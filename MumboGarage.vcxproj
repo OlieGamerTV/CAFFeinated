@@ -1,0 +1,255 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <VCProjectVersion>17.0</VCProjectVersion>
+    <Keyword>Win32Proj</Keyword>
+    <ProjectGuid>{f1614bd1-8cc4-4ff9-996c-9362b861b2b0}</ProjectGuid>
+    <RootNamespace>MumboGarage</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="Shared">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <IncludePath>imgui/;imgui/backends/;sdl/;$(IncludePath)</IncludePath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <IncludePath>imgui/;imgui/backends/;sdl/;$(IncludePath)</IncludePath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <IncludePath>thirdparty/imgui/;thirdparty/imgui/backends/;thirdparty/glfw/include;thirdparty/glad/include/glad;thirdparty/glad/include/KHR;thirdparty/nativefiledialog;thirdparty/nativefiledialog/include;thirdparty/stb;thirdparty/zlib/include;thirdparty/squish/include;$(IncludePath)</IncludePath>
+    <LibraryPath>thirdparty/glfw/lib;thirdparty/nativefiledialog/lib;thirdparty/zlib/lib;thirdparty/squish/lib;$(LibraryPath)</LibraryPath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <IncludePath>thirdparty/imgui/;thirdparty/imgui/backends/;thirdparty/glfw/include;thirdparty/glad/include/glad;thirdparty/glad/include/KHR;thirdparty/nativefiledialog;thirdparty/nativefiledialog/include;thirdparty/stb;thirdparty/zlib/include;thirdparty/squish/include;$(IncludePath)</IncludePath>
+    <LibraryPath>thirdparty/glfw/lib;thirdparty/nativefiledialog/lib;thirdparty/zlib/lib;thirdparty/squish/lib;$(LibraryPath)</LibraryPath>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <AdditionalIncludeDirectories>imgui/;imgui/backends/;sdl/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <AdditionalIncludeDirectories>imgui/;imgui/backends/;sdl/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>false</GenerateDebugInformation>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <AdditionalIncludeDirectories>imgui/;imgui/backends/;sdl/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>glfw3.lib;nfd.lib;zlibstatic.lib;squishd.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <ForceFileOutput>Enabled</ForceFileOutput>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <AdditionalIncludeDirectories>imgui/;imgui/backends/;sdl/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>false</GenerateDebugInformation>
+      <AdditionalDependencies>glfw3.lib;nfd.lib;zlibstatic.lib;squish.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <ForceFileOutput>Enabled</ForceFileOutput>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="code\Program Segments\BundleSeg.cpp" />
+    <ClCompile Include="code\Bundle.cpp" />
+    <ClCompile Include="code\CaffFileTypes.cpp" />
+    <ClCompile Include="code\Challenge.cpp" />
+    <ClCompile Include="code\MessageHandle.cpp" />
+    <ClCompile Include="code\GhoulBundle.cpp" />
+    <ClCompile Include="code\GhoulDemand.cpp" />
+    <ClCompile Include="code\GhoulFileTypes.cpp" />
+    <ClCompile Include="code\LoadingProcess.cpp" />
+    <ClCompile Include="code\LoctextWindow.cpp" />
+    <ClCompile Include="code\PinataDBBundle.cpp" />
+    <ClCompile Include="code\RPK.cpp" />
+    <ClCompile Include="code\KameoDatabase.cpp" />
+    <ClCompile Include="code\ConkerFileTypes.cpp" />
+    <ClCompile Include="code\DarkPackage.cpp" />
+    <ClCompile Include="code\MarkerWindow.cpp" />
+    <ClCompile Include="code\ScriptWindow.cpp" />
+    <ClCompile Include="thirdparty\glad\src\glad.c" />
+    <ClCompile Include="thirdparty\imgui\backends\imgui_impl_glfw.cpp" />
+    <ClCompile Include="thirdparty\imgui\backends\imgui_impl_opengl3.cpp" />
+    <ClCompile Include="thirdparty\imgui\imgui.cpp" />
+    <ClCompile Include="thirdparty\imgui\imgui_demo.cpp" />
+    <ClCompile Include="thirdparty\imgui\imgui_draw.cpp" />
+    <ClCompile Include="thirdparty\imgui\imgui_tables.cpp" />
+    <ClCompile Include="thirdparty\imgui\imgui_widgets.cpp" />
+    <ClCompile Include="code\MumboGarage.cpp" />
+    <ClCompile Include="code\Save.cpp" />
+    <ClCompile Include="code\StreamBundle.cpp" />
+    <ClCompile Include="code\VehicleWindow.cpp" />
+    <ClCompile Include="code\XUIString.cpp" />
+    <ClCompile Include="code\XWaveBank.cpp" />
+    <ClCompile Include="code\XWaveBank.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="code\AssetId.h" />
+    <ClInclude Include="code\Program Segments\BundleSeg.h" />
+    <ClInclude Include="code\AssetCommons.h" />
+    <ClInclude Include="code\BaseMarker.h" />
+    <ClInclude Include="code\BaseScript.h" />
+    <ClInclude Include="code\Bundle.h" />
+    <ClInclude Include="code\CaffFileTypes.h" />
+    <ClInclude Include="code\Challenge.h" />
+    <ClInclude Include="code\CommonReader.h" />
+    <ClInclude Include="code\Commons.h" />
+    <ClInclude Include="code\MessageHandle.h" />
+    <ClInclude Include="code\FlagCounterCommons.h" />
+    <ClInclude Include="code\GhoulBundle.h" />
+    <ClInclude Include="code\GhoulDemand.h" />
+    <ClInclude Include="code\GhoulFileTypes.h" />
+    <ClInclude Include="code\LoadingProcess.h" />
+    <ClInclude Include="code\LoctextWindow.h" />
+    <ClInclude Include="code\MLTypes.h" />
+    <ClInclude Include="code\PinataDBBundle.h" />
+    <ClInclude Include="code\RPK.h" />
+    <ClInclude Include="code\KameoDatabase.h" />
+    <ClInclude Include="code\DarkPackage.h" />
+    <ClInclude Include="code\ConkerFileTypes.h" />
+    <ClInclude Include="code\MarkerWindow.h" />
+    <ClInclude Include="code\ScriptWindow.h" />
+    <ClInclude Include="thirdparty\imgui\backends\imgui_impl_glfw.h" />
+    <ClInclude Include="thirdparty\imgui\backends\imgui_impl_opengl3.h" />
+    <ClInclude Include="thirdparty\imgui\backends\imgui_impl_opengl3_loader.h" />
+    <ClInclude Include="thirdparty\imgui\imconfig.h" />
+    <ClInclude Include="thirdparty\imgui\imgui.h" />
+    <ClInclude Include="thirdparty\imgui\imgui_internal.h" />
+    <ClInclude Include="thirdparty\imgui\imstb_rectpack.h" />
+    <ClInclude Include="thirdparty\imgui\imstb_textedit.h" />
+    <ClInclude Include="thirdparty\imgui\imstb_truetype.h" />
+    <ClInclude Include="code\imgui_includes.h" />
+    <ClInclude Include="code\MumboGarage.h" />
+    <ClInclude Include="code\obj_msg_list.h" />
+    <ClInclude Include="code\ReaderUtils.h" />
+    <ClInclude Include="code\resource.h" />
+    <ClInclude Include="code\Save.h" />
+    <ClInclude Include="thirdparty\stb\stb_image.h" />
+    <ClInclude Include="thirdparty\stb\stb_image_write.h" />
+    <ClInclude Include="code\StreamBundle.h" />
+    <ClInclude Include="code\xenon_texture.h" />
+    <ClInclude Include="code\VehicleParts.h" />
+    <ClInclude Include="code\VehicleWindow.h" />
+    <ClInclude Include="code\XUIString.h" />
+    <ClInclude Include="code\xbox_texture.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="MumboGarage.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="resource\aid_audio_icon.png" />
+    <Image Include="resource\aid_challenge_icon.png" />
+    <Image Include="resource\aid_list_icon.png" />
+    <Image Include="resource\aid_texture_banjox_ui_worldicon_banjoland.png" />
+    <Image Include="resource\aid_vehicleblock_icon.png" />
+    <Image Include="resource\aid_vehicle_icon.png" />
+    <Image Include="resource\aid_anim_icon.png" />
+    <Image Include="resource\exeIcon.ico" />
+    <Image Include="resource\icon.png" />
+    <Image Include="resource\icon_large.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Font Include="resource\NotoSansJP-Regular.ttf" />
+    <Font Include="resource\NotoSansKR-Regular.ttf" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>
