@@ -3,13 +3,13 @@
 
 ## Usage
 This tool does somewhat expect that you have a basic understanding of the files you are looking at beforehand.<br/>
-To open a file with the executable, go <b>File -> Open<b/>, there will be a list of available options to pick from. 
+To open a file with the executable, go <b>File -> Open</b>, there will be a list of available options to pick from. 
 | File Option  | Description |
 | ------------- | ------------- |
 | R1 Bundle File  | This is the most common format found, defined by its magic of "CAFF".<br/>The currently supported versions are V0026, V0031 and V0036.  |
 | Ghoulies Files  | These are exclusively for Grabbed by the Ghoulies.<br/>Two options are present, the bundle format and on-demand format. |
-| Viva Pinata DB Files | These are found in Viva Pinata. It relates to the three files found in \Beta\debug\ |
-| Rare Package File | Technically not from R1 like the previous options, these are used in Rare Replay with the extension .rpk |
+| Viva Pinata DB Files | These are found in the files for Viva Pinata.<br/>It relates to the three files found in <b>\\Beta\\debug\\</b> for VP and <b>\\Beta\\packed\\</b> for TiP. |
+| Rare Package File | These are used in Rare Replay with the extension .rpk / .rpk.gz |
 ----
 A few tool windows are present in this, for different purposes.
 | Tools Option  | Description |
