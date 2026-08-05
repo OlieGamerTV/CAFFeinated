@@ -1,4 +1,4 @@
-# CAFFeinated
+<img align="left" src="resource/icon_large.png"><h1>CAFFeinated</h1>
 A C++ tool built to read the various file formats used by Rare during the Xbox/Xbox 360 era via R1.
 
 ## Usage
