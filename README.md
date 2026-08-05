@@ -2,8 +2,8 @@
 <b>CAFFeinated</b> (formerly once known as <b>MumboGarage</b>) is a C++ tool made to read the various file formats used by Rare during the Xbox/Xbox 360 era via R1.
 
 ## Usage
-This tool does somewhat expect that you have a basic understanding of the files you are looking at beforehand.
-To open a file, go <b>File -> Open<b/>. 
+This tool does somewhat expect that you have a basic understanding of the files you are looking at beforehand.<br/>
+To open a file with the executable, go <b>File -> Open<b/>, there will be a list of available options to pick from. 
 | File Option  | Description |
 | ------------- | ------------- |
 | R1 Bundle File  | This is the most common format found, defined by its magic of "CAFF".<br/>The currently supported versions are V0026, V0031 and V0036.  |
@@ -20,8 +20,9 @@ A few tool windows are present in this, for different purposes.
 | Save Editor | (Nuts & Bolts only) An editor for the save files created by Banjo-Kazooie: Nuts & Bolts. |
 | Vehicle Editor | (Nuts & Bolts only) A (fairly extensive) editor for the vehicle files used by Banjo-Kazooie: Nuts & Bolts. |
 
-## Notes
+## Comments
 * Some crashes may appear when using the tool, as the tool is still a big Work in Progress.
+  * Please feel free to report any issues (whether it's just any jank or outright crashes) with the tool on the issues page.
 
 ## Libraries Used
 * GLAD & GLFW
