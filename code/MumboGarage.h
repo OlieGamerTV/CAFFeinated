@@ -25,6 +25,7 @@ void writeDataToFile(const char* fileName, const char* filter, char* data, size_
 void exportFilesFromBundleRaw();
 void exportFilesFromBundleSpecial();
 
+void readPinataDBFile();
 static void openPinataDbBundle();
 void fillPinataDbBundleFileList();
 void displayActivePinataDbBundleFileProperty();

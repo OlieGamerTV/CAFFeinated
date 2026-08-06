@@ -113,7 +113,7 @@ static StreamBundle* streamBundleFile;
 static GhoulDemand* ghoulDemandFile;
 static GhoulBundle* ghoulBundleFile;
 
-static DBBundle* PinataDbBundleFile;
+static DBBundle PinataDbBundleFile;
 
 static RPKFile* rpkFile;
 
@@ -451,15 +451,17 @@ void buildBaseImGuiWindow() {
 
 		// Viva Pinata Database Bundle Type
 		if (imGuiWindowInfo.saveData.targetType == PINATA_DBBUNDLE) {
-			if (PinataDbBundleFile->isReady) {
+			if (PinataDbBundleFile.isReady) {
 				fileType = CaffType::PINATA_DBBUNDLE;
 
 				imGuiWindowInfo.saveData.targetType = NONE;
+				CloseLoadingPromptWidget();
 			}
-			if (PinataDbBundleFile->hasErrored == true) {
+			if (PinataDbBundleFile.hasErrored == true) {
 				fileType = NONE;
 
 				imGuiWindowInfo.saveData.targetType = NONE;
+				CloseLoadingPromptWidget();
 			}
 		}
 
@@ -969,14 +971,11 @@ static void openPinataDbBundle() {
 		sprintf(currentFileName, "%s", outPath);
 		ImGui::DebugLog("Folder picked: %s\n", currentFileName);
 
-		if (PinataDbBundleFile == nullptr) {
-			PinataDbBundleFile = (DBBundle*)malloc(sizeof(DBBundle));
-		}
-
 		strcpy(imGuiWindowInfo.saveData.loadingMessage, "Currently loading Viva Pinata DB Files...");
 		imGuiWindowInfo.saveData.targetType = PINATA_DBBUNDLE;
-		imGuiWindowInfo.saveData.loadThread = std::thread(&DBBundle::readStandaloneDbBundleFiles, PinataDbBundleFile, currentFileName);
-		imGuiWindowInfo.saveData.loadThread.detach();
+		//imGuiWindowInfo.saveData.loadThread = std::thread(&DBBundle::readStandaloneDbBundleFiles, PinataDbBundleFile, currentFileName);
+		//imGuiWindowInfo.saveData.loadThread.detach();
+		std::thread(&readPinataDBFile).detach();
 	}
 	else {
 	}
@@ -2697,8 +2696,8 @@ void displayActiveStreamBundleFileProperty() {
 void displayActivePinataDbBundleFileProperty() {
 	if (fileId == -1) return;
 
-	int hashIdx = PinataDbBundleFile->precachedEntries[fileId].hashIdx;
-	int indexIdx = PinataDbBundleFile->precachedEntries[fileId].indexIdx;
+	int hashIdx = PinataDbBundleFile.precachedEntries[fileId].hashIdx;
+	int indexIdx = PinataDbBundleFile.precachedEntries[fileId].indexIdx;
 
 	char lbl[1024];
 	char type[32];
@@ -2708,19 +2707,19 @@ void displayActivePinataDbBundleFileProperty() {
 	memset(lbl, 0, 1024);
 	memset(type, 0, 32);
 
-	strcpy(lbl, PinataDbBundleFile->indexFile[indexIdx].filename);
+	strcpy(lbl, PinataDbBundleFile.indexFile[indexIdx].filename);
 
 
 	ImGui::Text("Filename:\t%s", lbl);
 
-	std::time_t stamp = PinataDbBundleFile->indexFile[indexIdx].timestamp;
+	std::time_t stamp = PinataDbBundleFile.indexFile[indexIdx].timestamp;
 	//std::time_t time = std::time(&stamp);
-	ImGui::Text("Timestamp: %d -> %s", PinataDbBundleFile->indexFile[indexIdx].timestamp, ctime(&stamp));
+	ImGui::Text("Timestamp: %d -> %s", PinataDbBundleFile.indexFile[indexIdx].timestamp, ctime(&stamp));
 
-	ImGui::Text("Version: %.03f", PinataDbBundleFile->indexFile[indexIdx].version);
+	ImGui::Text("Version: %.03f", PinataDbBundleFile.indexFile[indexIdx].version);
 
-	ImGui::Text("File Offset:\t%d", PinataDbBundleFile->hashFile.offsetArray[hashIdx]);
-	ImGui::Text("File Hash:\t%08X", PinataDbBundleFile->hashFile.hash32_Array[fileId]);
+	ImGui::Text("File Offset:\t%d", PinataDbBundleFile.hashFile.offsetArray[hashIdx]);
+	ImGui::Text("File Hash:\t%08X", PinataDbBundleFile.hashFile.hash32_Array[fileId]);
 
 	ImGui::SeparatorText("Streamed File Options");
 
@@ -2730,7 +2729,7 @@ void displayActivePinataDbBundleFileProperty() {
 
 		char* activeSect = 0;
 		int fileSize = 0;
-		activeSect = PinataDbBundleFile->getFileData(hashIdx, &fileSize);
+		activeSect = PinataDbBundleFile.getFileData(hashIdx, &fileSize);
 
 		writeDataToFile(lbl, "", activeSect, fileSize);
 	}
@@ -3061,7 +3060,7 @@ void fillPinataDbBundleFileList() {
 
 	ImGui::Text("File List");
 	ImGui::Separator();
-	for (int i = 0; i < PinataDbBundleFile->hashFile.fileCount; i++) {
+	for (int i = 0; i < PinataDbBundleFile.hashFile.fileCount; i++) {
 		ImGui::PushID(i);
 		memset(lbl, 0, 1024);
 		memset(type, 0, 32);
@@ -3069,9 +3068,9 @@ void fillPinataDbBundleFileList() {
 		memset(subtype, 0, 32);
 
 		// Check if the entry label we're reading contains "aid_".
-		int idx = PinataDbBundleFile->precachedEntries[i].indexIdx;
+		int idx = PinataDbBundleFile.precachedEntries[i].indexIdx;
 		if (idx != -1) {
-			strcpy(lbl, PinataDbBundleFile->indexFile[idx].filename);
+			strcpy(lbl, PinataDbBundleFile.indexFile[idx].filename);
 
 			assetGetTypeFromString(lbl + 4, type);
 
@@ -3852,6 +3851,18 @@ void writeCaffFile(const char* fileName) {
 	CloseLoadingBarPromptWidget();
 }
 
+void readPinataDBFile() {
+	SetupLoadingPromptWidget("Currently reading the file. Please wait.");
+
+	if (!PinataDbBundleFile.readStandaloneDbBundleFiles(currentFileName)) {
+		CloseLoadingPromptWidget();
+		FireMessage("A problem was encountered while reading the data.\nIf this is a Trouble in Paradise file, we do not currently support it until the hashing code is reversed.\nOtherwise, the files might be bad or the files needed aren't in the directory given.", ErrorType_Warn);
+		imGuiWindowInfo.saveData.targetType = NONE;
+	}
+
+	return;
+}
+
 void readGhouliesDBFile() {
 	SetupLoadingPromptWidget("Currently reading the file. Please wait.");
 
@@ -3887,6 +3898,12 @@ void readCaffFile() {
 	fseek(fdart, 0, SEEK_SET);
 
 	ImGui::DebugLog("%04X\n", val);
+
+	if (val == 0xF50F) { // Failsafe until we can somehow reverse engineer the Xbox 360 specific compression.
+		CloseLoadingPromptWidget();
+		FireMessage("The file provided was compressed with xbcompress.\nPlease run the file through xbdecompress first.\n", ErrorType_Info);
+		return;
+	}
 
 	// We only need to get about the first 0x14 bytes of data.
 	if (val == 0xDA78) {
@@ -4123,10 +4140,7 @@ void disposeAndCloseActiveFile() {
 		ghoulBundleFile = nullptr;
 	}
 
-	if (PinataDbBundleFile != nullptr) {
-		delete(PinataDbBundleFile);
-		PinataDbBundleFile = nullptr;
-	}
+	PinataDbBundleFile.ClearActiveBundleData();
 
 	if (rpkFile != nullptr) {
 		delete(rpkFile);

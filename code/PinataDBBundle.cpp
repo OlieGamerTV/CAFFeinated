@@ -3,38 +3,6 @@
 #include "PinataDBBundle.h"
 #include "Bundle.h"
 
-DBBundle::~DBBundle() {
-	if (indexFile != nullptr) {
-		delete[] indexFile;
-		indexFile = nullptr;
-	}
-
-	if (hashFile.offsetArray != nullptr) {
-		delete[] hashFile.offsetArray;
-		hashFile.offsetArray = nullptr;
-	}
-
-	if (hashFile.hash32_Array != nullptr) {
-		delete[] hashFile.hash32_Array;
-		hashFile.hash32_Array = nullptr;
-	}
-
-	if (hashFile.hash64_Array != nullptr) {
-		delete[] hashFile.hash64_Array;
-		hashFile.hash64_Array = nullptr;
-	}
-
-	if (hashFileData != nullptr) {
-		free(hashFileData);
-		hashFileData = nullptr;
-	}
-
-	if (indexFileData != nullptr) {
-		free(indexFileData);
-		indexFileData = nullptr;
-	}
-}
-
 char* DBBundle::getFileData(int fileIdx, int* dataSize) {
 	if (savedFilePath == nullptr) {
 		return nullptr;
@@ -86,7 +54,7 @@ char* DBBundle::getFileData(int fileIdx, int* dataSize) {
 	return fullCaffData;
 }
 
-void DBBundle::readStandaloneDbBundleFiles(char* filePath) {
+bool DBBundle::readStandaloneDbBundleFiles(char* filePath) {
 	isTiPIndexFile = false;
 	hasErrored = false;
 	isReady = false;
@@ -107,10 +75,12 @@ void DBBundle::readStandaloneDbBundleFiles(char* filePath) {
 	if (idxFile == 0) {
 		sprintf(indexFilePath, "%s\\db_index.bin", filePath); // If "db_index.txt" doesn't exist, check instead for "db_index.bin", which is what Trouble in Paradise uses.
 
-		fclose(idxFile);
+		//fclose(idxFile);
 		idxFile = fopen(indexFilePath, "rb");
 
 		if (idxFile != 0) {
+			fclose(idxFile);
+			return false;
 			isTiPIndexFile = true;
 		}
 	}
@@ -119,7 +89,7 @@ void DBBundle::readStandaloneDbBundleFiles(char* filePath) {
 	if (idxFile == 0) {
 		printf("%s - db_index does not exist in this directory.\n", __func__);
 		hasErrored = true;
-		return;
+		return false;
 	}
 
 	FILE* hashFile = fopen(hashFilePath, "rb");
@@ -129,7 +99,7 @@ void DBBundle::readStandaloneDbBundleFiles(char* filePath) {
 		fclose(idxFile);
 		fclose(hashFile);
 		hasErrored = true;
-		return;
+		return false;
 	}
 
 	fseek(idxFile, 0L, SEEK_END);
@@ -159,6 +129,8 @@ void DBBundle::readStandaloneDbBundleFiles(char* filePath) {
 		uncompedSize = flipEndian(uncompedSize);
 
 		inputIndexData = InflateData(indexData + 4, 9, length - 4, uncompedSize);
+
+		free(indexData);
 	}
 
 	fseek(hashFile, 0L, SEEK_END);
@@ -175,7 +147,7 @@ void DBBundle::readStandaloneDbBundleFiles(char* filePath) {
 
 	readDbBundleFiles(hashData, inputIndexData, number_of_lines);
 	
-	return;
+	return true;
 }
 
 void DBBundle::readDbBundleFiles(char* hashData, char* indexData, int totalIndexCount) {
@@ -213,7 +185,10 @@ void DBBundle::readDbBundleFiles(char* hashData, char* indexData, int totalIndex
 
 	precachedEntries = new PrecacheEntry[hashFile.fileCount];
 
+	memset(precachedEntries, 0, sizeof(PrecacheEntry) * hashFile.fileCount);
+
 	indexFile = new IndexEntry[totalIndexCount];
+	memset(indexFile, 0, sizeof(IndexEntry) * totalIndexCount);
 
 	// Get the hash & offsets first...
 	for (int i = 0; i < hashFile.fileCount; i++) {
@@ -234,7 +209,12 @@ void DBBundle::readDbBundleFiles(char* hashData, char* indexData, int totalIndex
 
 		hashFile.offsetArray[i] = flipEndian(offset);
 
-		printf("HASH ENTRY %d - [%08X %d]\n", i, hashFile.hash32_Array[i], hashFile.offsetArray[i]);
+		if (isTiPIndexFile) {
+			printf("HASH ENTRY %d - [%llX %d]\n", i, hashFile.hash64_Array[i], hashFile.offsetArray[i]);
+		}
+		else {
+			printf("HASH ENTRY %d - [%08X %d]\n", i, hashFile.hash32_Array[i], hashFile.offsetArray[i]);
+		}
 	}
 
 	// ...and now we get the available names.
@@ -254,14 +234,56 @@ void DBBundle::readDbBundleFiles(char* hashData, char* indexData, int totalIndex
 
 			precachedEntries[idx].hashIdx = idx;
 			precachedEntries[idx].indexIdx = i;
-			printf("HASH ENTRY %d - String %s correlates to known hash %08X.\n", i, indexFile[i].filename, indexFile[i].hash);
+			printf("ENTRY %d - String %s correlates to known hash %08X.\n", i, indexFile[i].filename, indexFile[i].hash);
 		}
 
 		if (idx == -1) {
-			precachedEntries[idx].hashIdx = -1;
-			precachedEntries[idx].indexIdx = -1;
+			printf("ENTRY %d - Hash of string %s (%08X) isn't present in index_hash.\n", i, indexFile[i].filename, indexFile[i].hash);
 		}
 	}
 
 	isReady = true;
+}
+
+void DBBundle::ClearActiveBundleData() {
+	try {
+		if (precachedEntries != nullptr) {
+			delete[] precachedEntries;
+			precachedEntries = nullptr;
+		}
+
+		if (indexFile != nullptr) {
+			delete[] indexFile;
+			indexFile = nullptr;
+		}
+
+		hashFile.fileCount = 0;
+		if (hashFile.hash32_Array != nullptr) {
+			delete[] hashFile.hash32_Array;
+			hashFile.hash32_Array = nullptr;
+		}	
+
+		if (hashFile.hash64_Array != nullptr) {
+			delete[] hashFile.hash64_Array;
+			hashFile.hash64_Array = nullptr;
+		}
+
+		if (hashFile.offsetArray != nullptr) {
+			delete[] hashFile.offsetArray;
+			hashFile.offsetArray = nullptr;
+		}
+
+		if (hashFileData != nullptr) {
+			free(hashFileData);
+			hashFileData = nullptr;
+		}
+
+		if (indexFileData != nullptr) {
+			free(indexFileData);
+			indexFileData = nullptr;
+		}
+	}
+	catch (std::exception e) {
+		printf("%s\n", e.what());
+	}
 }

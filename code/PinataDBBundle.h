@@ -44,20 +44,28 @@ public:
 	bool isReady = false;
 	bool hasErrored = false;
 
-	~DBBundle();
-
-	void readStandaloneDbBundleFiles(char* filePath);
+	bool readStandaloneDbBundleFiles(char* filePath);
 	void readDbBundleFiles(char* hashData, char* indexData, int indexCount);
 
 	// Allocates and returns the target file data.
 	char* getFileData(int fileIdx, int* dataSize);
 	char* getBundleFileData(int fileAid, int fileIdx);
 
+	void ClearActiveBundleData();
+
+	unsigned long long getHashFromArray(int idx) {
+		if (isTiPIndexFile)
+			return hashFile.hash64_Array[idx];
+
+		if (!isTiPIndexFile)
+			return hashFile.hash32_Array[idx];
+	}
+
 	// Gets the offset of the target file by adding the size of the files before it.
 	int getOffsetOfFile(unsigned int aid) {
 		int offset = 0;
 		for (int i = 0; i < hashFile.fileCount; i++) {
-			if (hashFile.hash32_Array[i] == aid) {
+			if (getHashFromArray(i) == aid) {
 				return hashFile.offsetArray[i];
 			}
 		}
@@ -67,7 +75,7 @@ public:
 	int getIdxOfFile(unsigned int aid) {
 		int offset = 0;
 		for (int i = 0; i < hashFile.fileCount; i++) {
-			if (hashFile.hash32_Array[i] == aid) {
+			if (getHashFromArray(i) == aid) {
 				return i;
 			}
 		}
