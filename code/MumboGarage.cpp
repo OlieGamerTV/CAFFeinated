@@ -211,7 +211,7 @@ int mainWindowCode() {
 	ImGuiIO& io = ImGui::GetIO();
 	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
 
-	imGuiWindowInfo.defFont = io.Fonts->AddFontDefault();
+	imGuiWindowInfo.defFont = io.Fonts->AddFontDefaultVector();
 
 	// Setup Platform/Renderer backends
 	ImGui_ImplGlfw_InitForOpenGL(window, true);          // Second param install_callback=true will install GLFW callbacks and chain to existing ones.
@@ -226,8 +226,8 @@ int mainWindowCode() {
 	RC_PNG_LISTICON = LoadResourceImage(IDB_PNG6, L"PNG");
 	RC_PNG_CHALICON = LoadResourceImage(IDB_PNG7, L"PNG");
 
-	LoadResourceFont(IDR_FONT1, RT_FONT); // Japanese Font
-	LoadResourceFont(IDR_FONT2, RT_FONT); // Korean Font
+	LoadResourceFont(IDR_FONT1, RT_FONT, 1.25f); // Japanese Font
+	LoadResourceFont(IDR_FONT2, RT_FONT, 1.25f); // Korean Font
 
 	imGuiWindowInfo.search = new char[128];
 	GetVehicleEditorWindowParameters()->vehicleBlockAddParams.outputPath = (char*)malloc(MAX_PATH);
@@ -240,7 +240,7 @@ int mainWindowCode() {
 	NFD_Init();
 
 	// Do an initial setup of the display scaling for fonts.
-	ImGui::PushFont(NULL, 13 * main_scale);
+	ImGui::PushFont(imGuiWindowInfo.defFont, 13 * main_scale); // Need to supply a font the first time around, otherwise it hits an assert on debug.
 
 	// The main loop
 	while (!glfwWindowShouldClose(window))
@@ -256,7 +256,7 @@ int mainWindowCode() {
 
 			// To accomodate for different display scaling settings
 			main_scale = ImGui_ImplGlfw_GetContentScaleForWindow(window);
-			ImGui::PushFont(NULL, 13 * main_scale);
+			ImGui::PushFont(NULL, 13 * main_scale); // We don't need to supply a font for any subsequent calls.
 
 			ImGui::NewFrame();
 
@@ -3237,9 +3237,10 @@ void fillBundleFileList() {
 		}
 
 		if (img != 0) {
-			ImGui::Image(img, ImVec2(32.5, 32.5));
+			float main_scale = ImGui_ImplGlfw_GetContentScaleForWindow(window);
+			ImGui::Image(img, ImVec2(26 * main_scale, 26 * main_scale));
 			ImGui::SameLine();
-			ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 6.5);
+			ImGui::SetCursorPosY(ImGui::GetCursorPosY() + ((13 * main_scale) - ImGui::CalcTextSize(lbl, NULL, false, -1.f).y / 2));
 		}
 
 		if (ImGui::Selectable(lbl, fileIdx == i + 1)) {
@@ -4570,10 +4571,11 @@ static void openLoadSaveFile() {
 /// <summary>
 /// Loads a font from the resource file and loads it into the ImGui font atlas.
 /// </summary>
-/// <param name="resourceName"></param>
-/// <param name="resourceType"></param>
+/// <param name="resourceName">The ID of the resource as is defined in the resource file.</param>
+/// <param name="resourceType">The type of the resource.</param>
+/// <param name="extraScale">Optional. Extra scaling to apply to the font if needed.</param>
 /// <returns>A pointer to the created ImFont object.</returns>
-static ImFont* LoadResourceFont(int resourceName, const wchar_t* resourceType) {
+static ImFont* LoadResourceFont(int resourceName, const wchar_t* resourceType, float extraScale = 1) {
 	HRESULT hr = S_OK;
 
 	// Resource management.
@@ -4617,13 +4619,11 @@ static ImFont* LoadResourceFont(int resourceName, const wchar_t* resourceType) {
 		PRINT("Failed to lock resource.\n");
 	}
 
-	float main_scale = ImGui_ImplGlfw_GetContentScaleForMonitor(glfwGetPrimaryMonitor());
-
 	ImFontConfig cfg;
 	cfg.OversampleH = cfg.OversampleV = 1;
 	cfg.PixelSnapH = true;
+	cfg.ExtraSizeScale = extraScale; // Extra scaling is needed for the pick of font for Japanese and Korean characters (Noto Sans).
 	cfg.MergeMode = true;
-	cfg.SizePixels = 16.0f * main_scale;
 
 	PRINT("%d\n", (int)imageFileSize);
 

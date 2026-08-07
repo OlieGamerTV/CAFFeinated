@@ -47,7 +47,7 @@ static GLFWimage LoadResourceImageToGLFWImage(int resourceName, const wchar_t* r
 static unsigned char* GetRawImageData_Base(char* data, int width, int height, int type);
 static unsigned char* GetRawImageData_Banjo(char* data, int width, int height, int type, int isSwizzled);
 
-static ImFont* LoadResourceFont(int resourceName, const wchar_t* resourceType);
+static ImFont* LoadResourceFont(int resourceName, const wchar_t* resourceType, float extraSize);
 
 int mainWindowCode();
 
