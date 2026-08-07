@@ -239,6 +239,9 @@ int mainWindowCode() {
 
 	NFD_Init();
 
+	// Do an initial setup of the display scaling for fonts.
+	ImGui::PushFont(NULL, 13 * main_scale);
+
 	// The main loop
 	while (!glfwWindowShouldClose(window))
 	{
@@ -250,8 +253,12 @@ int mainWindowCode() {
 
 			ImGui_ImplOpenGL3_NewFrame();
 			ImGui_ImplGlfw_NewFrame();
-			ImGui::NewFrame();
 
+			// To accomodate for different display scaling settings
+			main_scale = ImGui_ImplGlfw_GetContentScaleForWindow(window);
+			ImGui::PushFont(NULL, 13 * main_scale);
+
+			ImGui::NewFrame();
 
 			buildBaseImGuiWindow();
 			buildTitleBar();
@@ -4610,11 +4617,13 @@ static ImFont* LoadResourceFont(int resourceName, const wchar_t* resourceType) {
 		PRINT("Failed to lock resource.\n");
 	}
 
+	float main_scale = ImGui_ImplGlfw_GetContentScaleForMonitor(glfwGetPrimaryMonitor());
+
 	ImFontConfig cfg;
 	cfg.OversampleH = cfg.OversampleV = 1;
 	cfg.PixelSnapH = true;
 	cfg.MergeMode = true;
-	cfg.SizePixels = 13.0f * 1.0f;
+	cfg.SizePixels = 16.0f * main_scale;
 
 	PRINT("%d\n", (int)imageFileSize);
 
@@ -4630,7 +4639,7 @@ static ImFont* LoadResourceFont(int resourceName, const wchar_t* resourceType) {
 		PRINT("Failed to lock resource.\n");
 	}
 
-	return ImGui::GetIO().Fonts->AddFontFromMemoryTTF(fontFile, (int)imageFileSize, 16.0f, &cfg);
+	return ImGui::GetIO().Fonts->AddFontFromMemoryTTF(fontFile, (int)imageFileSize, 0.f, &cfg);
 }
 
 static unsigned char* GetRawImageData_Base(char* data, int width, int height, int type) {

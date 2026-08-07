@@ -24,6 +24,7 @@
     <ProjectGuid>{f1614bd1-8cc4-4ff9-996c-9362b861b2b0}</ProjectGuid>
     <RootNamespace>MumboGarage</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+    <ProjectName>CAFFeinated</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
