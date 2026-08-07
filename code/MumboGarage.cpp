@@ -240,7 +240,8 @@ int mainWindowCode() {
 	NFD_Init();
 
 	// Do an initial setup of the display scaling for fonts.
-	ImGui::PushFont(imGuiWindowInfo.defFont, 13 * main_scale); // Need to supply a font the first time around, otherwise it hits an assert on debug.
+	ImGui::GetStyle().FontSizeBase = 13.f;
+	ImGui::GetStyle().FontScaleDpi = main_scale;
 
 	// The main loop
 	while (!glfwWindowShouldClose(window))
@@ -256,7 +257,7 @@ int mainWindowCode() {
 
 			// To accomodate for different display scaling settings
 			main_scale = ImGui_ImplGlfw_GetContentScaleForWindow(window);
-			ImGui::PushFont(NULL, 13 * main_scale); // We don't need to supply a font for any subsequent calls.
+			ImGui::GetStyle().FontScaleDpi = main_scale;
 
 			ImGui::NewFrame();
 
