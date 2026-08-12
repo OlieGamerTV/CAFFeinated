@@ -4,13 +4,12 @@
 static void openGhouliesDemand();
 static void openGhouliesBundle();
 void displayGhoulDemandInfo();
+void displayGhoulBundleInfo();
 void displayActiveGhoulDemandProperty();
 void fillGhouliesBundleFileList();
 void displayActiveGhoulBundleProperty();
 void ReadGhoulBundleTexture();
 void ReadGhoulDemandTexture();
-void readGhouliesDBFile();
-void readGhouliesDemandFile();
 
 //h
 void ReadConkerLiveReloadedTexture(char* gpuData);
@@ -25,7 +24,6 @@ void writeDataToFile(const char* fileName, const char* filter, char* data, size_
 void exportFilesFromBundleRaw();
 void exportFilesFromBundleSpecial();
 
-void readPinataDBFile();
 static void openPinataDbBundle();
 void fillPinataDbBundleFileList();
 void displayActivePinataDbBundleFileProperty();
@@ -50,6 +48,7 @@ static unsigned char* GetRawImageData_Banjo(char* data, int width, int height, i
 static ImFont* LoadResourceFont(int resourceName, const wchar_t* resourceType, float extraSize);
 
 int mainWindowCode();
+void readOtherSupportedFile(int type);
 
 //Base Window
 void buildBaseImGuiWindow();

@@ -84,6 +84,8 @@ struct TextureGPUHeader {
 
 struct TextureGPUEntry {
 	char* textureData;
+
+	~TextureGPUEntry();
 };
 
 struct TextureFile {
@@ -97,4 +99,6 @@ struct TextureFile {
 
 	void ParseTextureHeader(char* data);
 	void ParseTextureEntries(char* data);
+
+	void FreeTextureData();
 };

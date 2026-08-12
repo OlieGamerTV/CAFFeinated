@@ -1,7 +1,13 @@
 #include "CommonReader.h"
 #include "GhoulBundle.h"
 
+FileEntry::~FileEntry() {
+	memset(fileName, 0, FILEENTRY_NAMESIZE);
+}
+
 bool GhoulBundle::ReadBundleFile(char* data, int dataSize) {
+	isReady = false;
+
 	if (data == nullptr) return false;
 	dataPtr = data;
 
@@ -49,6 +55,10 @@ bool GhoulBundle::ReadBundleFile(char* data, int dataSize) {
 		dataPtr = uncompedBaseData;
 
 		fileEntries = new FileEntry[entryCount];
+
+		if (fileEntries == nullptr)
+			return false;
+
 		for (int i = 0; i < entryCount; i++) {
 			strncpy(fileEntries[i].fileName, dataPtr + fileListOffset + (sizeof(FileEntry) * i), FILEENTRY_NAMESIZE);
 
@@ -92,4 +102,18 @@ bool GhoulBundle::readStandaloneBundleFile(char* fileName) {
 	fclose(currentFile);
 
 	return ReadBundleFile(data, length);
+}
+
+void GhoulBundle::ClearBundleFileData() {
+	isReady = false;
+
+	if (fileEntries != nullptr) {
+		delete[] fileEntries;
+		fileEntries = nullptr;
+	}
+
+	if (dataPtr != nullptr) {
+		free(dataPtr);
+		dataPtr = nullptr;
+	}
 }

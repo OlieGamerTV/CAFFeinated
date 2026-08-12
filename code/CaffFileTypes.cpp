@@ -1,6 +1,10 @@
 #include "CommonReader.h"
+
+#ifdef _WIN32 
+#define WIN32_LEAN_AND_MEAN
 #include <windows.h>
-#include <stringapiset.h>
+#endif
+
 #include "CaffFileTypes.h"
 
 #pragma region Script
@@ -18,6 +22,8 @@ void Script::ReadScript(char* data) {
 	// First, get the entire count of entries. We need to go through all the entries first in order to get that.
 	int size = 0;
 	int type = 0xFFFFFFFF;
+
+	int indention = 0;
 	while (type != dbScript_Null) {
 		memcpy(&size, scriptPtr + pos, sizeof(int));
 		memcpy(&type, scriptPtr + pos + 4, sizeof(int));
@@ -25,10 +31,107 @@ void Script::ReadScript(char* data) {
 		size = flipEndian(size);
 		type = flipEndian(type);
 
+		switch (type) {
+		    case dbScript_Condition_End:
+			case dbScript_Logic_Else:
+			case dbScript_Logic_Endif: {
+				indention--;
+		    }
+		}
+
+		for (int i = 0; i < indention; i++) {
+			printf("\t");
+		}
+
+		switch (type) {
+		    case dbScript_Condition_TimeOut:
+		    case dbScript_Condition_NumberGhouliesAlive:
+		    case dbScript_Condition_ObjectPickedUp:
+			case dbScript_Condition_NumberGhouliesKilled:
+			case dbScript_Condition_NumberOfKnockdowns:
+			case dbScript_Condition_ActorEntersRegion:
+			case dbScript_Condition_PlayerEntersRegion:
+			case dbScript_Condition_PlayerLeavesRegion:
+			case dbScript_Condition_SpecificGhouliesAlive:
+			case dbScript_Condition_SpecificGhouliesKilled:
+			case dbScript_Condition_ObjectRemoved:
+			case dbScript_Condition_PlayerDeflectionContact:
+			case dbScript_Condition_PlayerHitGhouly:
+			case dbScript_Condition_GhoulyTriggered:
+			case dbScript_Condition_GhoulyExists:
+			case dbScript_Condition_PlayerTalksToNPC:
+			case dbScript_Condition_PlayerEntersVehicle:
+			case dbScript_Logic_IfGameflag:
+			case dbScript_Logic_IfChallengeResult:
+			case dbScript_Logic_IfDialogResponse:
+			case dbScript_Logic_IfNumObjectsFound:
+			case dbScript_Logic_IfNoVehiclesInWorld:
+			case dbScript_Condition_ObjectEntersRegion:
+			case dbScript_Condition_CounterGreaterThan:
+			case dbScript_Logic_IfRandomFloatLessThanOrEqualsProb:
+			case dbScript_Logic_Else: {
+			    indention++;
+		    }
+		}
+
+		printf("Script Entry %d = <%d - %s>", count, size, dbScriptNames[type]);
+		switch (type) {
+		    case dbScript_Debug_Printf: {
+				char msg[256];
+				memset(msg, 0, 256);
+
+				strncpy_s(msg, 256, scriptPtr + pos + 8, 256);
+
+				printf(" (%s)\n", msg);
+		    }
+			break;
+			case dbScript_Condition_IfGameFlag:
+			case dbScript_Logic_IfGameflag:
+			case dbScript_Condition_CounterGreaterThan:
+			case dbScript_Flow_WaitOnGameFlag: {
+				char flag[0x40];
+				int compVal = 0;
+				memset(flag, 0, 0x40);
+
+				strncpy_s(flag, 0x40, scriptPtr + pos + 8, 0x40);
+
+				memcpy(&compVal, scriptPtr + pos + 0x48, sizeof(int));
+
+				compVal = flipEndian(compVal);
+
+				printf(" (%s - %d)\n", flag, compVal);
+			}
+			break;
+			case dbScript_Play_Dialog:
+			case dbScript_Execute_ScriptAsset: {
+				unsigned int aid = 0;
+
+				memcpy(&aid, scriptPtr + pos + 0x8, sizeof(int));
+
+				aid = flipEndian(aid);
+
+				printf(" (%08X)\n", aid);
+			}
+			break;
+			case dbScript_Logic_IfRandomFloatLessThanOrEqualsProb: {
+				float prob = 0;
+
+				memcpy(&prob, scriptPtr + pos + 0x8, sizeof(int));
+
+				prob = flipEndian_f32((char*)&prob, SRC_ENDIANBIG);
+
+				printf(" (%f)\n", prob);
+			}
+			break;
+			default: {
+				printf("\n");
+			}
+			break;
+		}
+		
+
 		pos += size;
 		count++;
-
-		printf("Script Entry %d = <%d - %s>\n", count, size, dbScriptNames[type]);
 	}
 
 	printf("Script Total Count: %d\n", count);
@@ -540,7 +643,7 @@ void Loctext::ExportToFileRaw(char* fileName) {
 
 			char conv[2048];
 
-			int total = WideCharToMultiByte(CP_UTF8, WC_COMPOSITECHECK, labelTable.stringTable.strings[i].string, -1, conv, 2048, NULL, NULL);
+			int total = wcstombs(conv, labelTable.stringTable.strings[i].string, 2048);
 
 			sprintf(fullStr, "%s\n", conv);
 
@@ -575,8 +678,8 @@ void Loctext::ExportToFileRaw(char* fileName) {
 
 				char conv[2048];
 
-				int total = WideCharToMultiByte(CP_UTF8, WC_COMPOSITECHECK, labelTable.stringTable.strings[GetIdxOfConnectedString(idx)].string, -1, conv, 2048, NULL, NULL);
-
+				int total = wcstombs(conv, labelTable.stringTable.strings[GetIdxOfConnectedString(idx)].string, 2048);
+				
 				// If a comment doesn't have a new line, apply one before we write our next value. Otherwise just write as normal.
 				if (hasCommentGotNewLine) {
 					sprintf(fullStr, "%s\t\t\t= \"%s\"\n", labelTable.tagTable.tags[GetIdxOfConnectedTag(idx)].val, conv);

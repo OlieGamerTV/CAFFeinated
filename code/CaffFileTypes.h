@@ -1,8 +1,10 @@
 #pragma once
 #include "BaseScript.h"
 
+#ifdef _WIN32 
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
+#endif
 #include <stdlib.h>
 
 const unsigned int VEHICLE_HEAD_GAMEID = 0xED07534D;
@@ -142,7 +144,6 @@ public:
 	UnkTable unknownTable;
 
 	void ReadLoctext(char* data);
-	void ReadLoctextWithCallback(char* data, int(*func_ptr)());
 
 	void ReadLabelData();
 	void ReadTagData();
@@ -151,6 +152,8 @@ public:
 
 	void ExportToFileRaw(char* fileName);
 	void ExportToFileBank(char* fileName, int endianness);
+
+	void WriteLoctext(char* filename);
 
 	int GetIdxOfConnectedString(unsigned short id) {
 		for (int i = 0; i < labelTable.stringTable.header.totalCount; i++) {

@@ -15,6 +15,8 @@ struct FileEntry {
 	int dataSectSize;
 	int gpuSectOffset;
 	int gpuSectSize;
+
+	~FileEntry();
 };
 
 struct GhoulBundle {
@@ -42,6 +44,8 @@ struct GhoulBundle {
 
 	bool ReadBundleFile(char* data, int dataSize);
 	bool readStandaloneBundleFile(char* fileName);
+
+	void ClearBundleFileData();
 
 	char* GetDataSection() {
 		if (dataPtr == nullptr) return nullptr;

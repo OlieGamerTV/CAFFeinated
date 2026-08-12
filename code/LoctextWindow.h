@@ -25,4 +25,11 @@ void ClearWindowParams() {
 
 void readExternalLoctextFile(char* data);
 
+void AssignLoctextFilename(char* filename) {
+	printf("%s\n", filename);
+	memset(loctextWindowParameters.originalFilename, 0, 128);
+	strcpy_s(loctextWindowParameters.originalFilename, 128, filename);
+	loctextWindowParameters.hasAssignedFileName = true;
+}
+
 #endif

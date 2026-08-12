@@ -11,11 +11,14 @@
 #define IMGUI_DEBUG_PRINTF 
 #define PRINT(fmt, ...) ((void)0)
 #else
+#define ASSERT(fmt, ...) (printf("%s %s %d - "##fmt,__FILE__, __func__, __LINE__, __VA_ARGS__))
 #define PRINT(fmt, ...) (printf(fmt, __VA_ARGS__))
 #endif
 
+#ifdef _WIN32 
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
+#endif
 
 //Include all the necessary ImGui things we need.
 #include "imgui_includes.h"
@@ -23,7 +26,6 @@
 #include <iostream>
 #include <thread>
 #include <atomic>
-#include <stringapiset.h>
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <nfd.h>
@@ -110,8 +112,8 @@ static CaffType fileType = CaffType::NONE;
 static BundleFile bundleFile;
 static StreamBundle* streamBundleFile;
 
-static GhoulDemand* ghoulDemandFile;
-static GhoulBundle* ghoulBundleFile;
+static GhoulDemand ghoulDemandFile;
+static GhoulBundle ghoulBundleFile;
 
 static DBBundle PinataDbBundleFile;
 
@@ -149,6 +151,7 @@ GLuint RC_PNG_VEHICON;
 GLuint RC_PNG_VEHBLOCKICON;
 GLuint RC_PNG_LISTICON;
 GLuint RC_PNG_CHALICON;
+GLuint RC_PNG_HAVOKICON;
 GLuint RGBA_TEST;
 GLuint DXT1_TEST;
 GLuint DXT3_TEST;
@@ -157,9 +160,11 @@ GLuint DXT3_TEST;
 static ImGuiGarageWindow imGuiWindowInfo;
 
 // For release builds (Where you just need the window)
+#ifdef _WIN32
 int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nCmdShow) {
 	return mainWindowCode();
 }
+#endif
 
 // For debug builds or any existing non-Windows platforms ig (Where we need a console to debug stuff)
 int main() {
@@ -176,17 +181,23 @@ int mainWindowCode() {
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
+	// Set the locale
+	setlocale(LC_ALL, "en_US.UTF-8");
+
 	float main_scale = ImGui_ImplGlfw_GetContentScaleForMonitor(glfwGetPrimaryMonitor()); // Valid on GLFW 3.3+ only
 	window = glfwCreateWindow((int)(1280 * main_scale), (int)(800 * main_scale), "CAFFeinated", NULL, NULL);
 	if (window == NULL)
 	{
-		std::cout << "Failed to create GLFW window" << std::endl;
+		ASSERT("Failed to create GLFW window\n");
+		//std::cout << "Failed to create GLFW window" << std::endl;
 		glfwTerminate();
 		return -1;
 	}
 
 	glfwMakeContextCurrent(window);
-	glfwSwapInterval(1); // Enable vsync
+	if (glfwExtensionSupported("GLX_EXT_swap_control_tear")) {
+		glfwSwapInterval(1); // Enable vsync
+	}
 	glfwSetWindowSizeLimits(window, 960 * main_scale, 600 * main_scale, GLFW_DONT_CARE, GLFW_DONT_CARE); // Set a minimum size for the window. Don't care for maximum.
 
 	// Setup our icons for the window.
@@ -197,11 +208,11 @@ int mainWindowCode() {
 
 	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
 	{
-		std::cout << "Failed to initialize GLAD" << std::endl;
+		ASSERT("Failed to initialize GLAD");
 		return -1;
 	}
 
-	glViewport(0, 0, 800, 600);
+	glViewport(0, 0, 1280 * main_scale, 800 * main_scale);
 
 	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 
@@ -225,15 +236,15 @@ int mainWindowCode() {
 	RC_PNG_AUDIOICON = LoadResourceImage(IDB_PNG5, L"PNG");
 	RC_PNG_LISTICON = LoadResourceImage(IDB_PNG6, L"PNG");
 	RC_PNG_CHALICON = LoadResourceImage(IDB_PNG7, L"PNG");
+	RC_PNG_HAVOKICON = LoadResourceImage(IDB_PNG10, L"PNG");
 
-	LoadResourceFont(IDR_FONT1, RT_FONT, 1.25f); // Japanese Font
-	LoadResourceFont(IDR_FONT2, RT_FONT, 1.25f); // Korean Font
+	LoadResourceFont(IDR_FONT1, RT_FONT, 1.25f); // Japanese Font (NotoSansJP)
+	LoadResourceFont(IDR_FONT2, RT_FONT, 1.25f); // Korean Font (NotoSansKR)
 
 	imGuiWindowInfo.search = new char[128];
 	GetVehicleEditorWindowParameters()->vehicleBlockAddParams.outputPath = (char*)malloc(MAX_PATH);
 	memset(imGuiWindowInfo.search, 0, 128);
 	bundleSetup.bufferedSaves = (BufferedSave*)malloc(0);
-	ghoulDemandFile = (GhoulDemand*)malloc(sizeof(GhoulDemand));
 	rpkFile = new RPKFile();
 	loctextWindowParameters.loctextFilePath = new char[MAX_PATH];
 
@@ -357,11 +368,11 @@ void buildBaseImGuiWindow() {
 			if (bundleFile.V36Bundle->isReady) {
 				fileType = CaffType::BUNDLEV36;
 
-				ImGui::DebugLog("Bundle Version: %s\n", bundleFile.V36Bundle->header.versionString);
-				ImGui::DebugLog("Bundle Header Size: %d - [%08x]\n", bundleFile.V36Bundle->headerSize(), bundleFile.V36Bundle->headerSize());
-				ImGui::DebugLog("Bundle CRC: %u - [%08x]\n", bundleFile.V36Bundle->bundleCRC(), bundleFile.V36Bundle->bundleCRC());
-				ImGui::DebugLog("Bundle Num. of Symbol Entries: %d - [%08x]\n", bundleFile.V36Bundle->numOfSymbols(), bundleFile.V36Bundle->numOfSymbols());
-				ImGui::DebugLog("Bundle Num. of File Part Entries: %d - [%08x]\n", bundleFile.V36Bundle->numOfFileParts(), bundleFile.V36Bundle->numOfFileParts());
+				PRINT("Bundle Version: %s\n", bundleFile.V36Bundle->header.versionString);
+				PRINT("Bundle Header Size: %d - [%08x]\n", bundleFile.V36Bundle->headerSize(), bundleFile.V36Bundle->headerSize());
+				PRINT("Bundle CRC: %u - [%08x]\n", bundleFile.V36Bundle->bundleCRC(), bundleFile.V36Bundle->bundleCRC());
+				PRINT("Bundle Num. of Symbol Entries: %d - [%08x]\n", bundleFile.V36Bundle->numOfSymbols(), bundleFile.V36Bundle->numOfSymbols());
+				PRINT("Bundle Num. of File Part Entries: %d - [%08x]\n", bundleFile.V36Bundle->numOfFileParts(), bundleFile.V36Bundle->numOfFileParts());
 
 				// Specifically on the bundles for Nuts & Bolts, a manifest file will be present.
 				if (bundleFile.V36Bundle->doesFileExist("manifest") != 0) {
@@ -376,7 +387,7 @@ void buildBaseImGuiWindow() {
 							throw("An error occured while attempting to create the manifest file.");
 						}
 						else {
-							ImGui::DebugLog("IDX %d\n", manifestFileIdx);
+							PRINT("IDX %d\n", manifestFileIdx);
 
 							char* manifestSect = 0;
 							manifestSect = bundleFile.V36Bundle->getFileData(currentFileName, manifestFileIdx);
@@ -385,9 +396,9 @@ void buildBaseImGuiWindow() {
 					}
 					else {
 						FireMessage("The manifest file exists in this file but we failed to get it.\nAid values for most entries won't appear unless this has been loaded correctly.\nReloading the file may solve this issue.\n", ErrorType_Error);
-						//ImGui::DebugLog("[ERROR] The manifest file exists in this file but we failed to get it.\n");
-						//ImGui::DebugLog("Aid values for most entries won't appear unless this has been loaded correctly.\n");
-						//ImGui::DebugLog("Reloading the file may solve this issue.\n");
+						//PRINT("[ERROR] The manifest file exists in this file but we failed to get it.\n");
+						//PRINT("Aid values for most entries won't appear unless this has been loaded correctly.\n");
+						//PRINT("Reloading the file may solve this issue.\n");
 					}
 				}
 
@@ -430,13 +441,13 @@ void buildBaseImGuiWindow() {
 
 		// Ghoulies Bundle Type
 		if (imGuiWindowInfo.saveData.targetType == GHOUL_BUNDLE) {
-			if (ghoulBundleFile->isReady == true) {
+			if (ghoulBundleFile.isReady == true) {
 				fileType = CaffType::GHOUL_BUNDLE;
 
 				imGuiWindowInfo.saveData.targetType = NONE;
 			}
 
-			if (ghoulBundleFile->hasErrored == true) {
+			if (ghoulBundleFile.hasErrored == true) {
 				fileType = NONE;
 
 				imGuiWindowInfo.saveData.targetType = NONE;
@@ -445,12 +456,12 @@ void buildBaseImGuiWindow() {
 
 		// Ghoulies Demand Type
 		if (imGuiWindowInfo.saveData.targetType == GHOUL_DEMAND) {
-			if (ghoulDemandFile->isReady) {
+			if (ghoulDemandFile.isReady) {
 				fileType = CaffType::GHOUL_DEMAND;
 
 				imGuiWindowInfo.saveData.targetType = NONE;
 			}
-			if (ghoulDemandFile->hasErrored == true) {
+			if (ghoulDemandFile.hasErrored == true) {
 				fileType = NONE;
 
 				imGuiWindowInfo.saveData.targetType = NONE;
@@ -581,7 +592,7 @@ static void ShowSearchMenu() {
 		ImGui::PushID("searchAid");
 		ImGui::Text("Find via aid: ");
 		ImGui::SameLine();
-		ImGui::InputScalar("##xx", ImGuiDataType_U32, &imGuiWindowInfo.aidSearch, 0, 0, "%08x");
+		ImGui::InputScalar("##xx", ImGuiDataType_U32, &imGuiWindowInfo.aidSearch, 0, 0, "%08x", ImGuiInputTextFlags_ParseEmptyRefVal);
 		ImGui::PopID();
 		ImGui::End();
 	}
@@ -692,7 +703,7 @@ static void ShowMenuFile()
 				SetupLoadingBarPromptWidget("Currently exporting the raw content...", bundleFile.V26Bundle->header.numOfFiles);
 			}
 			if (fileType == GHOUL_BUNDLE) {
-				SetupLoadingBarPromptWidget("Currently exporting the raw content...", ghoulBundleFile->entryCount);
+				SetupLoadingBarPromptWidget("Currently exporting the raw content...", ghoulBundleFile.entryCount);
 			}
 			
 			imGuiWindowInfo.saveData.saveThread = std::thread(exportFilesFromBundleRaw);
@@ -754,7 +765,7 @@ void exportFilesFromBundleRaw() {
 				FILE* writeFile = fopen(buf, "wb");
 
 				if (writeFile == NULL) {
-					ImGui::DebugLog("An error occured while creating the output file (%s).\n", buf);
+					ASSERT("An error occured while creating the output file (%s).\n", buf);
 					return;
 				}
 
@@ -763,13 +774,13 @@ void exportFilesFromBundleRaw() {
 				size_t written = fwrite(data, sizeof(char), bundleFile.V36Bundle->sectionTable.fileInfos[i].dataSize, writeFile);
 
 				if (written != bundleFile.V36Bundle->sectionTable.fileInfos[i].dataSize) {
-					ImGui::DebugLog("An error occured while writing data to output file.\n");
+					ASSERT("An error occured while writing data to output file.\n");
 				}
 
 				int flush = fflush(writeFile);
 
 				if (flush != 0) {
-					ImGui::DebugLog("An error occured while flushing data to output file.\n");
+					ASSERT("An error occured while flushing data to output file.\n");
 				}
 
 				fclose(writeFile);
@@ -819,11 +830,11 @@ void exportFilesFromBundleRaw() {
 						strcat(buf, tok);
 						std::filesystem::create_directory(buf);
 
-						ImGui::DebugLog("%s\n", tok);
+						PRINT("%s\n", tok);
 
 						tok = strtok(NULL, "\\");
 
-						ImGui::DebugLog("%d - %d\n", curLen, tokCount);
+						PRINT("%d - %d\n", curLen, tokCount);
 						curLen += strcspn(bundleFile.V31Bundle->fileInfoTable.debugTable.fileNames[i] + 0x1A + curLen, "\\") + 1;
 					}
 
@@ -836,11 +847,11 @@ void exportFilesFromBundleRaw() {
 				FILE* writeFile = fopen(buf, "wb");
 
 				if (writeFile == NULL) {
-					printf("An error occured while creating the output file (%s).\n", buf);
+					ASSERT("An error occured while creating the output file (%s).\n", buf);
 					return;
 				}
 
-				printf("Exporting %s.\n", buf);
+				PRINT("Exporting %s.\n", buf);
 
 				for (int s = 0; s < bundleFile.V31Bundle->header.numSectionTypes; s++) {
 					int fileInfoIDX = bundleFile.V31Bundle->GetMatchingFileInfoIdx(i + 1, s + 1);
@@ -851,7 +862,7 @@ void exportFilesFromBundleRaw() {
 					size_t written = fwrite(data, sizeof(char), bundleFile.V31Bundle->fileInfoTable.fileInfoEntries[fileInfoIDX].dataSize, writeFile);
 
 					if (written != bundleFile.V31Bundle->fileInfoTable.fileInfoEntries[fileInfoIDX].dataSize) {
-						ImGui::DebugLog("An error occured while writing data to output file.\n");
+						ASSERT("An error occured while writing data to output file.\n");
 					}
 
 					free(data);
@@ -860,7 +871,7 @@ void exportFilesFromBundleRaw() {
 				int flush = fflush(writeFile);
 
 				if (flush != 0) {
-					ImGui::DebugLog("An error occured while flushing data to output file.\n");
+					ASSERT("An error occured while flushing data to output file.\n");
 				}
 
 				fclose(writeFile);
@@ -960,10 +971,17 @@ static void openMenu() {
 
 		sprintf(currentFileName, "%s", outPath);
 
-		ImGui::DebugLog("File picked: %s\n", currentFileName);
+		PRINT("File picked: %s\n", currentFileName);
 
-		// Note: DON'T FORGET TO DETACH THE LOAD THREAD. IT CAUSES ISSUES IF YOU DON'T (SUCH AS CRASHING).
-		std::thread(&readCaffFile).detach();
+		// Small catch in-case the wrong button is pressed by accident.
+		if (strstr(currentFileName, ".bnl") != 0) {
+			imGuiWindowInfo.saveData.targetType = GHOUL_BUNDLE;
+			std::thread(&readOtherSupportedFile, CaffType::GHOUL_BUNDLE).detach();
+		}
+		else {
+			// Note: DON'T FORGET TO DETACH THE LOAD THREAD. IT CAUSES ISSUES IF YOU DON'T (SUCH AS CRASHING).
+			std::thread(&readCaffFile).detach();
+		}
 	}
 	else {
 	}
@@ -977,13 +995,13 @@ static void openPinataDbBundle() {
 		SetupLoadingPromptWidget("Currently opening the file. Please wait.");
 
 		sprintf(currentFileName, "%s", outPath);
-		ImGui::DebugLog("Folder picked: %s\n", currentFileName);
+		PRINT("Folder picked: %s\n", currentFileName);
 
 		strcpy(imGuiWindowInfo.saveData.loadingMessage, "Currently loading Viva Pinata DB Files...");
 		imGuiWindowInfo.saveData.targetType = PINATA_DBBUNDLE;
 		//imGuiWindowInfo.saveData.loadThread = std::thread(&DBBundle::readStandaloneDbBundleFiles, PinataDbBundleFile, currentFileName);
 		//imGuiWindowInfo.saveData.loadThread.detach();
-		std::thread(&readPinataDBFile).detach();
+		std::thread(&readOtherSupportedFile, CaffType::PINATA_DBBUNDLE).detach();
 	}
 	else {
 	}
@@ -1001,14 +1019,10 @@ static void openGhouliesBundle() {
 		SetupLoadingPromptWidget("Currently opening the file. Please wait.");
 
 		sprintf(currentFileName, "%s", outPath);
-		ImGui::DebugLog("File picked: %s\n", currentFileName);
-
-		if (ghoulBundleFile == nullptr) {
-			ghoulBundleFile = (GhoulBundle*)malloc(sizeof(GhoulBundle));
-		}
+		PRINT("File picked: %s\n", currentFileName);
 
 		imGuiWindowInfo.saveData.targetType = GHOUL_BUNDLE;
-		std::thread(&readGhouliesDBFile).detach();
+		std::thread(&readOtherSupportedFile, CaffType::GHOUL_BUNDLE).detach();
 		/*imGuiWindowInfo.saveData.loadThread = std::thread(&GhoulBundle::readStandaloneBundleFile, ghoulBundleFile, currentFileName);
 		imGuiWindowInfo.saveData.loadThread.detach();*/
 	}
@@ -1028,14 +1042,10 @@ static void openGhouliesDemand() {
 		SetupLoadingPromptWidget("Currently opening the file. Please wait.");
 
 		sprintf(currentFileName, "%s", outPath);
-		ImGui::DebugLog("File picked: %s\n", currentFileName);
-
-		if (ghoulDemandFile == nullptr) {
-			ghoulDemandFile = (GhoulDemand*)malloc(sizeof(GhoulDemand));
-		}
+		PRINT("File picked: %s\n", currentFileName);
 
 		imGuiWindowInfo.saveData.targetType = GHOUL_DEMAND;
-		std::thread(&readGhouliesDemandFile).detach();
+		std::thread(&readOtherSupportedFile, CaffType::GHOUL_DEMAND).detach();
 		/*imGuiWindowInfo.saveData.loadThread = std::thread(&GhoulDemand::readStandaloneDemandFile, ghoulDemandFile, currentFileName);
 		imGuiWindowInfo.saveData.loadThread.detach();*/
 	}
@@ -1056,7 +1066,7 @@ static void openRareRPKFile() {
 		SetupLoadingPromptWidget("Currently opening the file. Please wait.");
 
 		sprintf(currentFileName, "%s", outPath);
-		ImGui::DebugLog("File picked: %s\n", currentFileName);
+		PRINT("File picked: %s\n", currentFileName);
 
 		if (rpkFile == nullptr) {
 			rpkFile = new RPKFile();
@@ -1080,6 +1090,7 @@ void buildMainWindow() {
 	displayProperties(imGuiWindowInfo.titleBarHeight);
 }
 
+#pragma region File Info
 void displayFileInfo(float barHeight) {
 	int width;
 	int height;
@@ -1087,7 +1098,7 @@ void displayFileInfo(float barHeight) {
 	ImGui::SetNextWindowPos(ImVec2(0, barHeight));
 	ImGui::SetNextWindowSize(ImVec2(width / 2.5, (height / 2) - barHeight));
 
-	if(ImGui::Begin("Bundle File", 0, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoBringToFrontOnFocus)) {
+	if (ImGui::Begin("Bundle File", 0, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoBringToFrontOnFocus)) {
 		switch (fileType)
 		{
 		case NONE:
@@ -1102,6 +1113,9 @@ void displayFileInfo(float barHeight) {
 		case NB_STREAMBUNDLE:
 			displayStreamBundleInfo();
 			break;
+		case GHOUL_BUNDLE:
+			displayGhoulBundleInfo();
+			break;
 		case GHOUL_DEMAND:
 			displayGhoulDemandInfo();
 			break;
@@ -1113,6 +1127,179 @@ void displayFileInfo(float barHeight) {
 	}
 }
 
+void displayBundleInfo() {
+	char filename[256];
+	char* end = strrchr(currentFileName, '\\');
+	int strLen = strlen(currentFileName);
+	int remainLeft = strLen - (end - currentFileName);
+
+	try {
+		strncpy(filename, end + 1, remainLeft);
+		ImGui::Text("Filename: %s", filename);
+		ImGui::SeparatorText("Bundle Information");
+		ImGui::Text("Bundle Version: %s", bundleFile.V36Bundle->header.versionString);
+		ImGui::Text("Bundle CRC: %08x", bundleFile.V36Bundle->header.headerHash);
+		if (activeManifest != nullptr) {
+			time_t time = activeManifest->timestamp;
+
+			ImGui::Text("Timestamp: %08x -> %s", activeManifest->timestamp, ctime(&time));
+		}
+		bool val = bundleFile.V36Bundle->header.compression;
+		ImGui::Checkbox("Compressed", &val);
+		//ImGui::Text("Bundle Compression Status: %s", (bundleFile.V36Bundle->header.compression == 1 ? "Compressed" : "Uncompressed"));
+		ImGui::Spacing();
+		ImGui::SeparatorText("Bundle Sections");
+		ImGui::Text("Section Table - Uncompressed Size: %d", bundleFile.V36Bundle->header.sectionTableUncompedSize);
+		ImGui::Text("Section Table - Compressed Size: %d", bundleFile.V36Bundle->header.sectionTableCompedSize);
+		ImGui::Text("File Table - Uncompressed Size: %d", bundleFile.V36Bundle->header.fileTableCompedSize);
+		ImGui::Text("File Table - Compressed Size: %d", bundleFile.V36Bundle->header.fileTableUncompedSize);
+		ImGui::Spacing();
+		ImGui::Text("Available Section(s): {");
+		for (int i = 0; i < bundleFile.V36Bundle->header.numSectionTypes; i++) {
+			ImGui::Text("     %s", bundleFile.V36Bundle->sectionTable.sectionLabels[i].label);
+		}
+		ImGui::Text("}");
+	}
+	catch (std::exception e) {
+		PRINT("%s\n", e.what());
+	}
+}
+
+void displayBundleV31Info() {
+	char filename[256];
+	char* end = strrchr(currentFileName, '\\');
+	int strLen = strlen(currentFileName);
+	int remainLeft = strLen - (end - currentFileName);
+
+	try {
+		strncpy(filename, end + 1, remainLeft);
+		ImGui::Text("Filename: %s", filename);
+		ImGui::SeparatorText("Bundle Information");
+		ImGui::Text("Bundle Version: %s", bundleFile.V31Bundle->header.versionString);
+		ImGui::Text("Bundle CRC: %08x", bundleFile.V31Bundle->header.headerHash);
+		ImGui::Text("Bundle Compression Status: %s", (bundleFile.V31Bundle->header.compression == 1 ? "Compressed" : "Uncompressed"));
+		ImGui::Spacing();
+		ImGui::SeparatorText("Bundle Sections");
+		ImGui::Spacing();
+		ImGui::Text("Available Section(s): {");
+		for (int i = 0; i < bundleFile.V31Bundle->header.numSectionTypes; i++) {
+			ImGui::Text("     %s", bundleFile.V31Bundle->sectionEntries[i].sectionName);
+		}
+		ImGui::Text("}");
+	}
+	catch (int e) {
+	}
+}
+
+void displayStreamBundleInfo() {
+	char filename[256];
+	char* end = strrchr(currentFileName, '\\');
+	int strLen = strlen(currentFileName);
+	int remainLeft = strLen - (end - currentFileName);
+
+	try {
+
+		time_t time = streamBundleFile->header.timestamp;
+
+		strncpy(filename, end + 1, remainLeft);
+		ImGui::Text("Filename: %s", filename);
+		ImGui::SeparatorText("Streamed Bundle Information");
+		ImGui::Text("Timestamp: %08x -> %s", streamBundleFile->header.timestamp, ctime(&time));
+		ImGui::Spacing();
+		ImGui::SeparatorText("Bundle Sections");
+		ImGui::Text("TODO: fill this area.");
+		ImGui::Spacing();
+		ImGui::Text("References to other streamed bundles: {");
+		for (int i = 0; i < streamBundleFile->header.referenceTableCount; i++) {
+			int slot1 = (streamBundleFile->header.referenceTable[i] >> 24) & 0xFF;
+			int slot2 = (streamBundleFile->header.referenceTable[i] >> 16) & 0xFF;
+			int slot3 = (streamBundleFile->header.referenceTable[i] >> 8) & 0xFF;
+			int slot4 = streamBundleFile->header.referenceTable[i] & 0xFF;
+
+			ImGui::Text("     GAME:\\Bundle\\%02x\\%02x%02x%02x", slot1, slot2, slot3, slot4);
+		}
+		ImGui::Text("}");
+	}
+	catch (int e) {
+	}
+}
+
+void displayGhoulBundleInfo() {
+	char filename[256];
+	char* end = strrchr(currentFileName, '\\');
+	int strLen = strlen(currentFileName);
+	int remainLeft = strLen - (end - currentFileName);
+
+	try {
+		strncpy(filename, end + 1, remainLeft);
+		ImGui::Text("Filename: %s", filename);
+		ImGui::SeparatorText("Bundle Information");
+		bool isComped = ghoulBundleFile.isCompressed;
+		ImGui::Checkbox("Is Compressed", &isComped);
+
+		ImGui::Spacing();
+		ImGui::SeparatorText("Bundle Sections");
+		ImGui::Text("Data Section - Offset: %d", ghoulBundleFile.dataSectOffset);
+		ImGui::Text("Data Section - Size: %d", ghoulBundleFile.dataSectSize);
+
+		if (ghoulBundleFile.gpuSectOffset != 0) {
+			ImGui::Text("GPU Section - Offset: %d", ghoulBundleFile.gpuSectOffset);
+			ImGui::Text("GPU Section - Size: %d", ghoulBundleFile.gpuSectSize);
+		}
+	}
+	catch (int e) {
+	}
+}
+
+void displayGhoulDemandInfo() {
+	char filename[256];
+	char* end = strrchr(currentFileName, '\\');
+	int strLen = strlen(currentFileName);
+	int remainLeft = strLen - (end - currentFileName);
+
+	try {
+		strncpy(filename, end + 1, remainLeft);
+		ImGui::Text("Filename: %s", filename);
+		ImGui::SeparatorText("Bundle Information");
+
+		time_t time = ghoulDemandFile.timestamp;
+
+		ImGui::Text("Timestamp: %08x -> %s", ghoulDemandFile.timestamp, ctime(&time));
+
+		ImGui::Spacing();
+		ImGui::SeparatorText("Bundle Sections");
+		ImGui::Text("Data Section - Offset: %d", ghoulDemandFile.dataSectOffset);
+		ImGui::Text("Data Section - Size: %d", ghoulDemandFile.dataSectSize);
+
+		if (ghoulDemandFile.gpuSectOffset != 0) {
+			ImGui::Text("GPU Section - Offset: %d", ghoulDemandFile.gpuSectOffset);
+			ImGui::Text("GPU Section - Size: %d", ghoulDemandFile.gpuSectSize);
+		}
+	}
+	catch (int e) {
+	}
+}
+
+void displayRPKInfo() {
+	char filename[256];
+	char* end = strrchr(currentFileName, '\\');
+	int strLen = strlen(currentFileName);
+	int remainLeft = strLen - (end - currentFileName);
+
+	try {
+		strncpy(filename, end + 1, remainLeft);
+		ImGui::Text("Filename: %s", filename);
+		ImGui::SeparatorText("File Information");
+
+		ImGui::Spacing();
+		ImGui::Text("Num. of Files - %d", rpkFile->fileCount);
+	}
+	catch (int e) {
+	}
+}
+#pragma endregion
+
+#pragma region Properties
 void displayProperties(float barHeight) {
 	int width;
 	int height;
@@ -1399,7 +1586,7 @@ void displayActiveFileProperty() {
 					for (int i = 0; i < activeTex->headerSect.frameCount; i++) {
 						memset(filePath, 0, 128);
 						sprintf(filePath, "%s/%s_%03d.png", outPath, lbl, i);
-						printf("Export image %s_%03d.png to %s.\n", lbl, i, outPath);
+						PRINT("Export image %s_%03d.png to %s.\n", lbl, i, outPath);
 
 						char* texData = (char*)malloc(chunkSize);
 						memset(texData, 0, chunkSize);
@@ -1410,10 +1597,10 @@ void displayActiveFileProperty() {
 						int success = stbi_write_png(filePath, activeTex->headerSect.width, activeTex->headerSect.height, 4, imgData, activeTex->headerSect.width * 4);
 
 						if (success == 1) {
-							printf("Image has been successfully exported.\n");
+							PRINT("Image has been successfully exported.\n");
 						}
 						else {
-							printf("An error occured while trying to export the image. Error Code 0x%08x.\n", success);
+							ASSERT("An error occured while trying to export the image. Error Code 0x%08x.\n", success);
 						}
 
 						free(texData);
@@ -1423,7 +1610,7 @@ void displayActiveFileProperty() {
 					free(gpuSect);
 				}
 				catch (int err) {
-					printf("An error occured while trying to export the image. Error Code 0x%08x.\n", err);
+					ASSERT("An error occured while trying to export the image. Error Code 0x%08x.\n", err);
 				}
 			}
 		}
@@ -1450,6 +1637,7 @@ void displayActiveFileProperty() {
 
 			SetupLoadingPromptWidget("Currently loading the loctext file. Please wait.");
 			std::thread(&readLoctextFile, activeSect, lbl).detach();
+			AssignLoctextFilename(lbl);
 		}
 		break;
 	case 0x19:
@@ -1495,15 +1683,15 @@ void displayActiveFileProperty() {
 					commonData->ParseCommon(activeSect + offs);
 					PRINT("World %s, Challenge %s, Game Style %s ", commonData->worldNameTag, commonData->challengeTag, commonData->gameStyleTag);
 				}
-					break;
+												  break;
 				case dbChallengeRequirement_StayInVehicle: {
 					challengeStayInVehicle* stayInVehData = static_cast<challengeStayInVehicle*>(baseData);
 					stayInVehData->ParseStayInVehicle(activeSect + offs);
 
 					PRINT("Can Player Get Out - %s, Can Baddies Get Out - %s ", stayInVehData->canPlayersGetOut == 1 ? "YES" : "NO", stayInVehData->canBaddiesGetOut == 1 ? "YES" : "NO");
 				}
-					
-					break;
+
+														 break;
 				}
 
 				PRINT("] ]\n");
@@ -1793,7 +1981,7 @@ void displayActiveBundleV31Property() {
 			if (ImGui::Button("Export All Sections")) {
 				int fullFileSize = bundleFile.V31Bundle->GetTotalSizeOfContainedFile(fileId + 1);
 				char* fullSect = (char*)malloc(fullFileSize);
-				
+
 				int activeOffset = 0;
 				for (int i = 0; i < bundleFile.V31Bundle->header.numSectionTypes; i++) {
 					int idx = bundleFile.V31Bundle->GetMatchingFileInfoIdx(fileId + 1, i + 1);
@@ -1826,13 +2014,13 @@ void displayActiveBundleV31Property() {
 
 				ImGui::PushID(i);
 				ImGui::SameLine();
-				
+
 				if (ImGui::Button(bundleFile.V31Bundle->sectionEntries[i].sectionName)) {
 					char* activeSect = bundleFile.V31Bundle->getFileData(NULL, fileIDX);
 
 					writeDataToFile(lbl, bundleFile.V31Bundle->sectionEntries[i].sectionName, activeSect, bundleFile.V31Bundle->fileInfoTable.fileInfoEntries[fileIDX].dataSize);
 				}
-				
+
 				ImGui::PopID();
 			}
 		}
@@ -2088,7 +2276,7 @@ void displayActiveBundleV26Property() {
 
 void displayActiveGhoulDemandProperty() {
 
-	ImGui::Text("Asset Type: %02x (%s)", ghoulDemandFile->type, ghoulies_AssetArray[ghoulDemandFile->type]);
+	ImGui::Text("Asset Type: %02x (%s)", ghoulDemandFile.type, ghoulies_AssetArray[ghoulDemandFile.type]);
 
 	ImGui::SeparatorText("File Options");
 
@@ -2101,36 +2289,36 @@ void displayActiveGhoulDemandProperty() {
 
 	ImGui::PushID("data");
 	if (ImGui::Button(".data")) {
-		char* activeSect = ghoulDemandFile->GetDataSection();
+		char* activeSect = ghoulDemandFile.GetDataSection();
 
 		char file[1024];
 		memset(file, 0, 1024);
 
 		strcat(file, "export.data");
 
-		writeDataToFile("export", ".data", activeSect, ghoulDemandFile->dataSectSize);
+		writeDataToFile("export", ".data", activeSect, ghoulDemandFile.dataSectSize);
 	}
 	ImGui::PopID();
 
-	if (ghoulDemandFile->gpuSectSize != 0) {
+	if (ghoulDemandFile.gpuSectSize != 0) {
 		ImGui::SameLine();
 		ImGui::PushID("gpu");
 		if (ImGui::Button(".gpu")) {
-			char* activeSect = ghoulDemandFile->GetGpuSection();
+			char* activeSect = ghoulDemandFile.GetGpuSection();
 
 			char file[1024];
 			memset(file, 0, 1024);
 
 			strcat(file, "export.gpu");
 
-			writeDataToFile("export", ".gpu", activeSect, ghoulDemandFile->gpuSectSize);
+			writeDataToFile("export", ".gpu", activeSect, ghoulDemandFile.gpuSectSize);
 		}
 		ImGui::PopID();
 	}
 
 	ImGui::PopID();
 
-	switch (ghoulDemandFile->type)
+	switch (ghoulDemandFile.type)
 	{
 	case ghoulDB_Texture:
 		//Failsafe
@@ -2140,13 +2328,13 @@ void displayActiveGhoulDemandProperty() {
 
 		// If we've loaded up a new file, refresh the display.
 		if (activeGhoulTex->refresh) {
-			char* dataSect = (char*)malloc(ghoulDemandFile->dataSectSize);
-			memcpy(dataSect, ghoulDemandFile->dataPtr + ghoulDemandFile->dataSectOffset, ghoulDemandFile->dataSectSize);
+			char* dataSect = (char*)malloc(ghoulDemandFile.dataSectSize);
+			memcpy(dataSect, ghoulDemandFile.dataPtr + ghoulDemandFile.dataSectOffset, ghoulDemandFile.dataSectSize);
 
 			activeGhoulTex->ParseTextureHeader(dataSect);
 
 			char* gpuSect = (char*)malloc(16);
-			memcpy(gpuSect, ghoulDemandFile->dataPtr + ghoulDemandFile->gpuSectOffset, 16);
+			memcpy(gpuSect, ghoulDemandFile.dataPtr + ghoulDemandFile.gpuSectOffset, 16);
 
 			activeGhoulTex->ParseTextureEntries(gpuSect);
 
@@ -2168,7 +2356,7 @@ void displayActiveGhoulDemandProperty() {
 				sprintf(filePath, "%s\\exported_image.png", outPath);
 
 				char* texData = (char*)malloc(activeGhoulTex->header.chunkSize);
-				memcpy(texData, ghoulDemandFile->dataPtr + ghoulDemandFile->gpuSectOffset + activeGhoulTex->gpuHeader.offset + (activeGhoulTex->header.chunkSize * activeGhoulTex->framePos), activeGhoulTex->header.chunkSize);
+				memcpy(texData, ghoulDemandFile.dataPtr + ghoulDemandFile.gpuSectOffset + activeGhoulTex->gpuHeader.offset + (activeGhoulTex->header.chunkSize * activeGhoulTex->framePos), activeGhoulTex->header.chunkSize);
 
 				unsigned char* imgData = GetRawImageData_Base(texData, activeGhoulTex->header.width, activeGhoulTex->header.height, activeGhoulTex->header.format);
 
@@ -2188,10 +2376,13 @@ void displayActiveGhoulDemandProperty() {
 				free(texData);
 				free(imgData);
 			}
-			
+
 		}
 
 		if (activeGhoulTex->header.frameCount != 1) {
+			ImGui::SameLine();
+			ImGui::Text("OR");
+			ImGui::SameLine();
 			if (ImGui::Button("Export All Frames")) {
 				char* outPath;
 				char filePath[2048];
@@ -2202,7 +2393,7 @@ void displayActiveGhoulDemandProperty() {
 						sprintf(filePath, "%s/exported_image_%03d.png", outPath, i);
 
 						char* texData = (char*)malloc(activeGhoulTex->header.chunkSize);
-						memcpy(texData, ghoulDemandFile->dataPtr + ghoulDemandFile->gpuSectOffset + activeGhoulTex->gpuHeader.offset + (activeGhoulTex->header.chunkSize * i), activeGhoulTex->header.chunkSize);
+						memcpy(texData, ghoulDemandFile.dataPtr + ghoulDemandFile.gpuSectOffset + activeGhoulTex->gpuHeader.offset + (activeGhoulTex->header.chunkSize * i), activeGhoulTex->header.chunkSize);
 
 						unsigned char* imgData = GetRawImageData_Base(texData, activeGhoulTex->header.width, activeGhoulTex->header.height, activeGhoulTex->header.format);
 
@@ -2228,9 +2419,8 @@ void displayActiveGhoulDemandProperty() {
 
 		ImGui::SeparatorText("Texture Info");
 		ImGui::Text("Format: %d", activeGhoulTex->header.format);
-		ImGui::Text("Width/Height: %d / %d", activeGhoulTex->header.width, activeGhoulTex->header.height);
-		ImGui::Text("Total Frames: %d", activeGhoulTex->header.frameCount);
-		ImGui::Text("Total Chunk Size: %d", activeGhoulTex->header.chunkSize);
+		ImGui::Text("Format: %d | W/H : %d / %d | Chunk Size: %d", activeGhoulTex->header.format, activeGhoulTex->header.width, activeGhoulTex->header.height, activeGhoulTex->header.chunkSize);
+		ImGui::Text("Frames Info: %d - %d FPS", activeGhoulTex->header.frameCount, activeGhoulTex->header.framerate);
 		ImGui::SeparatorText("Texture View");
 
 		if (activeGhoulTex->header.frameCount != 1) {
@@ -2278,8 +2468,8 @@ void displayActiveGhoulDemandProperty() {
 		break;
 	case ghoulDB_Loctext:
 		if (ImGui::Button("Load Localization Text")) {
-			char* dataSect = (char*)malloc(ghoulDemandFile->dataSectSize);
-			memcpy(dataSect, ghoulDemandFile->dataPtr + ghoulDemandFile->dataSectOffset, ghoulDemandFile->dataSectSize);
+			char* dataSect = (char*)malloc(ghoulDemandFile.dataSectSize);
+			memcpy(dataSect, ghoulDemandFile.dataPtr + ghoulDemandFile.dataSectOffset, ghoulDemandFile.dataSectSize);
 
 			SetupLoadingPromptWidget("Currently loading the loctext file. Please wait.");
 			std::thread(&readLoctextFile, dataSect, currentFileName).detach();
@@ -2299,33 +2489,33 @@ void displayActiveGhoulBundleProperty() {
 	memset(lbl, 0, 1024);
 	memset(type, 0, 32);
 
-	char* ptr = strstr(ghoulBundleFile->fileEntries[fileId].fileName, "aid_");
+	char* ptr = strstr(ghoulBundleFile.fileEntries[fileId].fileName, "aid_");
 	if (ptr != NULL) {
 		strcpy(lbl, ptr);
 		assetGetTypeFromString(lbl + 4, type);
 	}
 	else {
-		strcpy(lbl, ghoulBundleFile->fileEntries[fileId].fileName);
+		strcpy(lbl, ghoulBundleFile.fileEntries[fileId].fileName);
 	}
 
 	ImGui::Text("Filename: %s", lbl);
-	ImGui::Text("Asset Type: %d (%s)", ghoulBundleFile->fileEntries[fileId].type, type);
+	ImGui::Text("Asset Type: %d (%s)", ghoulBundleFile.fileEntries[fileId].type, type);
 
-	std::time_t stamp = ghoulBundleFile->fileEntries[fileId].timestamp;
+	std::time_t stamp = ghoulBundleFile.fileEntries[fileId].timestamp;
 	//std::time_t time = std::time(&stamp);
-	ImGui::Text("Timestamp: %d -> %s", ghoulBundleFile->fileEntries[fileId].timestamp, ctime(&stamp));
+	ImGui::Text("Timestamp: %d -> %s", ghoulBundleFile.fileEntries[fileId].timestamp, ctime(&stamp));
 
 	//if (suffix != NULL) {
 	//	ImGui::Text("Suffix: %s", suffix);
 	//}
 
-	
+
 	ImGui::Text("Sections: ");
 	ImGui::SameLine();
 
 	ImGui::Text(".data");
 
-	if (ghoulBundleFile->fileEntries[fileId].gpuSectSize != 0) {
+	if (ghoulBundleFile.fileEntries[fileId].gpuSectSize != 0) {
 		ImGui::SameLine();
 		ImGui::Text(".gpu");
 	}
@@ -2338,21 +2528,22 @@ void displayActiveGhoulBundleProperty() {
 
 	ImGui::PushID("data");
 	if (ImGui::Button(".data")) {
-		char* activeSect = ghoulBundleFile->GetFileData(fileId);
+		char* activeSect = ghoulBundleFile.GetFileData(fileId);
 
-		writeDataToFile(lbl, ".data", activeSect, ghoulBundleFile->fileEntries[fileId].dataSectSize);
+		writeDataToFile(lbl, ".data", activeSect, ghoulBundleFile.fileEntries[fileId].dataSectSize);
 	}
 	ImGui::PopID();
 
 	// Check if we actually have any GPU data for the selected item. (Usually just textures)
-	if (ghoulBundleFile->fileEntries[fileId].gpuSectSize != 0) {
+	if (ghoulBundleFile.fileEntries[fileId].gpuSectSize != 0) {
 		ImGui::SameLine();
 
 		ImGui::PushID("gpu");
 		if (ImGui::Button(".gpu")) {
-			char* gpu = ghoulBundleFile->GetFileGPU(fileId);
+			char* gpu = ghoulBundleFile.GetFileGPU(fileId);
 
-			writeDataToFile(lbl, ".gpu", gpu, ghoulBundleFile->fileEntries[fileId].gpuSectSize);
+			printf("Exporting GPU for file %s. Offset %d with size %d.\n", ghoulBundleFile.fileEntries[fileId].fileName, ghoulBundleFile.fileEntries[fileId].gpuSectOffset, ghoulBundleFile.fileEntries[fileId].gpuSectSize);
+			writeDataToFile(lbl, ".gpu", gpu, ghoulBundleFile.fileEntries[fileId].gpuSectSize);
 
 			free(gpu);
 		}
@@ -2361,7 +2552,7 @@ void displayActiveGhoulBundleProperty() {
 
 	ImGui::PopID();
 
-	switch (ghoulBundleFile->fileEntries[fileId].type)
+	switch (ghoulBundleFile.fileEntries[fileId].type)
 	{
 	case 1:
 		//Failsafe
@@ -2384,7 +2575,7 @@ void displayActiveGhoulBundleProperty() {
 
 				sprintf(filePath, "%s\\%s.png", outPath, lbl);
 
-				char* dataSect = ghoulBundleFile->GetFileData(fileId);
+				char* dataSect = ghoulBundleFile.GetFileData(fileId);
 
 				activeGhoulTex->ParseTextureHeader(dataSect);
 
@@ -2392,7 +2583,7 @@ void displayActiveGhoulBundleProperty() {
 
 				char* texData = (char*)malloc(activeGhoulTex->header.chunkSize);
 
-				char* gpuSect = ghoulBundleFile->GetFileGPUForTexture(fileId);
+				char* gpuSect = ghoulBundleFile.GetFileGPUForTexture(fileId);
 
 				memcpy(texData, gpuSect + (activeGhoulTex->header.chunkSize * activeGhoulTex->framePos), activeGhoulTex->header.chunkSize);
 
@@ -2431,7 +2622,7 @@ void displayActiveGhoulBundleProperty() {
 						memset(filePath, 0, 128);
 						sprintf(filePath, "%s\\%s_%03d.png", outPath, lbl, i);
 
-						char* dataSect = ghoulBundleFile->GetFileData(fileId);
+						char* dataSect = ghoulBundleFile.GetFileData(fileId);
 
 						activeGhoulTex->ParseTextureHeader(dataSect);
 
@@ -2439,7 +2630,7 @@ void displayActiveGhoulBundleProperty() {
 
 						char* texData = (char*)malloc(activeGhoulTex->header.chunkSize);
 
-						char* gpuSect = ghoulBundleFile->GetFileGPUForTexture(fileId);
+						char* gpuSect = ghoulBundleFile.GetFileGPUForTexture(fileId);
 
 						memcpy(texData, gpuSect + (activeGhoulTex->header.chunkSize * i), activeGhoulTex->header.chunkSize);
 
@@ -2541,7 +2732,7 @@ void displayActiveRPKFileProperty() {
 	ImGui::Text("File Size:\t%d", rpkFile->fileEntries[fileId].dataSize);
 	ImGui::Text("UNK VAL 1:\t%d", rpkFile->fileEntries[fileId].unk2);
 	ImGui::Text("UNK VAL 2:\t%d", rpkFile->fileEntries[fileId].unk4);
-	//ImGui::Text("Asset Type: %d (%s)", ghoulBundleFile->fileEntries[fileId].type, type);
+	//ImGui::Text("Asset Type: %d (%s)", ghoulBundleFile.fileEntries[fileId].type, type);
 
 	if (rpkFile->fileEntries[fileId].dataSize != 0) {
 		ImGui::SeparatorText("File Options");
@@ -2742,182 +2933,9 @@ void displayActivePinataDbBundleFileProperty() {
 		writeDataToFile(lbl, "", activeSect, fileSize);
 	}
 }
+#pragma endregion
 
-void readMarkerFile(char* data) {
-	GetMarkerEditorWindowParameters()->isFileActive = false;
-
-	GetMarkerEditorWindowParameters()->activeMarker.ReadMarkerFile(data);
-
-	GetMarkerEditorWindowParameters()->isFileActive = true;
-
-	SetupMarkerEditorWindow(false);
-
-	CloseLoadingPromptWidget();
-}
-
-void readLoctextFile(char* data, char* fileName) {
-	loctextWindowParameters.ready = false;
-
-	if (loctextWindowParameters.activeLoctext != nullptr) {
-		delete loctextWindowParameters.activeLoctext;
-		loctextWindowParameters.activeLoctext = nullptr;
-	}
-
-	printf("Loading loctext from file \"%s\".\n", fileName);
-	loctextWindowParameters.activeLoctext = new Loctext();
-	loctextWindowParameters.activeLoctext->ReadLoctext(data);
-
-	loctextWindowParameters.ready = true;
-
-	loctextWindowParameters.showLoctextEditor = true;
-
-	CloseLoadingPromptWidget();
-}
-
-void displayBundleInfo() {
-	char filename[256];
-	char* end = strrchr(currentFileName, '\\');
-	int strLen = strlen(currentFileName);
-	int remainLeft = strLen - (end - currentFileName);
-
-	try {
-		strncpy(filename, end + 1, remainLeft);
-		ImGui::Text("Filename: %s", filename);
-		ImGui::SeparatorText("Bundle Information");
-		ImGui::Text("Bundle Version: %s", bundleFile.V36Bundle->header.versionString);
-		ImGui::Text("Bundle CRC: %08x", bundleFile.V36Bundle->header.headerHash);
-		if (activeManifest != nullptr) {
-			time_t time = activeManifest->timestamp;
-
-			ImGui::Text("Timestamp: %08x -> %s", activeManifest->timestamp, ctime(&time));
-		}
-		bool val = bundleFile.V36Bundle->header.compression;
-		ImGui::Checkbox("Compressed", &val);
-		//ImGui::Text("Bundle Compression Status: %s", (bundleFile.V36Bundle->header.compression == 1 ? "Compressed" : "Uncompressed"));
-		ImGui::Spacing();
-		ImGui::SeparatorText("Bundle Sections");
-		ImGui::Text("Section Table - Uncompressed Size: %d", bundleFile.V36Bundle->header.sectionTableUncompedSize);
-		ImGui::Text("Section Table - Compressed Size: %d", bundleFile.V36Bundle->header.sectionTableCompedSize);
-		ImGui::Text("File Table - Uncompressed Size: %d", bundleFile.V36Bundle->header.fileTableCompedSize);
-		ImGui::Text("File Table - Compressed Size: %d", bundleFile.V36Bundle->header.fileTableUncompedSize);
-		ImGui::Spacing();
-		ImGui::Text("Available Section(s): {");
-		for (int i = 0; i < bundleFile.V36Bundle->header.numSectionTypes; i++) {
-			ImGui::Text("     %s", bundleFile.V36Bundle->sectionTable.sectionLabels[i].label);
-		}
-		ImGui::Text("}");
-	}
-	catch (std::exception e) {
-		ImGui::DebugLog("%s\n", e.what());
-	}
-}
-
-void displayBundleV31Info() {
-	char filename[256];
-	char* end = strrchr(currentFileName, '\\');
-	int strLen = strlen(currentFileName);
-	int remainLeft = strLen - (end - currentFileName);
-
-	try {
-		strncpy(filename, end + 1, remainLeft);
-		ImGui::Text("Filename: %s", filename);
-		ImGui::SeparatorText("Bundle Information");
-		ImGui::Text("Bundle Version: %s", bundleFile.V31Bundle->header.versionString);
-		ImGui::Text("Bundle CRC: %08x", bundleFile.V31Bundle->header.headerHash);
-		ImGui::Text("Bundle Compression Status: %s", (bundleFile.V31Bundle->header.compression == 1 ? "Compressed" : "Uncompressed"));
-		ImGui::Spacing();
-		ImGui::SeparatorText("Bundle Sections");
-		ImGui::Spacing();
-		ImGui::Text("Available Section(s): {");
-		for (int i = 0; i < bundleFile.V31Bundle->header.numSectionTypes; i++) {
-			ImGui::Text("     %s", bundleFile.V31Bundle->sectionEntries[i].sectionName);
-		}
-		ImGui::Text("}");
-	}
-	catch (int e) {
-	}
-}
-
-void displayStreamBundleInfo() {
-	char filename[256];
-	char* end = strrchr(currentFileName, '\\');
-	int strLen = strlen(currentFileName);
-	int remainLeft = strLen - (end - currentFileName);
-
-	try {
-
-		time_t time = streamBundleFile->header.timestamp;
-
-		strncpy(filename, end + 1, remainLeft);
-		ImGui::Text("Filename: %s", filename);
-		ImGui::SeparatorText("Streamed Bundle Information");
-		ImGui::Text("Timestamp: %08x -> %s", streamBundleFile->header.timestamp, ctime(&time));
-		ImGui::Spacing();
-		ImGui::SeparatorText("Bundle Sections");
-		ImGui::Text("TODO: fill this area.");
-		ImGui::Spacing();
-		ImGui::Text("References to other streamed bundles: {");
-		for (int i = 0; i < streamBundleFile->header.referenceTableCount; i++) {
-			int slot1 = (streamBundleFile->header.referenceTable[i] >> 24) & 0xFF;
-			int slot2 = (streamBundleFile->header.referenceTable[i] >> 16) & 0xFF;
-			int slot3 = (streamBundleFile->header.referenceTable[i] >> 8) & 0xFF;
-			int slot4 = streamBundleFile->header.referenceTable[i] & 0xFF;
-
-			ImGui::Text("     GAME:\\Bundle\\%02x\\%02x%02x%02x", slot1, slot2, slot3, slot4);
-		}
-		ImGui::Text("}");
-	}
-	catch (int e) {
-	}
-}
-
-void displayGhoulDemandInfo() {
-	char filename[256];
-	char* end = strrchr(currentFileName, '\\');
-	int strLen = strlen(currentFileName);
-	int remainLeft = strLen - (end - currentFileName);
-
-	try {
-		strncpy(filename, end + 1, remainLeft);
-		ImGui::Text("Filename: %s", filename);
-		ImGui::SeparatorText("Bundle Information");
-		
-		time_t time = ghoulDemandFile->timestamp;
-
-		ImGui::Text("Timestamp: %08x -> %s", ghoulDemandFile->timestamp, ctime(&time));
-
-		ImGui::Spacing();
-		ImGui::SeparatorText("Bundle Sections");
-		ImGui::Text("Data Section - Offset: %d", ghoulDemandFile->dataSectOffset);
-		ImGui::Text("Data Section - Size: %d", ghoulDemandFile->dataSectSize);
-
-		if (ghoulDemandFile->gpuSectOffset != 0) {
-			ImGui::Text("GPU Section - Offset: %d", ghoulDemandFile->gpuSectOffset);
-			ImGui::Text("GPU Section - Size: %d", ghoulDemandFile->gpuSectSize);
-		}
-	}
-	catch (int e) {
-	}
-}
-
-void displayRPKInfo() {
-	char filename[256];
-	char* end = strrchr(currentFileName, '\\');
-	int strLen = strlen(currentFileName);
-	int remainLeft = strLen - (end - currentFileName);
-
-	try {
-		strncpy(filename, end + 1, remainLeft);
-		ImGui::Text("Filename: %s", filename);
-		ImGui::SeparatorText("File Information");
-
-		ImGui::Spacing();
-		ImGui::Text("Num. of Files - %d", rpkFile->fileCount);
-	}
-	catch (int e) {
-	}
-}
-
+#pragma region File List
 void displayAvailableFilesList(float barHeight) {
 	int width;
 	int height;
@@ -2960,172 +2978,6 @@ void displayAvailableFilesList(float barHeight) {
 		}
 
 		ImGui::End();
-	}
-}
-
-void fillGhouliesBundleFileList() {
-	// Setup the local parameters needed.
-	char lbl[1024];
-	char type[32];
-	char domain[32];
-	char subtype[32];
-
-	ImGui::Text("File List");
-	ImGui::Separator();
-	for (int i = 0; i < ghoulBundleFile->entryCount; i++) {
-		ImGui::PushID(i);
-		memset(lbl, 0, 1024);
-		memset(type, 0, 32);
-		memset(domain, 0, 32);
-		memset(subtype, 0, 32);
-
-		// Check if the entry label we're reading contains "aid_".
-		char* ptr = strstr(ghoulBundleFile->fileEntries[i].fileName, "aid_");
-		if (ptr != NULL) {
-			// If so, copy the contents from the location of that and fetch the asset type.
-			strcpy(lbl, ptr);
-
-			assetGetTypeFromString(lbl + 4, type);
-
-			assetGetTypeFromString(lbl + 4 + (strlen(type) + 1), domain);
-
-			if (strcmp(type, "misc") == 0 || strcmp(type, "objparams") == 0 || strcmp(type, "statetable") == 0) {
-				assetGetTypeFromString(lbl + 4 + (strlen(type) + 1) + (strlen(domain) + 1), subtype);
-			}
-		}
-		else {
-			// Else, just copy the contents of the label to the dest.
-			strcpy(lbl, ghoulBundleFile->fileEntries[i].fileName);
-		}
-
-		if (strlen(imGuiWindowInfo.search) != 0) {
-			if (strstr(lbl, imGuiWindowInfo.search) == NULL) {
-				ImGui::PopID();
-				continue;
-			}
-		}
-
-		//All (properly named) texture files end with "\default.rtx". Filter that out as well.
-		if (strcmp(type, "texture") == 0) {
-			strtok(lbl, "\\");
-		}
-
-		if (ImGui::Selectable(lbl, fileIdx == i + 1)) {
-			if (fileIdx == i + 1) {
-				fileId = -1;
-				fileIdx = -1;
-			}
-			else {
-				if (ghoulBundleFile->fileEntries[i].type == 1) {
-					if (activeGhoulTex != nullptr) {
-						activeGhoulTex->framePos = 0;
-						activeGhoulTex->refresh = true;
-					}
-				}
-				fileId = i;
-				fileIdx = i + 1;
-			}
-		}
-
-		ImGui::PopID();
-	}
-}
-
-void fillRPKFileList() {
-	ImGui::Text("File List");
-	ImGui::Separator();
-	for (int i = 0; i < rpkFile->fileCount; i++) {
-		ImGui::PushID(i);
-
-		if (strlen(imGuiWindowInfo.search) != 0) {
-			if (strstr(rpkFile->fileEntries[i].fileName, imGuiWindowInfo.search) == NULL) {
-				ImGui::PopID();
-				continue;
-			}
-		}
-
-		if (ImGui::Selectable(rpkFile->fileEntries[i].fileName, fileId == i)) {
-			if (fileId == i) {
-				fileId = -1;
-				fileIdx = -1;
-			}
-			else {
-				fileId = i;
-				fileIdx = i + 1;
-			}
-		}
-
-		ImGui::PopID();
-	}
-}
-
-void fillPinataDbBundleFileList() {
-	// Setup the local parameters needed.
-	char lbl[1024];
-	char type[32];
-	char domain[32];
-	char subtype[32];
-
-	ImGui::Text("File List");
-	ImGui::Separator();
-	for (int i = 0; i < PinataDbBundleFile.hashFile.fileCount; i++) {
-		ImGui::PushID(i);
-		memset(lbl, 0, 1024);
-		memset(type, 0, 32);
-		memset(domain, 0, 32);
-		memset(subtype, 0, 32);
-
-		// Check if the entry label we're reading contains "aid_".
-		int idx = PinataDbBundleFile.precachedEntries[i].indexIdx;
-		if (idx != -1) {
-			strcpy(lbl, PinataDbBundleFile.indexFile[idx].filename);
-
-			assetGetTypeFromString(lbl + 4, type);
-
-			assetGetTypeFromString(lbl + 4 + (strlen(type) + 1), domain);
-
-			if (strcmp(type, "misc") == 0 || strcmp(type, "objparams") == 0 || strcmp(type, "statetable") == 0) {
-				assetGetTypeFromString(lbl + 4 + (strlen(type) + 1) + (strlen(domain) + 1), subtype);
-			}
-			else {
-			}
-		}
-		else {
-			sprintf(lbl, "CAFF Entry %d", i);
-		}
-		
-
-		if (strlen(imGuiWindowInfo.search) != 0) {
-			if (strstr(lbl, imGuiWindowInfo.search) == NULL) {
-				ImGui::PopID();
-				continue;
-			}
-		}
-
-		// Most entries will contain a timestamp and presumably a version number, separated by "," characters.
-		if (strchr(lbl, ' ') != NULL) {
-			strtok(lbl, " ");
-		}
-
-		if (ImGui::Selectable(lbl, fileIdx == i + 1)) {
-			if (fileIdx == i + 1) {
-				fileId = -1;
-				fileIdx = -1;
-			}
-			else {
-				assetType = GetAssetIDFromType(type);
-				if (assetType == 1 && activeTex != nullptr) {
-					//activeTex->framePos = 0;
-					delete(activeTex);
-					activeTex = new Texture();
-				}
-
-				fileId = i;
-				fileIdx = i + 1;
-			}
-		}
-
-		ImGui::PopID();
 	}
 }
 
@@ -3214,6 +3066,11 @@ void fillBundleFileList() {
 		// Display Vehicle Icon
 		if (strcmp(type, "vehicle") == 0) {
 			img = RC_PNG_VEHICON;
+		}
+
+		// Display Havok Icon
+		if (strcmp(type, "havok") == 0) {
+			img = RC_PNG_HAVOKICON;
 		}
 
 		// Check if the item we're passing in is a misc type.
@@ -3628,7 +3485,7 @@ void fillStreamBundleFileListOfBundle() {
 
 						writeDataToFile(lbl, label, activeSect, bundleFile->sectionTable.fileInfos[s].dataSize);*/
 					}
-					
+
 					ImGui::PopID();
 					ImGui::SameLine();
 				}
@@ -3666,10 +3523,210 @@ void fillStreamBundleFileListOfBundle() {
 	}
 }
 
+void fillGhouliesBundleFileList() {
+	// Setup the local parameters needed.
+	char lbl[1024];
+	char type[32];
+	char domain[32];
+	char subtype[32];
+
+	ImGui::Text("File List");
+	ImGui::Separator();
+	for (int i = 0; i < ghoulBundleFile.entryCount; i++) {
+		ImGui::PushID(i);
+		memset(lbl, 0, 1024);
+		memset(type, 0, 32);
+		memset(domain, 0, 32);
+		memset(subtype, 0, 32);
+
+		// Check if the entry label we're reading contains "aid_".
+		char* ptr = strstr(ghoulBundleFile.fileEntries[i].fileName, "aid_");
+		if (ptr != NULL) {
+			// If so, copy the contents from the location of that and fetch the asset type.
+			strcpy(lbl, ptr);
+
+			assetGetTypeFromString(lbl + 4, type);
+
+			assetGetTypeFromString(lbl + 4 + (strlen(type) + 1), domain);
+
+			if (strcmp(type, "misc") == 0 || strcmp(type, "objparams") == 0 || strcmp(type, "statetable") == 0) {
+				assetGetTypeFromString(lbl + 4 + (strlen(type) + 1) + (strlen(domain) + 1), subtype);
+			}
+		}
+		else {
+			// Else, just copy the contents of the label to the dest.
+			strcpy(lbl, ghoulBundleFile.fileEntries[i].fileName);
+		}
+
+		if (strlen(imGuiWindowInfo.search) != 0) {
+			if (strstr(lbl, imGuiWindowInfo.search) == NULL) {
+				ImGui::PopID();
+				continue;
+			}
+		}
+
+		//All (properly named) texture files end with "\default.rtx". Filter that out as well.
+		if (strcmp(type, "texture") == 0) {
+			strtok(lbl, "\\");
+		}
+
+		if (ImGui::Selectable(lbl, fileIdx == i + 1)) {
+			if (fileIdx == i + 1) {
+				fileId = -1;
+				fileIdx = -1;
+			}
+			else {
+				if (ghoulBundleFile.fileEntries[i].type == 1) {
+					if (activeGhoulTex != nullptr) {
+						activeGhoulTex->framePos = 0;
+						activeGhoulTex->refresh = true;
+					}
+				}
+				fileId = i;
+				fileIdx = i + 1;
+			}
+		}
+
+		ImGui::PopID();
+	}
+}
+
+void fillRPKFileList() {
+	ImGui::Text("File List");
+	ImGui::Separator();
+	for (int i = 0; i < rpkFile->fileCount; i++) {
+		ImGui::PushID(i);
+
+		if (strlen(imGuiWindowInfo.search) != 0) {
+			if (strstr(rpkFile->fileEntries[i].fileName, imGuiWindowInfo.search) == NULL) {
+				ImGui::PopID();
+				continue;
+			}
+		}
+
+		if (ImGui::Selectable(rpkFile->fileEntries[i].fileName, fileId == i)) {
+			if (fileId == i) {
+				fileId = -1;
+				fileIdx = -1;
+			}
+			else {
+				fileId = i;
+				fileIdx = i + 1;
+			}
+		}
+
+		ImGui::PopID();
+	}
+}
+
+void fillPinataDbBundleFileList() {
+	// Setup the local parameters needed.
+	char lbl[1024];
+	char type[32];
+	char domain[32];
+	char subtype[32];
+
+	ImGui::Text("File List");
+	ImGui::Separator();
+	for (int i = 0; i < PinataDbBundleFile.hashFile.fileCount; i++) {
+		ImGui::PushID(i);
+		memset(lbl, 0, 1024);
+		memset(type, 0, 32);
+		memset(domain, 0, 32);
+		memset(subtype, 0, 32);
+
+		// Check if the entry label we're reading contains "aid_".
+		int idx = PinataDbBundleFile.precachedEntries[i].indexIdx;
+		if (idx != -1) {
+			strcpy(lbl, PinataDbBundleFile.indexFile[idx].filename);
+
+			assetGetTypeFromString(lbl + 4, type);
+
+			assetGetTypeFromString(lbl + 4 + (strlen(type) + 1), domain);
+
+			if (strcmp(type, "misc") == 0 || strcmp(type, "objparams") == 0 || strcmp(type, "statetable") == 0) {
+				assetGetTypeFromString(lbl + 4 + (strlen(type) + 1) + (strlen(domain) + 1), subtype);
+			}
+			else {
+			}
+		}
+		else {
+			sprintf(lbl, "CAFF Entry %d", i);
+		}
+
+
+		if (strlen(imGuiWindowInfo.search) != 0) {
+			if (strstr(lbl, imGuiWindowInfo.search) == NULL) {
+				ImGui::PopID();
+				continue;
+			}
+		}
+
+		// Most entries will contain a timestamp and presumably a version number, separated by "," characters.
+		if (strchr(lbl, ' ') != NULL) {
+			strtok(lbl, " ");
+		}
+
+		if (ImGui::Selectable(lbl, fileIdx == i + 1)) {
+			if (fileIdx == i + 1) {
+				fileId = -1;
+				fileIdx = -1;
+			}
+			else {
+				assetType = GetAssetIDFromType(type);
+				if (assetType == 1 && activeTex != nullptr) {
+					//activeTex->framePos = 0;
+					delete(activeTex);
+					activeTex = new Texture();
+				}
+
+				fileId = i;
+				fileIdx = i + 1;
+			}
+		}
+
+		ImGui::PopID();
+	}
+}
+#pragma endregion
+
+void readMarkerFile(char* data) {
+	GetMarkerEditorWindowParameters()->isFileActive = false;
+
+	GetMarkerEditorWindowParameters()->activeMarker.ReadMarkerFile(data);
+
+	GetMarkerEditorWindowParameters()->isFileActive = true;
+
+	SetupMarkerEditorWindow(false);
+
+	CloseLoadingPromptWidget();
+}
+
+void readLoctextFile(char* data, char* fileName) {
+	loctextWindowParameters.ready = false;
+
+	if (loctextWindowParameters.activeLoctext != nullptr) {
+		delete loctextWindowParameters.activeLoctext;
+		loctextWindowParameters.activeLoctext = nullptr;
+	}
+
+	printf("Loading loctext from file \"%s\".\n", fileName);
+	loctextWindowParameters.activeLoctext = new Loctext();
+	loctextWindowParameters.activeLoctext->ReadLoctext(data);
+
+	loctextWindowParameters.ready = true;
+
+	loctextWindowParameters.showLoctextEditor = true;
+
+	AssignLoctextFilename(fileName);
+
+	CloseLoadingPromptWidget();
+}
+
 void writeCaffFile(const char* fileName) {
 
 	if (!bundleSetup.isDirty) {
-		ImGui::DebugLog("No changes have been made to the CAFF file.\n");
+		PRINT("No changes have been made to the CAFF file.\n");
 	}
 
 	if (bundleFile.V36Bundle->header.compression) {
@@ -3684,16 +3741,16 @@ void writeCaffFile(const char* fileName) {
 	if (newFile == nullptr) {
 		switch (errno) {
 		default:
-			ImGui::DebugLog("An unmanaged error has occured while attempting to open the CAFF file for writing. Error - %d\n", errno);
+			ASSERT("An unmanaged error has occured while attempting to open the CAFF file for writing. Error - %d\n", errno);
 			return;
 		case ENOENT:
-			ImGui::DebugLog("No such file or directory could be found... while attempting to open the active CAFF file for writing. This should never be able to be reached.\n");
+			ASSERT("No such file or directory could be found... while attempting to open the active CAFF file for writing. This should never be able to be reached.\n");
 			return;
 		case EACCES:
-			ImGui::DebugLog("A permission denied error occured while attempting to open the CAFF file for writing. File might be set to read-only.\n");
+			ASSERT("A permission denied error occured while attempting to open the CAFF file for writing. File might be set to read-only.\n");
 			return;
 		case EIO:
-			ImGui::DebugLog("An I/O error occured while attempting to open the CAFF file for writing.\n");
+			ASSERT("An I/O error occured while attempting to open the CAFF file for writing.\n");
 			return;
 		}
 	}
@@ -3728,7 +3785,7 @@ void writeCaffFile(const char* fileName) {
 					lbl = strstr(bundleFile.V36Bundle->sectionTable.fileLabelTable.fileLabels[f].label, "aid_");
 				}
 
-				ImGui::DebugLog("File Info [File %d - Section %d] - %s>\n", f + 1, i + 1, lbl);
+				PRINT("File Info [File %d - Section %d] - %s>\n", f + 1, i + 1, lbl);
 
 				// .texturegpu has a buffer allocation of 4096. Every other section appears to have a buffer allocation of 16.
 				bool isGPUSect = bundleFile.V36Bundle->isGPUSection(bundleFile.V36Bundle->sectionTable.fileInfos[id].section - 1);
@@ -3780,7 +3837,7 @@ void writeCaffFile(const char* fileName) {
 
 					shiftingOffset += bundleSetup.bufferedSaves[bufferedSaveId].dataSize + (boundarySize - offsetRemains);
 
-					ImGui::DebugLog("File Info [File %d - Section %d] - <New Data Size - %d, Default Offset - %d, Next Offset - %d (%d)>\n", f + 1, i + 1, bundleSetup.bufferedSaves[bufferedSaveId].dataSize, bundleFile.V36Bundle->sectionTable.fileInfos[id].dataOffset, shiftingOffset, boundarySize - offsetRemains);
+					PRINT("File Info [File %d - Section %d] - <New Data Size - %d, Default Offset - %d, Next Offset - %d (%d)>\n", f + 1, i + 1, bundleSetup.bufferedSaves[bufferedSaveId].dataSize, bundleFile.V36Bundle->sectionTable.fileInfos[id].dataOffset, shiftingOffset, boundarySize - offsetRemains);
 				}
 				else {
 					if (f + 1 < bundleFile.V36Bundle->header.numAssets && (bundleFile.V36Bundle->sectionTable.fileInfos[id].dataSize % boundarySize) != 0) {
@@ -3810,7 +3867,7 @@ void writeCaffFile(const char* fileName) {
 					fseek(newFile, tempPos, SEEK_SET);
 
 					shiftingOffset += bundleFile.V36Bundle->sectionTable.fileInfos[id].dataSize + (boundarySize - offsetRemains);
-					ImGui::DebugLog("File Info [File %d - Section %d] - <Data Size - %d, Default Offset - %d, Next Offset - %d (%d)>\n", f + 1, i + 1, bundleFile.V36Bundle->sectionTable.fileInfos[id].dataSize, bundleFile.V36Bundle->sectionTable.fileInfos[id].dataOffset, shiftingOffset, boundarySize - offsetRemains);
+					PRINT("File Info [File %d - Section %d] - <Data Size - %d, Default Offset - %d, Next Offset - %d (%d)>\n", f + 1, i + 1, bundleFile.V36Bundle->sectionTable.fileInfos[id].dataSize, bundleFile.V36Bundle->sectionTable.fileInfos[id].dataOffset, shiftingOffset, boundarySize - offsetRemains);
 				}
 
 				IncreaseCurrentSavedOnLoadingWidget();
@@ -3837,19 +3894,19 @@ void writeCaffFile(const char* fileName) {
 	catch (int e) {
 		switch (e) {
 		default:
-			ImGui::DebugLog("An unmanaged error has occured while attempting to write to the CAFF file. Error - %d\n", e);
+			PRINT("An unmanaged error has occured while attempting to write to the CAFF file. Error - %d\n", e);
 			break;
 		case ENOENT:
-			ImGui::DebugLog("No such file or directory could be found... while attempting to write to the active CAFF file. This should never be able to be reached.\n");
+			PRINT("No such file or directory could be found... while attempting to write to the active CAFF file. This should never be able to be reached.\n");
 			break;
 		case EACCES:
-			ImGui::DebugLog("A permission denied error occured while attempting to write to the CAFF file. File might be set to read-only.\n");
+			PRINT("A permission denied error occured while attempting to write to the CAFF file. File might be set to read-only.\n");
 			break;
 		case EIO:
-			ImGui::DebugLog("An I/O error occured while attempting to write to the CAFF file.\n");
+			PRINT("An I/O error occured while attempting to write to the CAFF file.\n");
 			break;
 		case EINVAL:
-			ImGui::DebugLog("An invalid argument was passed to a function while attempting to write to the CAFF file.\n");
+			PRINT("An invalid argument was passed to a function while attempting to write to the CAFF file.\n");
 			break;
 		}
 	}
@@ -3860,40 +3917,38 @@ void writeCaffFile(const char* fileName) {
 	CloseLoadingBarPromptWidget();
 }
 
-void readPinataDBFile() {
+void readOtherSupportedFile(int type) {
 	SetupLoadingPromptWidget("Currently reading the file. Please wait.");
 
-	if (!PinataDbBundleFile.readStandaloneDbBundleFiles(currentFileName)) {
-		CloseLoadingPromptWidget();
-		FireMessage("A problem was encountered while reading the data.\nIf this is a Trouble in Paradise file, we do not currently support it until the hashing code is reversed.\nOtherwise, the files might be bad or the files needed aren't in the directory given.", ErrorType_Warn);
-		imGuiWindowInfo.saveData.targetType = NONE;
+	if (type == CaffType::GHOUL_BUNDLE) {
+		if (!ghoulBundleFile.readStandaloneBundleFile(currentFileName)) {
+			CloseLoadingPromptWidget();
+			FireMessage("Either the file provided is bad or this is not a valid bundle file.\n", ErrorType_Warn);
+			imGuiWindowInfo.saveData.targetType = NONE;
+		}
 	}
 
-	return;
-}
-
-void readGhouliesDBFile() {
-	SetupLoadingPromptWidget("Currently reading the file. Please wait.");
-
-	if (!ghoulBundleFile->readStandaloneBundleFile(currentFileName)) {
-		CloseLoadingPromptWidget();
-		FireMessage("Either the file provided is bad or this is not a valid bundle file.\n", ErrorType_Warn);
-		imGuiWindowInfo.saveData.targetType = NONE;
+	if (type == CaffType::GHOUL_DEMAND) {
+		if (!ghoulDemandFile.readStandaloneDemandFile(currentFileName)) {
+			CloseLoadingPromptWidget();
+			FireMessage("Either the file provided is bad or this is not a valid bundle file.\n", ErrorType_Warn);
+			imGuiWindowInfo.saveData.targetType = NONE;
+		}
 	}
 
-	return;
-}
-
-void readGhouliesDemandFile() {
-	SetupLoadingPromptWidget("Currently reading the file. Please wait.");
-
-	if (!ghoulDemandFile->readStandaloneDemandFile(currentFileName)) {
-		CloseLoadingPromptWidget();
-		FireMessage("Either the file provided is bad or this is not a valid bundle file.\n", ErrorType_Warn);
-		imGuiWindowInfo.saveData.targetType = NONE;
+	if (type == CaffType::PINATA_DBBUNDLE) {
+		if (!PinataDbBundleFile.readStandaloneDbBundleFiles(currentFileName)) {
+			CloseLoadingPromptWidget();
+			FireMessage("A problem was encountered while reading the data.\nIf this is a Trouble in Paradise file, we do not currently support it until the hashing code is reversed.\nOtherwise, the files might be bad or the files needed aren't in the directory given.", ErrorType_Warn);
+			imGuiWindowInfo.saveData.targetType = NONE;
+		}
 	}
 
-	return;
+	if (type == CaffType::RR_RPK) {
+
+	}
+
+	CloseLoadingPromptWidget();
 }
 
 void readCaffFile() {
@@ -3906,7 +3961,7 @@ void readCaffFile() {
 
 	fseek(fdart, 0, SEEK_SET);
 
-	ImGui::DebugLog("%04X\n", val);
+	PRINT("%04X\n", val);
 
 	if (val == 0xF50F) { // Failsafe until we can somehow reverse engineer the Xbox 360 specific compression.
 		CloseLoadingPromptWidget();
@@ -3918,17 +3973,17 @@ void readCaffFile() {
 	if (val == 0xDA78) {
 		SetupLoadingPromptWidget("Currently decompressing the file. Please wait.");
 		outData = inf(fdart);
-		ImGui::DebugLog("comp\n");
+		PRINT("comp\n");
 	}
 
 	fclose(fdart);
 
 	if (val != 0xDA78) {
 		outData = ReadContentsFromFile(currentFileName);
-		ImGui::DebugLog("no comp\n");
+		PRINT("no comp\n");
 	}
 
-	ImGui::DebugLog("%08X\n", outData);
+	PRINT("%08X\n", outData);
 
 	unsigned int caffMagic;
 
@@ -3938,10 +3993,10 @@ void readCaffFile() {
 
 	memcpy(&caffVersion, outData + 4, 0x10);
 
-	ImGui::DebugLog("MAGIC: %08x, VERSION: %s\n", caffMagic, caffVersion);
+	PRINT("MAGIC: %08x, VERSION: %s\n", caffMagic, caffVersion);
 
 	if (caffMagic != 0x46464143 && caffMagic != 0x7CB48C43) { 
-		//ImGui::DebugLog("The file supplied is not a valid bundle or streambundle file.\n");
+		//PRINT("The file supplied is not a valid bundle or streambundle file.\n");
 		CloseLoadingPromptWidget();
 		FireMessage("The file supplied is not a valid bundle or streambundle file.\n", ErrorType_Warn);
 		return; 
@@ -3951,7 +4006,7 @@ void readCaffFile() {
 
 	// Check if the read magic matches the one for a bundle or streambundle.
 	if (caffMagic == 0x46464143) {
-		ImGui::DebugLog("About to start reading a standalone bundle file.\n");
+		PRINT("About to start reading a standalone bundle file.\n");
 
 		if (strcmp(caffVersion, "24.09.03.0026") == 0) {
 			imGuiWindowInfo.saveData.targetType = BUNDLEV26;
@@ -4144,10 +4199,7 @@ void disposeAndCloseActiveFile() {
 		streamBundleFile = nullptr;
 	}
 
-	if (ghoulBundleFile != nullptr) {
-		delete(ghoulBundleFile);
-		ghoulBundleFile = nullptr;
-	}
+	ghoulBundleFile.ClearBundleFileData();
 
 	PinataDbBundleFile.ClearActiveBundleData();
 
@@ -4270,7 +4322,7 @@ void TestBundleRecompilation() {
 }
 
 void ReadGhoulBundleTexture() {
-	char* dataSect = ghoulBundleFile->GetFileData(fileId);
+	char* dataSect = ghoulBundleFile.GetFileData(fileId);
 
 	activeGhoulTex->ParseTextureHeader(dataSect);
 
@@ -4278,7 +4330,7 @@ void ReadGhoulBundleTexture() {
 
 	char* texData = (char*)malloc(activeGhoulTex->header.chunkSize);
 
-	char* gpuSect = ghoulBundleFile->GetFileGPUForTexture(fileId);
+	char* gpuSect = ghoulBundleFile.GetFileGPUForTexture(fileId);
 
 	memcpy(texData, gpuSect + (activeGhoulTex->header.chunkSize * activeGhoulTex->framePos), activeGhoulTex->header.chunkSize);
 
@@ -4305,7 +4357,7 @@ void ReadConkerLiveReloadedTexture(char* gpuData) {
 
 void ReadGhoulDemandTexture() {
 	char* texData = (char*)malloc(activeGhoulTex->gpuHeader.chunkSize);
-	memcpy(texData, ghoulDemandFile->dataPtr + ghoulDemandFile->gpuSectOffset + activeGhoulTex->gpuHeader.offset + (activeGhoulTex->header.chunkSize * activeGhoulTex->framePos), activeGhoulTex->header.chunkSize);
+	memcpy(texData, ghoulDemandFile.dataPtr + ghoulDemandFile.gpuSectOffset + activeGhoulTex->gpuHeader.offset + (activeGhoulTex->header.chunkSize * activeGhoulTex->framePos), activeGhoulTex->header.chunkSize);
 
 	if (tempTexInt != -1) {
 		glDeleteTextures(1, &tempTexInt);
@@ -4621,8 +4673,6 @@ static ImFont* LoadResourceFont(int resourceName, const wchar_t* resourceType, f
 	}
 
 	ImFontConfig cfg;
-	cfg.OversampleH = cfg.OversampleV = 1;
-	cfg.PixelSnapH = true;
 	cfg.ExtraSizeScale = extraScale; // Extra scaling is needed for the pick of font for Japanese and Korean characters (Noto Sans).
 	cfg.MergeMode = true;
 
@@ -5136,6 +5186,7 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 
 void processInput(GLFWwindow* window)
 {
-	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
-		glfwSetWindowShouldClose(window, true);
+	// No clue why this was here.
+	/*if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+		glfwSetWindowShouldClose(window, true);*/
 }

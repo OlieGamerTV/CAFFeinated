@@ -39,3 +39,25 @@ void TextureFile::ParseTextureEntries(char* data) {
 
 	printf("Header Size - %d | UNK - %d | Data Offset - %d | Chunk Size - %d\n", gpuHeader.size, gpuHeader.iunk2, gpuHeader.offset, gpuHeader.chunkSize);
 }
+
+void TextureFile::FreeTextureData() {
+	if (texFileData != nullptr) {
+		free(texFileData);
+		texFileData = nullptr;
+	}
+
+	if (entries != nullptr) {
+		delete[] entries;
+		entries = nullptr;
+	}
+
+	refresh = true;
+	framePos = 0;
+}
+
+TextureGPUEntry::~TextureGPUEntry() {
+	if (textureData != nullptr) {
+		free(textureData);
+		textureData = nullptr;
+	}
+}

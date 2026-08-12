@@ -207,6 +207,7 @@
     <ClInclude Include="code\ConkerFileTypes.h" />
     <ClInclude Include="code\MarkerWindow.h" />
     <ClInclude Include="code\ScriptWindow.h" />
+    <ClInclude Include="resource.h" />
     <ClInclude Include="thirdparty\imgui\backends\imgui_impl_glfw.h" />
     <ClInclude Include="thirdparty\imgui\backends\imgui_impl_opengl3.h" />
     <ClInclude Include="thirdparty\imgui\backends\imgui_impl_opengl3_loader.h" />
@@ -237,6 +238,7 @@
   <ItemGroup>
     <Image Include="resource\aid_audio_icon.png" />
     <Image Include="resource\aid_challenge_icon.png" />
+    <Image Include="resource\aid_havok_icon.png" />
     <Image Include="resource\aid_list_icon.png" />
     <Image Include="resource\aid_texture_banjox_ui_worldicon_banjoland.png" />
     <Image Include="resource\aid_vehicleblock_icon.png" />

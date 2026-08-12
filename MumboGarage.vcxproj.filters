@@ -347,6 +347,9 @@
     <ClInclude Include="code\MessageHandle.h">
       <Filter>Header Files\Program Segments</Filter>
     </ClInclude>
+    <ClInclude Include="resource.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="MumboGarage.rc">
@@ -383,6 +386,9 @@
     </Image>
     <Image Include="resource\exeIcon.ico">
       <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="resource\aid_havok_icon.png">
+      <Filter>Resource Files\images</Filter>
     </Image>
   </ItemGroup>
   <ItemGroup>
