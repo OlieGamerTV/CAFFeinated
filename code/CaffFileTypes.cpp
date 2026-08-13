@@ -244,6 +244,10 @@ void Loctext::ReadLoctext(char* data) {
 		// The only section that cares about endianness is the label data. Every other section treats it as little endian.
 		ReadLabelData();
 
+		usesTags = labelTable.header.tagTableOffset != 0;
+		usesComments = labelTable.header.commentTableOffset != 0;
+		usesPos = labelTable.header.positionTableOffset != 0;
+
 		// Kameo and PDZ don't use this table, so it needs to be checked beforehand.
 		if (labelTable.header.tagTableOffset != 0) {
 			ReadTagData();
@@ -269,42 +273,25 @@ void Loctext::ReadLabelData() {
 		return;
 	}
 
-	int endiannes = -1;
 	int dataOffs = 0;
 	int dataSize = 6;
-
-	if (labelTable.header.magic == LOCTEXT_LBSL_MAGIC) {
-		endiannes = SRC_ENDIANLITTLE;
+	
+	if (strstr(labelTable.header.magic, LOCTEXT_LSBL)) {
+		endianness = SRC_ENDIANLITTLE;
 	}
 
-	if (labelTable.header.magic == LOCTEXT_LSBL_MAGIC) {
-		endiannes = SRC_ENDIANBIG;
+	if (strstr(labelTable.header.magic, LOCTEXT_LBSL)) {
+		endianness = SRC_ENDIANBIG;
 	}
 
-	if (labelTable.header.magic == LOCTEXT_LBSTWO_MAGIC) {
-		endiannes = SRC_ENDIANLITTLE;
-		dataOffs = 8;
-		if (labelTable.header.tagTableOffset == 0) {
-			dataSize = 8;
-		}
-	}
-
-	if (labelTable.header.magic == LOCTEXT_LSBTWO_MAGIC) {
-		endiannes = SRC_ENDIANBIG;
-		dataOffs = 8;
-		if (labelTable.header.tagTableOffset == 0) {
-			dataSize = 8;
-		}
-	}
-
-	if (endiannes != SRC_ENDIANLITTLE && endiannes != SRC_ENDIANBIG) {
-		printf("Loctext::ReadLabelData() somehow ended up with an invalid endian value of %d.\n", endiannes);
+	if (endianness != SRC_ENDIANLITTLE && endianness != SRC_ENDIANBIG) {
+		printf("Loctext::ReadLabelData() somehow ended up with an invalid endian value of %d.\n", endianness);
 		return;
 	}
 
 	printf("Loctext::ReadLabelData() ENDIAN - %08x.\n", labelTable.header.magic);
 
-	if (endiannes == SRC_ENDIANLITTLE) {
+	if (endianness == SRC_ENDIANLITTLE) {
 		memcpy(&labelTable.header.headerLen, loctextPtr + labelDataOffset + 4 + dataOffs, sizeof(int));
 		memcpy(&labelTable.header.entryTotal, loctextPtr + labelDataOffset + 8 + dataOffs, sizeof(int));
 		memcpy(&labelTable.header.stringTableOffset, loctextPtr + labelDataOffset + 0xC + dataOffs, sizeof(int));
@@ -315,7 +302,7 @@ void Loctext::ReadLabelData() {
 		memcpy(&labelTable.stringTable.header.totalSectLen, loctextPtr + labelDataOffset + labelTable.header.stringTableOffset, sizeof(int));
 		memcpy(&labelTable.stringTable.header.totalCount, loctextPtr + labelDataOffset + labelTable.header.stringTableOffset + 4, sizeof(int));
 	}
-	else if (endiannes == SRC_ENDIANBIG) {
+	else if (endianness == SRC_ENDIANBIG) {
 		int unk1; // 0x4
 		int unk2; // 0x8
 		int stringTableOffset; // 0xC
@@ -354,16 +341,16 @@ void Loctext::ReadLabelData() {
 	labelTable.stringTable.infoEntries = new LabelStrInfoEntry[labelTable.stringTable.header.totalCount];
 	labelTable.stringTable.strings = new LabelStrEntry[labelTable.stringTable.header.totalCount];
 	for (int i = 0; i < labelTable.stringTable.header.totalCount; i++) {
-		if (endiannes == SRC_ENDIANLITTLE) {
+		if (endianness == SRC_ENDIANLITTLE) {
 			memcpy(&labelTable.stringTable.infoEntries[i].hash, loctextPtr + strInfoOffset + (6 * i), sizeof(short));
 			memcpy(&labelTable.stringTable.infoEntries[i].offset, loctextPtr + strInfoOffset + (6 * i) + 2, sizeof(int));
 		}
-		else if (endiannes == SRC_ENDIANBIG) {
+		else if (endianness == SRC_ENDIANBIG) {
 			unsigned short strUnkVal; // 0x0 (Only on LSB2 W/ no Tag Table.)
 			unsigned short strIdVar; // 0x0 (0x2 on LSB2 W/ no Tag Table.)
 			int strOffsetVar; // 0x2 (0x4 on LSB2 W/ no Tag Table.)
 
-			if (labelTable.header.magic == LOCTEXT_LSBTWO_MAGIC) {
+			/*if (labelTable.header.magic == LOCTEXT_LSBTWO_MAGIC) {
 				if (labelTable.header.tagTableOffset == 0) {
 					memcpy(&strUnkVal, loctextPtr + strInfoOffset + (dataSize * i), sizeof(short));
 					memcpy(&strIdVar, loctextPtr + strInfoOffset + (dataSize * i) + 2, sizeof(short));
@@ -379,7 +366,10 @@ void Loctext::ReadLabelData() {
 			else {
 				memcpy(&strIdVar, loctextPtr + strInfoOffset + (dataSize * i), sizeof(short));
 				memcpy(&strOffsetVar, loctextPtr + strInfoOffset + (dataSize * i) + 2, sizeof(int));
-			}
+			}*/
+
+			memcpy(&strIdVar, loctextPtr + strInfoOffset + (dataSize * i), sizeof(short));
+			memcpy(&strOffsetVar, loctextPtr + strInfoOffset + (dataSize * i) + 2, sizeof(int));
 
 			labelTable.stringTable.infoEntries[i].hash = flipEndian(strIdVar);
 			labelTable.stringTable.infoEntries[i].offset = flipEndian(strOffsetVar);
@@ -393,7 +383,7 @@ void Loctext::ReadLabelData() {
 
 		wchar_t chr = 0xFFFF;
 		int idx = 0;
-		if (endiannes == SRC_ENDIANLITTLE) {
+		if (endianness == SRC_ENDIANLITTLE) {
 			while (chr != '\0') {
 				memcpy(&chr, loctextPtr + offs, sizeof(wchar_t));
 				labelTable.stringTable.strings[i].string[idx] = chr;
@@ -401,7 +391,7 @@ void Loctext::ReadLabelData() {
 				offs += 2;
 			}
 		}
-		else if (endiannes == SRC_ENDIANBIG) {
+		else if (endianness == SRC_ENDIANBIG) {
 			while (chr != '\0') {
 				memcpy(&chr, loctextPtr + offs, sizeof(wchar_t));
 				labelTable.stringTable.strings[i].string[idx] = flipEndian(chr);
@@ -423,9 +413,9 @@ void Loctext::ReadTagData() {
 
 	bool doesEndMatter = false;
 
-	if (labelTable.header.magic == LOCTEXT_LSBTWO_MAGIC) {
+	/*if (labelTable.header.magic == LOCTEXT_LSBTWO_MAGIC) {
 		doesEndMatter = true;
-	}
+	}*/
 
 	if (doesEndMatter) {
 		int totalSectLen = 0;
@@ -502,9 +492,9 @@ void Loctext::ReadCommentData() {
 
 	bool doesEndMatter = false;
 
-	if (labelTable.header.magic == LOCTEXT_LSBTWO_MAGIC) {
+	/*if (labelTable.header.magic == LOCTEXT_LSBTWO_MAGIC) {
 		doesEndMatter = true;
-	}
+	}*/
 
 	if (doesEndMatter) {
 		int sectLen = 0;
@@ -580,9 +570,9 @@ void Loctext::ReadPosData() {
 
 	bool doesEndMatter = false;
 
-	if (labelTable.header.magic == LOCTEXT_LSBTWO_MAGIC) {
+	/*if (labelTable.header.magic == LOCTEXT_LSBTWO_MAGIC) {
 		doesEndMatter = true;
-	}
+	}*/
 
 	if (doesEndMatter) {
 		int sectLen = 0;
@@ -735,7 +725,7 @@ void Loctext::ExportToFileBank(char* fileName, int endianness) {
 
 			char conv[2048];
 
-			int total = WideCharToMultiByte(CP_UTF8, WC_COMPOSITECHECK, labelTable.stringTable.strings[GetIdxOfConnectedString(idx)].string, -1, conv, 2048, NULL, NULL);
+			int total = wcstombs(conv, labelTable.stringTable.strings[GetIdxOfConnectedString(idx)].string, 2048);
 
 			// If a comment doesn't have a new line, apply one before we write our next value. Otherwise just write as normal.
 			if (hasCommentGotNewLine) {
@@ -755,6 +745,208 @@ void Loctext::ExportToFileBank(char* fileName, int endianness) {
 
 	is.flush();
 	is.close();
+}
+
+void Loctext::WriteLoctext(char* filename) {
+	int position = 0;
+
+	FILE* writeStrm = fopen(filename, "wb");
+
+	if (writeStrm == nullptr) {
+		printf("Error occured while trying to open the write stream. Error Code 0x%08X\n", errno);
+		return;
+	}
+
+	try {
+		int CVal = 0xC;
+		int zeroVal = 0;
+
+		if (startEndianness == SRC_ENDIANLITTLE) {
+			fwrite(&CVal, 4, 1, writeStrm);
+			fwrite(&zeroVal, 4, 1, writeStrm);
+			fwrite(&zeroVal, 4, 1, writeStrm);
+		}
+		else {
+			CVal = flipEndian(CVal);
+			fwrite(&CVal, 4, 1, writeStrm);
+			fwrite(&zeroVal, 4, 1, writeStrm);
+			fwrite(&zeroVal, 4, 1, writeStrm);
+		}
+
+		int lableTableSize = 16 + (labelTable.stringTable.header.totalCount * 6);
+		int tagTableSize = 8 + (labelTable.tagTable.header.totalCount * 8);
+		int commentTableSize = 8 + (labelTable.commentTable.header.totalCount * 8);
+		int posTableSize = 8 + (labelTable.posTable.header.totalCount * 2);
+
+		//Precalculate some offs.
+		for (int i = 0; i < labelTable.stringTable.header.totalCount; i++) {
+			lableTableSize += (wcslen(labelTable.stringTable.strings[i].string) * 2) + 2;
+		}
+
+		if (usesTags) {
+			for (int i = 0; i < labelTable.tagTable.header.totalCount; i++) {
+				tagTableSize += strlen(labelTable.tagTable.tags[i].val) + 1;
+			}
+		}
+		else {
+			tagTableSize = 0;
+		}
+
+		if (usesComments) {
+			for (int i = 0; i < labelTable.commentTable.header.totalCount; i++) {
+				commentTableSize += strlen(labelTable.commentTable.comments[i].val) + 1;
+			}
+		}
+		else {
+			commentTableSize = 0;
+		}
+
+		if (!usesPos) posTableSize = 0;
+
+		int locBankHeadSize = 0x1C;
+		int locEntryCount = 4;
+		int lableTableOffs = 0x1C;
+		int tagTableOffs = 0;
+		int commentTableOffs = 0;
+		int posTableOffs = 0;
+
+		if (usesTags) {
+			tagTableOffs = locBankHeadSize + lableTableSize;
+		}
+		if (usesComments) {
+			commentTableOffs = locBankHeadSize + lableTableSize + tagTableSize;
+		}
+		if (usesPos) {
+			posTableOffs = locBankHeadSize + lableTableSize + tagTableSize + commentTableSize;
+		}
+
+		if (endianness == SRC_ENDIANLITTLE) {
+			fwrite(&LOCTEXT_LSBL, 4, 1, writeStrm);
+			fwrite(&locBankHeadSize, 4, 1, writeStrm);
+			fwrite(&locEntryCount, 4, 1, writeStrm);
+			fwrite(&lableTableOffs, 4, 1, writeStrm);
+			fwrite(&tagTableOffs, 4, 1, writeStrm);
+			fwrite(&commentTableOffs, 4, 1, writeStrm);
+			fwrite(&posTableOffs, 4, 1, writeStrm);
+		}
+		else {
+			fwrite(&LOCTEXT_LBSL, 4, 1, writeStrm);
+
+			locBankHeadSize = flipEndian(locBankHeadSize);
+			locEntryCount = flipEndian(locEntryCount);
+			lableTableOffs = flipEndian(lableTableOffs);
+			tagTableOffs = flipEndian(tagTableOffs);
+			commentTableOffs = flipEndian(commentTableOffs);
+			posTableOffs = flipEndian(posTableOffs);
+
+			fwrite(&locBankHeadSize, 4, 1, writeStrm);
+			fwrite(&locEntryCount, 4, 1, writeStrm);
+			fwrite(&lableTableOffs, 4, 1, writeStrm);
+			fwrite(&tagTableOffs, 4, 1, writeStrm);
+			fwrite(&commentTableOffs, 4, 1, writeStrm);
+			fwrite(&posTableOffs, 4, 1, writeStrm);
+		}
+
+		// String Table Time
+		if (endianness == SRC_ENDIANLITTLE) {
+			fwrite(&lableTableSize, 4, 1, writeStrm);
+			fwrite(&labelTable.stringTable.header.totalCount, 4, 1, writeStrm);
+		}
+		else {
+			lableTableSize = flipEndian(lableTableSize);
+			int strTableTotalCount = flipEndian(labelTable.stringTable.header.totalCount);
+			fwrite(&lableTableSize, 4, 1, writeStrm);
+			fwrite(&strTableTotalCount, 4, 1, writeStrm);
+		}
+
+		int currOffset = 0;
+		for (int i = 0; i < labelTable.stringTable.header.totalCount; i++) {
+			short hash = labelTable.stringTable.infoEntries[i].hash;
+			int offset = currOffset;
+
+			if (endianness == SRC_ENDIANLITTLE) {
+				fwrite(&hash, 2, 1, writeStrm);
+				fwrite(&offset, 4, 1, writeStrm);
+			}
+			else {
+				hash = flipEndian(hash);
+				offset = flipEndian(offset);
+				fwrite(&hash, 2, 1, writeStrm);
+				fwrite(&offset, 4, 1, writeStrm);
+			}
+
+			currOffset += wcslen(labelTable.stringTable.strings[i].string) + 1;
+		}
+
+		short blankHash = -1;
+		// Insert a blank entry
+		fwrite(&blankHash, 2, 1, writeStrm);
+		if (endianness == SRC_ENDIANLITTLE) {
+			fwrite(&currOffset, 4, 1, writeStrm);
+		}
+		else {
+			int lastOffs = flipEndian(currOffset);
+			fwrite(&lastOffs, 4, 1, writeStrm);
+		}
+		
+		for (int i = 0; i < labelTable.stringTable.header.totalCount; i++) {
+			if (endianness == SRC_ENDIANLITTLE) {
+				fwrite(&labelTable.stringTable.strings[i].string, 2, wcslen(labelTable.stringTable.strings[i].string) + 1, writeStrm);
+			}
+			else {
+				for (int c = 0; c < wcslen(labelTable.stringTable.strings[i].string) + 1; c++) {
+					wchar_t val = flipEndian(labelTable.stringTable.strings[i].string[c]);
+					fwrite(&val, 2, 1, writeStrm);
+				}
+			}
+		}
+
+		short blank = 0;
+		fwrite(&blank, 2, 1, writeStrm);
+
+		//Tag Table Time
+		if (usesTags) {
+			fwrite(&tagTableSize, 4, 1, writeStrm);
+			fwrite(&labelTable.tagTable.header.totalCount, 4, 1, writeStrm);
+
+			currOffset = 0;
+			for (int i = 0; i < labelTable.tagTable.header.totalCount; i++) {
+				fwrite(&labelTable.tagTable.infoEntries[i].id, 2, 1, writeStrm);
+				fwrite(&labelTable.tagTable.infoEntries[i].unk1, 2, 1, writeStrm);
+				fwrite(&currOffset, 4, 1, writeStrm);
+				currOffset += strlen(labelTable.tagTable.tags[i].val) + 1;
+			}
+
+			for (int i = 0; i < labelTable.tagTable.header.totalCount; i++) {
+				fwrite(&labelTable.tagTable.tags[i].val, 1, strlen(labelTable.tagTable.tags[i].val) + 1, writeStrm);
+			}
+		}
+
+		//Comment Table Time
+		if (usesComments) {
+			fwrite(&commentTableSize, 4, 1, writeStrm);
+			fwrite(&labelTable.commentTable.header.totalCount, 4, 1, writeStrm);
+			for (int i = 0; i < labelTable.commentTable.header.totalCount; i++) {
+				fwrite(&labelTable.commentTable.comments[i].val, 1, strlen(labelTable.commentTable.comments[i].val) + 1, writeStrm);
+			}
+		}
+
+		//Position Table Time
+		if (usesPos) {
+			fwrite(&posTableSize, 4, 1, writeStrm);
+			fwrite(&labelTable.posTable.header.totalCount, 4, 1, writeStrm);
+
+			for (int i = 0; i < labelTable.posTable.header.totalCount; i++) {
+				fwrite(&labelTable.posTable.entries[i], 2, 1, writeStrm);
+			}
+		}
+	}
+	catch (std::exception e) {
+
+	}
+
+	fflush(writeStrm);
+	fclose(writeStrm);
 }
 #pragma endregion
 
@@ -1252,7 +1444,7 @@ void LocTwo::ExportToFile(char* fileName) {
 
 			char conv[2048];
 
-			int total = WideCharToMultiByte(CP_UTF8, WC_COMPOSITECHECK, labelTable.stringTable.strings[GetIdxOfConnectedString(idx)].string, -1, conv, 2048, NULL, NULL);
+			int total = wcstombs(conv, labelTable.stringTable.strings[GetIdxOfConnectedString(idx)].string, 2048);
 
 			sprintf(fullStr, "%s\t\t\t= \"%s\"\n", labelTable.tagTable.tags[GetIdxOfConnectedTag(idx)].val, conv);
 

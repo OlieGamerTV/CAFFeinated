@@ -9,6 +9,10 @@
 
 #include "LoadingProcess.h"
 
+LoctextWindowParams loctextWindowParameters;
+
+LoctextWindowParams* getLoctextWindowParams() { return &loctextWindowParameters; }
+
 /// <summary>
 /// Handles the functionality of the Loctext Editor window.
 /// </summary>
@@ -24,9 +28,15 @@ void DisplayLoctextEditorBaseWindow() {
 					openLoadLoctextFile();
 				}
 
-				if (ImGui::MenuItem("Save", NULL, false, false)) {
+				if (ImGui::MenuItem("Save", NULL, false, clearActive)) {
+					if (loctextWindowParameters.loctextFilePath != nullptr) {
+						loctextWindowParameters.activeLoctext->WriteLoctext(loctextWindowParameters.loctextFilePath);
+					}
 				}
-				if (ImGui::MenuItem("Save as New", NULL, false, false)) {
+				if (ImGui::MenuItem("Save as New", NULL, false, clearActive)) {
+					if (NFD_SaveDialogU8(&loctextWindowParameters.loctextFilePath, NULL, 0, "", "default.str") == NFD_OKAY) {
+						loctextWindowParameters.activeLoctext->WriteLoctext(loctextWindowParameters.loctextFilePath);
+					}
 				}
 
 				ImGui::Separator();
@@ -42,8 +52,15 @@ void DisplayLoctextEditorBaseWindow() {
 					nfdu8char_t* outPath;
 					nfdu8filteritem_t filters[1] = { { "Setup Information File", "inf" } };
 					char filename[134];
+					memset(filename, 0, 134);
 
-					strcpy(filename, "default.inf");
+					if (loctextWindowParameters.hasAssignedFileName) {
+						sprintf(filename, "%s.inf", loctextWindowParameters.originalFilename);
+					}
+					else {
+						strcpy(filename, "default.inf");
+					}
+					
 					printf("Exporting file \"%s\"\n", filename);
 
 					if (NFD_SaveDialogU8(&outPath, filters, 1, NULL, filename) == NFD_OKAY) {
@@ -63,6 +80,9 @@ void DisplayLoctextEditorBaseWindow() {
 		if (loctextWindowParameters.activeLoctext != nullptr && loctextWindowParameters.ready == true) {
 
 			ImGui::SeparatorText("Loctext File");
+			bool isBigEndian = loctextWindowParameters.activeLoctext->endianness;
+			ImGui::Checkbox("Is Big Endian", &isBigEndian);
+			loctextWindowParameters.activeLoctext->endianness = isBigEndian;
 			ImGui::SeparatorText("Entries");
 
 			// Vehicle Parts List
@@ -153,6 +173,12 @@ static void openLoadLoctextFile() {
 	}
 }
 
+void ClearWindowParams() {
+	memset(loctextWindowParameters.originalFilename, 0, 128);
+	loctextWindowParameters.hasAssignedFileName = false;
+	loctextWindowParameters.ready = false;
+}
+
 void readExternalLoctextFile(char* data) {
 	loctextWindowParameters.ready = false;
 
@@ -169,4 +195,12 @@ void readExternalLoctextFile(char* data) {
 	free(data);
 
 	CloseLoadingPromptWidget();
+}
+
+void AssignLoctextFilename(char* filename) {
+	printf("%s\n", filename);
+	memset(loctextWindowParameters.originalFilename, 0, 128);
+	strcpy_s(loctextWindowParameters.originalFilename, 128, filename);
+	loctextWindowParameters.hasAssignedFileName = true;
+	printf("%s\n", loctextWindowParameters.originalFilename);
 }

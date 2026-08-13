@@ -15,21 +15,10 @@ struct LoctextWindowParams {
 	bool hasAssignedFileName = false;
 };
 
-LoctextWindowParams loctextWindowParameters;
+LoctextWindowParams* getLoctextWindowParams();
 
-void ClearWindowParams() {
-	memset(loctextWindowParameters.originalFilename, 0, 128);
-	loctextWindowParameters.hasAssignedFileName = false;
-	loctextWindowParameters.ready = false;
-}
-
+void ClearWindowParams();
 void readExternalLoctextFile(char* data);
-
-void AssignLoctextFilename(char* filename) {
-	printf("%s\n", filename);
-	memset(loctextWindowParameters.originalFilename, 0, 128);
-	strcpy_s(loctextWindowParameters.originalFilename, 128, filename);
-	loctextWindowParameters.hasAssignedFileName = true;
-}
+void AssignLoctextFilename(char* filename);
 
 #endif

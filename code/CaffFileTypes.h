@@ -13,6 +13,8 @@ const unsigned int VEHICLE_SAVE_PREFIX2 = 0xE17A5440;
 
 const unsigned int LOCTEXT_LSBTWO_MAGIC = 0x3242534C;
 const unsigned int LOCTEXT_LBSTWO_MAGIC = 0x3253424C;
+const char LOCTEXT_LSBL[4] = { 'L', 'S', 'B', 'L' };
+const char LOCTEXT_LBSL[4] = { 'L', 'B', 'S', 'L' };
 const unsigned int LOCTEXT_LSBL_MAGIC = 0x4C53424C;
 const unsigned int LOCTEXT_LBSL_MAGIC = 0x4C42534C;
 
@@ -102,7 +104,7 @@ struct LabelTagTable {
 
 struct LabelHeader {
 public:
-	unsigned int magic = 0; // 0x0
+	char magic[4]; // 0x0
 	int headerLen = 0; // 0x4
 	int entryTotal = 0; // 0x8
 	int stringTableOffset = 0; // 0xC
@@ -134,6 +136,13 @@ struct UnkTable {
 struct Loctext {
 public:
 	char* loctextPtr;
+
+	int endianness;
+	int startEndianness = SRC_ENDIANBIG;
+
+	bool usesTags = false;
+	bool usesComments = false;
+	bool usesPos = false;
 
 	int labelDataOffset = 0;
 	int unkTableOffset = 0;

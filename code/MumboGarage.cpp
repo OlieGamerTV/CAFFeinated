@@ -246,7 +246,7 @@ int mainWindowCode() {
 	memset(imGuiWindowInfo.search, 0, 128);
 	bundleSetup.bufferedSaves = (BufferedSave*)malloc(0);
 	rpkFile = new RPKFile();
-	loctextWindowParameters.loctextFilePath = new char[MAX_PATH];
+	getLoctextWindowParams()->loctextFilePath = new char[MAX_PATH];
 
 	NFD_Init();
 
@@ -321,7 +321,7 @@ void buildBaseImGuiWindow() {
 		DisplayVehicleEditorBaseWindow();
 	}
 
-	if (loctextWindowParameters.showLoctextEditor) {
+	if (getLoctextWindowParams()->showLoctextEditor) {
 		DisplayLoctextEditorBaseWindow();
 	}
 
@@ -540,8 +540,8 @@ void buildTitleBar() {
 		}
 		if (ImGui::BeginMenu("Tools"))
 		{
-			if (ImGui::MenuItem("Loctext Editor", NULL, loctextWindowParameters.showLoctextEditor)) {
-				loctextWindowParameters.showLoctextEditor = !loctextWindowParameters.showLoctextEditor;
+			if (ImGui::MenuItem("Loctext Editor", NULL, getLoctextWindowParams()->showLoctextEditor)) {
+				getLoctextWindowParams()->showLoctextEditor = !getLoctextWindowParams()->showLoctextEditor;
 			}
 			if (ImGui::MenuItem("Script Editor", NULL, GetScriptEditorWindowParameters()->showScriptEditor)) {
 				GetScriptEditorWindowParameters()->showScriptEditor = !GetScriptEditorWindowParameters()->showScriptEditor;
@@ -973,15 +973,8 @@ static void openMenu() {
 
 		PRINT("File picked: %s\n", currentFileName);
 
-		// Small catch in-case the wrong button is pressed by accident.
-		if (strstr(currentFileName, ".bnl") != 0) {
-			imGuiWindowInfo.saveData.targetType = GHOUL_BUNDLE;
-			std::thread(&readOtherSupportedFile, CaffType::GHOUL_BUNDLE).detach();
-		}
-		else {
-			// Note: DON'T FORGET TO DETACH THE LOAD THREAD. IT CAUSES ISSUES IF YOU DON'T (SUCH AS CRASHING).
-			std::thread(&readCaffFile).detach();
-		}
+		// Note: DON'T FORGET TO DETACH THE LOAD THREAD. IT CAUSES ISSUES IF YOU DON'T (SUCH AS CRASHING).
+		std::thread(&readCaffFile).detach();
 	}
 	else {
 	}
@@ -1638,6 +1631,7 @@ void displayActiveFileProperty() {
 			SetupLoadingPromptWidget("Currently loading the loctext file. Please wait.");
 			std::thread(&readLoctextFile, activeSect, lbl).detach();
 			AssignLoctextFilename(lbl);
+			getLoctextWindowParams()->activeLoctext->startEndianness = bundleFile.V36Bundle->header.byteswapFlags;
 		}
 		break;
 	case 0x19:
@@ -1847,6 +1841,8 @@ void displayActiveBundleV31Property() {
 
 				SetupLoadingPromptWidget("Currently loading the loctext file. Please wait.");
 				std::thread(&readLoctextFile, activeSect, filename).detach();
+				AssignLoctextFilename(filename);
+				getLoctextWindowParams()->activeLoctext->startEndianness = bundleFile.V31Bundle->header.byteswapFlags;
 			}
 		}
 		break;
@@ -2473,6 +2469,7 @@ void displayActiveGhoulDemandProperty() {
 
 			SetupLoadingPromptWidget("Currently loading the loctext file. Please wait.");
 			std::thread(&readLoctextFile, dataSect, currentFileName).detach();
+			getLoctextWindowParams()->activeLoctext->startEndianness = 0;
 		}
 		break;
 	}
@@ -3703,22 +3700,21 @@ void readMarkerFile(char* data) {
 }
 
 void readLoctextFile(char* data, char* fileName) {
-	loctextWindowParameters.ready = false;
+	LoctextWindowParams* locParams = getLoctextWindowParams();
+	locParams->ready = false;
 
-	if (loctextWindowParameters.activeLoctext != nullptr) {
-		delete loctextWindowParameters.activeLoctext;
-		loctextWindowParameters.activeLoctext = nullptr;
+	if (locParams->activeLoctext != nullptr) {
+		delete locParams->activeLoctext;
+		locParams->activeLoctext = nullptr;
 	}
 
 	printf("Loading loctext from file \"%s\".\n", fileName);
-	loctextWindowParameters.activeLoctext = new Loctext();
-	loctextWindowParameters.activeLoctext->ReadLoctext(data);
+	locParams->activeLoctext = new Loctext();
+	locParams->activeLoctext->ReadLoctext(data);
 
-	loctextWindowParameters.ready = true;
+	locParams->ready = true;
 
-	loctextWindowParameters.showLoctextEditor = true;
-
-	AssignLoctextFilename(fileName);
+	locParams->showLoctextEditor = true;
 
 	CloseLoadingPromptWidget();
 }
