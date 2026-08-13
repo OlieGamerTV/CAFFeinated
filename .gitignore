@@ -86,3 +86,6 @@ imgui.ini
 # Output directories from the old solution
 Win32/
 CAFFeinated/
+
+# Shortcut created by generate.bat
+*.lnk

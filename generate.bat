@@ -70,13 +70,25 @@ if /i "%DOBUILD%"=="build" (
     )
 )
 
-if exist "build\CAFFeinated.slnx" (
-    echo Solution written to build\CAFFeinated.slnx
-) else if exist "build\CAFFeinated.sln" (
-    echo Solution written to build\CAFFeinated.sln
-) else (
+set "SLNPATH="
+if exist "build\CAFFeinated.slnx" set "SLNPATH=%CD%\build\CAFFeinated.slnx"
+if not defined SLNPATH if exist "build\CAFFeinated.sln" set "SLNPATH=%CD%\build\CAFFeinated.sln"
+
+if not defined SLNPATH (
     echo Generation exited with success but no solution file was found.
     set "RC=1" & goto :end
+)
+echo Solution written to %SLNPATH%
+
+set "LNK=%CD%\CAFFeinated Solution.lnk"
+set "LNKICON=%CD%\resource\exeIcon.ico"
+if exist "%LNK%" del /f /q "%LNK%" >nul 2>&1
+powershell -NoProfile -ExecutionPolicy Bypass -Command "$s=(New-Object -ComObject WScript.Shell).CreateShortcut('%LNK%'); $s.TargetPath='%SLNPATH%'; $s.WorkingDirectory='%CD%'; $s.Description='CAFFeinated Visual Studio solution'; if (Test-Path '%LNKICON%') { $s.IconLocation='%LNKICON%,0' }; $s.Save()" >nul 2>&1
+
+if exist "%LNK%" (
+    echo Shortcut created: "CAFFeinated Solution.lnk"
+) else (
+    echo Note: could not create the shortcut, open %SLNPATH% directly.
 )
 set "RC=0" & goto :end
 

@@ -15,7 +15,7 @@ if /i "%~1"=="-n" set "MODE=dry"
 
 set "TARGET_DIRS=.vs build x64 Win32 x86 CAFFeinated CMakeFiles"
 set "TARGET_FILES=imgui.ini CMakeCache.txt cmake_install.cmake"
-set "TARGET_GLOBS=*.vcxproj *.vcxproj.filters *.vcxproj.user *.sln *.slnx"
+set "TARGET_GLOBS=*.vcxproj *.vcxproj.filters *.vcxproj.user *.sln *.slnx *.lnk"
 
 set "FOUND=0"
 echo.
@@ -34,12 +34,10 @@ for %%F in (%TARGET_FILES%) do (
         set /a FOUND+=1
     )
 )
-for %%G in (%TARGET_GLOBS%) do (
-    for %%F in (%%G) do (
-        if exist "%%F" (
-            echo [file] %%F
-            set /a FOUND+=1
-        )
+for %%F in (%TARGET_GLOBS%) do (
+    if exist "%%F" (
+        echo [file] %%F
+        set /a FOUND+=1
     )
 )
 
@@ -81,12 +79,10 @@ for %%F in (%TARGET_FILES%) do (
         if exist "%%F" ( echo [Failed] %%F & set /a FAILED+=1 )
     )
 )
-for %%G in (%TARGET_GLOBS%) do (
-    for %%F in (%%G) do (
-        if exist "%%F" (
-            del /f /q "%%F" 2>nul
-            if exist "%%F" ( echo [Failed] %%F & set /a FAILED+=1 )
-        )
+for %%F in (%TARGET_GLOBS%) do (
+    if exist "%%F" (
+        del /f /q "%%F" 2>nul
+        if exist "%%F" ( echo [Failed] %%F & set /a FAILED+=1 )
     )
 )
 
