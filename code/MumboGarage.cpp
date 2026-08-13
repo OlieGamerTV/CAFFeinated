@@ -9,6 +9,7 @@
 
 #ifdef NDEBUG
 #define IMGUI_DEBUG_PRINTF 
+#define ASSERT(fmt, ...) ((void)0)
 #define PRINT(fmt, ...) ((void)0)
 #else
 #define ASSERT(fmt, ...) (printf("%s %s %d - "##fmt,__FILE__, __func__, __LINE__, __VA_ARGS__))
