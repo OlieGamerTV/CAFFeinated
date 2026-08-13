@@ -10,3 +10,6 @@
 [submodule "thirdparty/squish"]
 	path = thirdparty/squish
 	url = https://github.com/OpenELEC/libsquish
+[submodule "thirdparty/imgui"]
+	path = thirdparty/imgui
+	url = https://github.com/ocornut/imgui
