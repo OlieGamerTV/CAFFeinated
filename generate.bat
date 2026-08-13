@@ -14,7 +14,7 @@ if errorlevel 1 (
 
 if not exist "thirdparty\imgui\.git" (
     echo Submodules missing, Running git submodule update recursively...
-    git submodule update --init --recursive
+    git submodule update --init --recursive --force
     if errorlevel 1 (
         echo git submodule update failed.
         set "RC=1" & goto :end

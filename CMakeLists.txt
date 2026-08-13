@@ -25,7 +25,7 @@ set(TP "${CMAKE_CURRENT_SOURCE_DIR}/thirdparty")
 foreach(sub glfw nativefiledialog zlib squish imgui)
     if(NOT EXISTS "${TP}/${sub}/.git")
         message(FATAL_ERROR
-            "Submodule thirdparty/${sub} is empty. git submodule update --init --recursive might help.")
+            "Submodule thirdparty/${sub} is empty. git submodule update --init --recursive --force might help.")
     endif()
 endforeach()
 
