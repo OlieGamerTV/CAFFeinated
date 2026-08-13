@@ -77,12 +77,33 @@ list(APPEND IMGUI_SOURCES
     "${TP}/imgui/backends/imgui_impl_glfw.cpp"
     "${TP}/imgui/backends/imgui_impl_opengl3.cpp")
 
-file(GLOB_RECURSE APP_SOURCES CONFIGURE_DEPENDS
-    "${CMAKE_CURRENT_SOURCE_DIR}/code/*.cpp")
+file(GLOB IMGUI_HEADERS CONFIGURE_DEPENDS "${TP}/imgui/*.h")
+list(APPEND IMGUI_HEADERS
+    "${TP}/imgui/backends/imgui_impl_glfw.h"
+    "${TP}/imgui/backends/imgui_impl_opengl3.h"
+    "${TP}/imgui/backends/imgui_impl_opengl3_loader.h")
+
+file(GLOB STB_HEADERS CONFIGURE_DEPENDS "${TP}/stb/*.h")
+
+set(CODE "${CMAKE_CURRENT_SOURCE_DIR}/code")
+set(RES "${CMAKE_CURRENT_SOURCE_DIR}/resource")
+
+file(GLOB_RECURSE APP_SOURCES CONFIGURE_DEPENDS "${CODE}/*.cpp")
+file(GLOB_RECURSE APP_HEADERS CONFIGURE_DEPENDS "${CODE}/*.h")
+list(APPEND APP_HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/resource.h")
+
+file(GLOB RES_IMAGES CONFIGURE_DEPENDS "${RES}/*.png")
+file(GLOB RES_FONTS CONFIGURE_DEPENDS "${RES}/*.ttf")
+set(RES_ASSETS ${RES_IMAGES} ${RES_FONTS} "${RES}/exeIcon.ico")
+set_source_files_properties(${RES_ASSETS} PROPERTIES HEADER_FILE_ONLY TRUE)
 
 add_executable(CAFFeinated
     ${APP_SOURCES}
+    ${APP_HEADERS}
     ${IMGUI_SOURCES}
+    ${IMGUI_HEADERS}
+    ${STB_HEADERS}
+    ${RES_ASSETS}
     "${TP}/glad/src/glad.c"
     MumboGarage.rc)
 
@@ -107,3 +128,57 @@ set_property(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
 
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 set_target_properties(glfw3 nfd zlibstatic squish PROPERTIES FOLDER "thirdparty")
+
+source_group("Source Files\\Imported" FILES
+    "${TP}/glad/src/glad.c" ${IMGUI_SOURCES})
+source_group("Source Files\\Ghoulies" FILES
+    "${CODE}/GhoulBundle.cpp"
+    "${CODE}/GhoulDemand.cpp"
+    "${CODE}/GhoulFileTypes.cpp")
+source_group("Source Files\\Rare Replay" FILES "${CODE}/RPK.cpp")
+source_group("Source Files\\Xenon" FILES
+    "${CODE}/XUIString.cpp"
+    "${CODE}/XWaveBank.cpp")
+source_group("Source Files\\Pinata" FILES "${CODE}/PinataDBBundle.cpp")
+source_group("Source Files\\Kameo" FILES "${CODE}/KameoDatabase.cpp")
+source_group("Source Files\\Conker" FILES "${CODE}/ConkerFileTypes.cpp")
+source_group("Source Files\\PDZ" FILES "${CODE}/DarkPackage.cpp")
+source_group("Source Files\\Program Segments" FILES
+    "${CODE}/LoadingProcess.cpp"
+    "${CODE}/LoctextWindow.cpp"
+    "${CODE}/MarkerWindow.cpp"
+    "${CODE}/MessageHandle.cpp"
+    "${CODE}/ScriptWindow.cpp"
+    "${CODE}/VehicleWindow.cpp"
+    "${CODE}/Program Segments/BundleSeg.cpp")
+source_group("Header Files\\Imported" FILES ${IMGUI_HEADERS} ${STB_HEADERS})
+source_group("Header Files\\Base" FILES "${CODE}/AssetId.h")
+source_group("Header Files\\Base\\Scripts" FILES "${CODE}/BaseScript.h")
+source_group("Header Files\\Base\\Markers" FILES "${CODE}/BaseMarker.h")
+source_group("Header Files\\Base\\ML" FILES "${CODE}/MLTypes.h")
+source_group("Header Files\\Ghoulies" FILES
+    "${CODE}/GhoulBundle.h"
+    "${CODE}/GhoulDemand.h"
+    "${CODE}/GhoulFileTypes.h")
+source_group("Header Files\\Rare Replay" FILES "${CODE}/RPK.h")
+source_group("Header Files\\Xenon" FILES
+    "${CODE}/XUIString.h"
+    "${CODE}/XWaveBank.h"
+    "${CODE}/xenon_texture.h")
+source_group("Header Files\\Xbox" FILES "${CODE}/xbox_texture.h")
+source_group("Header Files\\Pinata" FILES "${CODE}/PinataDBBundle.h")
+source_group("Header Files\\Kameo" FILES "${CODE}/KameoDatabase.h")
+source_group("Header Files\\Conker" FILES "${CODE}/ConkerFileTypes.h")
+source_group("Header Files\\PDZ" FILES "${CODE}/DarkPackage.h")
+source_group("Header Files\\Program Segments" FILES
+    "${CODE}/LoadingProcess.h"
+    "${CODE}/LoctextWindow.h"
+    "${CODE}/MarkerWindow.h"
+    "${CODE}/MessageHandle.h"
+    "${CODE}/ScriptWindow.h"
+    "${CODE}/VehicleWindow.h"
+    "${CODE}/Program Segments/BundleSeg.h")
+
+source_group("Resource Files" FILES MumboGarage.rc "${RES}/exeIcon.ico")
+source_group("Resource Files\\images" FILES ${RES_IMAGES})
+source_group("Resource Files\\fonts" FILES ${RES_FONTS})
