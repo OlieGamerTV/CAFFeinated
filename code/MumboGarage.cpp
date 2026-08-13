@@ -8,7 +8,7 @@
 #pragma comment(lib, "OpenGL32.lib")
 
 #ifdef NDEBUG
-#define IMGUI_DEBUG_PRINTF 
+#define IMGUI_DEBUG_PRINTF
 #define ASSERT(fmt, ...) ((void)0)
 #define PRINT(fmt, ...) ((void)0)
 #else
