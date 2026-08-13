@@ -1,0 +1,15 @@
+[submodule "thirdparty/glfw"]
+	path = thirdparty/glfw
+	url = https://github.com/glfw/glfw
+[submodule "thirdparty/nativefiledialog"]
+	path = thirdparty/nativefiledialog
+	url = https://github.com/btzy/nativefiledialog-extended
+[submodule "thirdparty/zlib"]
+	path = thirdparty/zlib
+	url = https://github.com/madler/zlib
+[submodule "thirdparty/squish"]
+	path = thirdparty/squish
+	url = https://github.com/OpenELEC/libsquish
+[submodule "thirdparty/imgui"]
+	path = thirdparty/imgui
+	url = https://github.com/ocornut/imgui
