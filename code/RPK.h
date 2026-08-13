@@ -23,7 +23,7 @@ public:
 
 	RPKFileEntry* fileEntries;
 
-	~RPKFile();
+	void ClearActiveData();
 
 	bool readStandaloneRPKFile(char* fileName);
 	bool readRPKFile(char* data);

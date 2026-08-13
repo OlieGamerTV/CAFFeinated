@@ -74,7 +74,7 @@ static void ShowMenuFile();
 static void openMenu();
 static void ShowSearchMenu();
 void TestBundleRecompilation();
-void readLoctextFile(char* data, char* fileName);
+void readLoctextFile(char* data, int startEndian);
 void readMarkerFile(char* data);
 
 //Save Editor

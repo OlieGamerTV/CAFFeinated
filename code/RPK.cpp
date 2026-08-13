@@ -1,7 +1,7 @@
 #include "CommonReader.h"
 #include "RPK.h"
 
-RPKFile::~RPKFile() {
+void RPKFile::ClearActiveData() {
 	if (rpkData != nullptr) {
 		free(rpkData);
 		rpkData = nullptr;
