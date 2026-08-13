@@ -5,6 +5,8 @@ if(CMAKE_SOURCE_DIR STREQUAL CMAKE_BINARY_DIR)
         "Use a build directory instead: cmake -B build or run generate.bat.")
 endif()
 
+set(CMAKE_INTERMEDIATE_DIR_STRATEGY "SHORT" CACHE STRING "")
+
 project(CAFFeinated LANGUAGES C CXX)
 
 if(NOT MSVC)
