@@ -29,6 +29,9 @@
 #include <atomic>
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
+#define GLFW_EXPOSE_NATIVE_WIN32
+#define GLFW_EXPOSE_NATIVE_WGL
+#include <GLFW/glfw3native.h>
 #include <nfd.h>
 #include <nfd_glfw3.h>
 #include <squish.h>
@@ -73,11 +76,6 @@
 #include "xbox_texture.h"
 #include "xenon_texture.h"
 
-#define GLFW_EXPOSE_NATIVE_WIN32
-#define GLFW_EXPOSE_NATIVE_WGL
-#define GLFW_NATIVE_INCLUDE_NONE
-#include <GLFW/glfw3native.h>
-
 // The Vehicle Editor Window
 #ifndef VEHICLE_WINDOW
 #include "VehicleWindow.h"
@@ -101,6 +99,11 @@
 
 #include "LoadingProcess.h"
 
+// Windows Theme stuff
+#if _WIN32
+#pragma comment(lib, "dwmapi.lib")
+#include <dwmapi.h>
+#endif
 
 // Permanent reference to the window so it can be fetched from anywhere.
 GLFWwindow* window;
@@ -181,6 +184,7 @@ int mainWindowCode() {
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+	glfwWindowHint(GLFW_TRANSPARENT_FRAMEBUFFER, GLFW_TRUE);
 
 	// Set the locale
 	setlocale(LC_ALL, "en_US.UTF-8");
@@ -217,6 +221,52 @@ int mainWindowCode() {
 
 	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 
+#if _WIN32
+	// Setup Acrylic Window Background for Windows 10/11
+	HWND hwnd = glfwGetWin32Window(window);
+	if (!hwnd) {
+		ASSERT("Failed to get hwnd from GLFW window");
+		return -1;
+	}
+	MARGINS margins = { -1 };
+	DwmExtendFrameIntoClientArea(hwnd, &margins);
+
+	const HINSTANCE hModule = LoadLibrary(TEXT("user32.dll"));
+	if (hModule)
+	{
+		typedef struct _ACCENT_POLICY
+		{
+			int nAccentState;
+			int nFlags;
+			int nColor;
+			int nAnimationId;
+		} ACCENT_POLICY;
+
+		typedef struct _WINDOWCOMPOSITIONATTRIBDATA
+		{
+			int nAttribute;
+			PVOID pData;
+			SIZE_T ulDataSize;
+		} WINDOWCOMPOSITIONATTRIBDATA;
+
+		enum AccentState
+		{
+			ACCENT_DISABLED = 0,
+			ACCENT_ENABLE_BLURBEHIND = 3,
+			ACCENT_ENABLE_ACRYLICBLURBEHIND = 4 // Windows 10/11
+		};
+
+		auto SetWindowCompositionAttribute = (BOOL(WINAPI*)(HWND, WINDOWCOMPOSITIONATTRIBDATA*))GetProcAddress(hModule, "SetWindowCompositionAttribute");
+		if (SetWindowCompositionAttribute)
+		{
+			ACCENT_POLICY policy = { ACCENT_ENABLE_BLURBEHIND, 0, 0, 0 };
+			WINDOWCOMPOSITIONATTRIBDATA data = { 19, &policy, sizeof(policy) };
+			SetWindowCompositionAttribute(hwnd, &data);
+		}
+		FreeLibrary(hModule);
+	}
+#endif
+
 	// Setup Dear ImGui context
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
@@ -228,6 +278,8 @@ int mainWindowCode() {
 	// Setup Platform/Renderer backends
 	ImGui_ImplGlfw_InitForOpenGL(window, true);          // Second param install_callback=true will install GLFW callbacks and chain to existing ones.
 	ImGui_ImplOpenGL3_Init();
+
+	Style::SetColor(ImVec4(0.8f, 0.8f, 0.8f, 1.0f));
 
 	// Preload all our icon PNGs so we can use them whenever.
 	RC_PNG_ANIMICON = LoadResourceImage(IDB_PNG1, L"PNG");
@@ -276,7 +328,7 @@ int mainWindowCode() {
 			buildTitleBar();
 
 			// Rendering
-			glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+			glClearColor(0.01f, 0.01f, 0.01f, 0.75f);
 			glClear(GL_COLOR_BUFFER_BIT);
 			// (Your code clears your framebuffer, renders your other stuff etc.)
 			ImGui::Render();
@@ -516,9 +568,12 @@ void buildTitleBar() {
 			ShowMenuFile();
 			ImGui::EndMenu();
 		}
+		//Set color to pink
+		Style::SetColor(ImVec4(0.8f, 0.2f, 0.6f, 1.0f));
 		if (ImGui::MenuItem("Search", "CTRL+F", imGuiWindowInfo.showSearch, true)) {
 			imGuiWindowInfo.showSearch = !imGuiWindowInfo.showSearch;
 		}
+		Style::PopColor();
 		if (ImGui::BeginMenu("Bundles"))
 		{
 			if (ImGui::BeginMenu("Streamed", fileType == NB_STREAMBUNDLE))
@@ -582,6 +637,7 @@ void buildTitleBar() {
 }
 
 static void ShowSearchMenu() {
+	Style::SetColor(ImVec4(0.8f, 0.2f, 0.6f, 1.0f));
 	if (ImGui::Begin("Search", &imGuiWindowInfo.showSearch, ImGuiWindowFlags_NoCollapse)) {
 		ImGui::PushID("searchStr");
 		ImGui::Text("Find what: ");
@@ -596,6 +652,7 @@ static void ShowSearchMenu() {
 		ImGui::PopID();
 		ImGui::End();
 	}
+	Style::PopColor();
 }
 
 static void ShowBundleComparisonMenu() {
