@@ -1,6 +1,7 @@
 #include "imgui_includes.h"
 #include "CaffFileTypes.h"
 #include "CommonReader.h"
+#include "AssetCommons.h"
 
 #include <nfd.h>
 #include <thread>
@@ -48,6 +49,131 @@ void DisplayLoctextEditorBaseWindow() {
 					ClearWindowParams();
 				}
 				ImGui::Separator();
+				if (ImGui::MenuItem("Import", NULL, false, !clearActive)) {
+					nfdu8char_t* outPath = new char[MAX_PATH];
+
+					if (NFD_OpenDialogU8(&outPath, NULL, 0, NULL) == NFD_OKAY) {
+						FILE* data = fopen(outPath, "r");
+
+						if (loctextWindowParameters.activeLoctext != nullptr) {
+							delete loctextWindowParameters.activeLoctext;
+							loctextWindowParameters.activeLoctext = new Loctext();
+						}
+
+						if (loctextWindowParameters.activeLoctext == nullptr) {
+							loctextWindowParameters.activeLoctext = new Loctext();
+						}
+
+						if (data != nullptr) {
+							char str[8192] = { 0 };
+							char tag[256] = { 0 };
+							char text[2048] = { 0 };
+							int strCount = -1;
+							int commentCount = 0;
+
+							fseek(data, 0, SEEK_SET);
+
+							while (!feof(data)) {
+								fgets(str, 8192, data);
+								if (str[0] != '\0' && str[0] != ';') {
+									strCount++;
+								}
+								if (str[0] != '\0' && str[0] == ';') {
+									commentCount++;
+								}
+							}
+
+							fseek(data, 0, SEEK_SET);
+
+							loctextWindowParameters.activeLoctext->usesTags = true;
+							loctextWindowParameters.activeLoctext->usesComments = commentCount != 0;
+							loctextWindowParameters.activeLoctext->usesPos = true;
+
+							loctextWindowParameters.activeLoctext->labelTable.stringTable.header.totalCount = strCount;
+							loctextWindowParameters.activeLoctext->labelTable.tagTable.header.totalCount = strCount;
+							loctextWindowParameters.activeLoctext->labelTable.commentTable.header.totalCount = commentCount;
+							loctextWindowParameters.activeLoctext->labelTable.posTable.header.totalCount = strCount;
+
+							loctextWindowParameters.activeLoctext->labelTable.stringTable.infoEntries = new LabelStrInfoEntry[strCount];
+							loctextWindowParameters.activeLoctext->labelTable.stringTable.strings = new LabelStrEntry[strCount];
+							loctextWindowParameters.activeLoctext->labelTable.tagTable.infoEntries = new TagInfo[strCount];
+							loctextWindowParameters.activeLoctext->labelTable.tagTable.tags = new TagStr[strCount];
+							loctextWindowParameters.activeLoctext->labelTable.commentTable.comments = new CommentStr[commentCount];
+							loctextWindowParameters.activeLoctext->labelTable.commentTable.entries = new CommentEntry[commentCount];
+							loctextWindowParameters.activeLoctext->labelTable.posTable.entries = new unsigned short[strCount];
+
+							int tiedComment = -1;
+							int currentStr = -1;
+							bool isCurrentlyReadingComment = false;
+
+							int totalStrOffs = 0;
+							int totalTagOffs = 0;
+							int totalCommentOffs = 0;
+
+							while (!feof(data)) {
+								memset(str, 0, 8192);
+								memset(tag, 0, 256);
+								memset(text, 0, 2048);
+
+								fgets(str, 8192, data);
+								if (str[0] == ';') {
+									printf("%s\n", str);
+									if (isCurrentlyReadingComment) {
+										strncat(loctextWindowParameters.activeLoctext->labelTable.commentTable.comments[tiedComment].val, str, strlen(str));
+									}
+									if (!isCurrentlyReadingComment) {
+										isCurrentlyReadingComment = true;
+										tiedComment++;
+										loctextWindowParameters.activeLoctext->labelTable.commentTable.entries[tiedComment].id = 0;
+										memset(loctextWindowParameters.activeLoctext->labelTable.commentTable.comments[tiedComment].val, 0, 8192);
+										strncpy(loctextWindowParameters.activeLoctext->labelTable.commentTable.comments[tiedComment].val, str, strlen(str));
+									}
+								}
+
+								if (str[0] != '\0' && str[0] != ';') {
+									char* tagEnd = strchr(str, '\t');
+									if (tagEnd != nullptr) {
+										strncpy(tag, str, tagEnd - str);
+									}
+									char* strStart = strchr(str, '\"');
+									char* strEnd = strrchr(str, '\"');
+									if (strStart != nullptr && strEnd != nullptr) {
+										strncpy(text, strStart + 1, strEnd - strStart - 1);
+									}
+
+									currentStr++;
+
+									unsigned short hash = flipEndian(locHashElfHash16(tag));
+									printf("%04X %s = %s\n", hash, tag, text);
+
+									memset(loctextWindowParameters.activeLoctext->labelTable.stringTable.strings[currentStr].string, 0, sizeof(wchar_t) * 2048);
+									memset(loctextWindowParameters.activeLoctext->labelTable.tagTable.tags[currentStr].val, 0, 256);
+
+									mbstowcs(loctextWindowParameters.activeLoctext->labelTable.stringTable.strings[currentStr].string, text, 2048);
+									strncpy(loctextWindowParameters.activeLoctext->labelTable.tagTable.tags[currentStr].val, tag, strlen(tag));
+
+									loctextWindowParameters.activeLoctext->labelTable.stringTable.infoEntries[currentStr].hash = hash;
+
+									loctextWindowParameters.activeLoctext->labelTable.tagTable.infoEntries[currentStr].id = hash;
+
+									loctextWindowParameters.activeLoctext->labelTable.posTable.entries[currentStr] = hash;
+
+									if (isCurrentlyReadingComment) {
+										isCurrentlyReadingComment = false;
+										loctextWindowParameters.activeLoctext->labelTable.commentTable.entries[tiedComment].id = hash;
+									}
+								}
+							}
+
+							printf("Num of Text Entries %d\n", strCount + 1);
+							printf("Num of Comment Entries %d\n", commentCount);
+							loctextWindowParameters.ready = true;
+						}
+						fclose(data);
+
+						NFD_FreePathU8(outPath);
+					}
+				}
 				if (ImGui::MenuItem("Export", NULL, false, clearActive)) {
 					nfdu8char_t* outPath;
 					nfdu8filteritem_t filters[1] = { { "Setup Information File", "inf" } };
@@ -93,7 +219,7 @@ void DisplayLoctextEditorBaseWindow() {
 					unsigned short idx = 0;
 
 					// Check if the position table is present. If it is, get the value from that. If not then fallback on the tag table entries.
-					if (loctextWindowParameters.activeLoctext->labelTable.header.positionTableOffset != 0) {
+					if (loctextWindowParameters.activeLoctext->usesPos) {
 						idx = loctextWindowParameters.activeLoctext->labelTable.posTable.entries[i];
 					}
 					else {
@@ -109,7 +235,7 @@ void DisplayLoctextEditorBaseWindow() {
 					//Buffer for the text.
 					char conv[2048];
 
-					if (loctextWindowParameters.activeLoctext->labelTable.header.tagTableOffset != 0 && loctextWindowParameters.activeLoctext->IsHashConnectedToTag(idx)) {
+					if (loctextWindowParameters.activeLoctext->usesTags && loctextWindowParameters.activeLoctext->IsHashConnectedToTag(idx)) {
 						if (ImGui::TreeNode(loctextWindowParameters.activeLoctext->labelTable.tagTable.tags[loctextWindowParameters.activeLoctext->GetIdxOfConnectedTag(idx)].val)) {
 							//int total = WideCharToMultiByte(CP_UTF8, WC_COMPOSITECHECK, loctextWindowParameters.activeLoctext->labelTable.stringTable.strings[loctextWindowParameters.activeLoctext->GetIdxOfConnectedString(idx)].string, -1, conv, 2048, NULL, NULL);
 							size_t total = wcstombs(conv, loctextWindowParameters.activeLoctext->labelTable.stringTable.strings[loctextWindowParameters.activeLoctext->GetIdxOfConnectedString(idx)].string, 2048);

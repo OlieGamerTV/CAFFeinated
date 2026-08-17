@@ -48,6 +48,7 @@ static unsigned char* GetRawImageData_Banjo(char* data, int width, int height, i
 static ImFont* LoadResourceFont(int resourceName, const wchar_t* resourceType, float extraSize);
 
 int mainWindowCode();
+void drawWindow();
 void readOtherSupportedFile(int type);
 
 //Base Window
@@ -259,4 +260,5 @@ struct ImGuiGarageWindow {
 
 //GLFW
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
+void window_refresh_callback(GLFWwindow* window);
 void processInput(GLFWwindow* window);

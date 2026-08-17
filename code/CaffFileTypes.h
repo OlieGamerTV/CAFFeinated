@@ -181,7 +181,7 @@ public:
 	}
 
 	int GetIdxOfConnectedComment(unsigned short id) {
-		if (labelTable.header.commentTableOffset == 0) return -2;
+		if (!usesComments) return -2;
 
 		for (int i = 0; i < labelTable.commentTable.header.totalCount; i++) {
 			if (labelTable.commentTable.entries[i].id == id) return i;
@@ -199,7 +199,7 @@ public:
 	}
 
 	bool IsIdxConnectedToComment(unsigned short id) {
-		if (labelTable.header.commentTableOffset == 0) return false;
+		if (!usesComments) return false;
 
 		for (int i = 0; i < labelTable.commentTable.header.totalCount; i++) {
 			if (labelTable.commentTable.entries[i].id == id) return true;

@@ -29,6 +29,7 @@
 #include <atomic>
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
+#include <GLFW/glfw3native.h>
 #include <nfd.h>
 #include <nfd_glfw3.h>
 #include <squish.h>
@@ -72,11 +73,6 @@
 // Xbox-specific stuff
 #include "xbox_texture.h"
 #include "xenon_texture.h"
-
-#define GLFW_EXPOSE_NATIVE_WIN32
-#define GLFW_EXPOSE_NATIVE_WGL
-#define GLFW_NATIVE_INCLUDE_NONE
-#include <GLFW/glfw3native.h>
 
 // The Vehicle Editor Window
 #ifndef VEHICLE_WINDOW
@@ -178,11 +174,15 @@ int main() {
 /// <returns></returns>
 int mainWindowCode() {
 	glfwInit();
+
+	// Establish all our window hints.
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+	glfwWindowHint(GLFW_SCALE_TO_MONITOR, GLFW_TRUE);
+	glfwWindowHint(GLFW_DOUBLEBUFFER, GLFW_TRUE);
 
-	// Set the locale
+	// Set the locale, this is needed for the wide-char/multi-byte conversions.
 	setlocale(LC_ALL, "en_US.UTF-8");
 
 	float main_scale = ImGui_ImplGlfw_GetContentScaleForMonitor(glfwGetPrimaryMonitor()); // Valid on GLFW 3.3+ only
@@ -214,8 +214,6 @@ int mainWindowCode() {
 	}
 
 	glViewport(0, 0, 1280 * main_scale, 800 * main_scale);
-
-	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 
 	// Setup Dear ImGui context
 	IMGUI_CHECKVERSION();
@@ -254,36 +252,27 @@ int mainWindowCode() {
 	ImGui::GetStyle().FontSizeBase = 13.f;
 	ImGui::GetStyle().FontScaleDpi = main_scale;
 
+	// Setup some callbacks
+	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
+	glfwSetWindowRefreshCallback(window, window_refresh_callback);
+
 	// The main loop
 	while (!glfwWindowShouldClose(window))
 	{
 		try {
 			processInput(window);
-
-			glfwSwapBuffers(window);
 			glfwPollEvents();
 
-			ImGui_ImplOpenGL3_NewFrame();
-			ImGui_ImplGlfw_NewFrame();
-
-			// To accomodate for different display scaling settings
-			main_scale = ImGui_ImplGlfw_GetContentScaleForWindow(window);
-			ImGui::GetStyle().FontScaleDpi = main_scale;
-
-			ImGui::NewFrame();
-
-			buildBaseImGuiWindow();
-			buildTitleBar();
-
-			// Rendering
-			glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-			glClear(GL_COLOR_BUFFER_BIT);
-			// (Your code clears your framebuffer, renders your other stuff etc.)
-			ImGui::Render();
-			ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+			drawWindow();
+			glfwSwapBuffers(window);
 		}
-		catch (int e) {
-
+		catch (std::exception e) {
+			printf("An error occured in the window.\n%s\n", e.what());
+			glfwSetWindowShouldClose(window, true);
+		}
+		catch (...) {
+			printf("An unknown error occured in the executable.\n");
+			glfwSetWindowShouldClose(window, true);
 		}
 	}
 
@@ -297,7 +286,31 @@ int mainWindowCode() {
 	disposeAndCloseActiveFile();
 
 	glfwTerminate();
-	return 0;
+	return errno;
+}
+
+/// <summary>
+/// Contains the code needed to render the window.
+/// </summary>
+void drawWindow() {
+	ImGui_ImplOpenGL3_NewFrame();
+	ImGui_ImplGlfw_NewFrame();
+
+	// To accomodate for different display scaling settings
+	float main_scale = ImGui_ImplGlfw_GetContentScaleForWindow(window);
+	ImGui::GetStyle().FontScaleDpi = main_scale;
+
+	ImGui::NewFrame();
+
+	buildBaseImGuiWindow();
+	buildTitleBar();
+
+	// Rendering
+	glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+	glClear(GL_COLOR_BUFFER_BIT);
+	// (Your code clears your framebuffer, renders your other stuff etc.)
+	ImGui::Render();
+	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 }
 
 // ImGui Windows
@@ -1137,10 +1150,20 @@ void displayBundleInfo() {
 		//ImGui::Text("Bundle Compression Status: %s", (bundleFile.V36Bundle->header.compression == 1 ? "Compressed" : "Uncompressed"));
 		ImGui::Spacing();
 		ImGui::SeparatorText("Bundle Sections");
-		ImGui::Text("Section Table - Uncompressed Size: %d", bundleFile.V36Bundle->header.sectionTableUncompedSize);
-		ImGui::Text("Section Table - Compressed Size: %d", bundleFile.V36Bundle->header.sectionTableCompedSize);
-		ImGui::Text("File Table - Uncompressed Size: %d", bundleFile.V36Bundle->header.fileTableCompedSize);
-		ImGui::Text("File Table - Compressed Size: %d", bundleFile.V36Bundle->header.fileTableUncompedSize);
+		if (bundleFile.V36Bundle->header.sectionTableCompedSize == bundleFile.V36Bundle->header.sectionTableUncompedSize) {
+			ImGui::Text("Section Table - Total Size: %d", bundleFile.V36Bundle->header.sectionTableUncompedSize);
+		}
+		else {
+			ImGui::Text("Section Table - Uncomped/Comped Sizes: %d/%d", bundleFile.V36Bundle->header.sectionTableUncompedSize, bundleFile.V36Bundle->header.sectionTableCompedSize);
+		}
+
+		if (bundleFile.V36Bundle->header.fileTableCompedSize == bundleFile.V36Bundle->header.fileTableUncompedSize) {
+			ImGui::Text("File Table - Total Size: %d", bundleFile.V36Bundle->header.fileTableUncompedSize);
+		}
+		else {
+			ImGui::Text("File Table - Uncomped/Comped Size: %d", bundleFile.V36Bundle->header.fileTableCompedSize, bundleFile.V36Bundle->header.fileTableUncompedSize);
+		}
+		
 		ImGui::Spacing();
 		ImGui::Text("Available Section(s): {");
 		for (int i = 0; i < bundleFile.V36Bundle->header.numSectionTypes; i++) {
@@ -5175,6 +5198,14 @@ static GLFWimage LoadResourceImageToGLFWImage(int resourceName, const wchar_t* r
 void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {
 	glViewport(0, 0, width, height);
+}
+
+void window_refresh_callback(GLFWwindow* window)
+{
+	drawWindow();
+
+	glfwSwapBuffers(window);
+	glFinish();
 }
 
 void processInput(GLFWwindow* window)

@@ -626,7 +626,7 @@ void Loctext::ExportToFileRaw(char* fileName) {
 		return;
 	}
 
-	if (labelTable.header.tagTableOffset == 0) {
+	if (!usesTags) {
 		for (int i = 0; i < labelTable.stringTable.header.totalCount; i++) {
 
 			char fullStr[4096];
@@ -641,12 +641,12 @@ void Loctext::ExportToFileRaw(char* fileName) {
 		}
 	}
 
-	if (labelTable.header.tagTableOffset != 0) {
+	if (usesTags) {
 		for (int i = 0; i < labelTable.tagTable.header.totalCount; i++) {
 			unsigned short idx = 0;
 
 			// Check if the position table is present. If it is, get the value from that. If not then fallback on the tag table entries.
-			if (labelTable.header.positionTableOffset != 0) {
+			if (usesPos) {
 				idx = labelTable.posTable.entries[i];
 			}
 			else {
@@ -926,6 +926,17 @@ void Loctext::WriteLoctext(char* filename) {
 		if (usesComments) {
 			fwrite(&commentTableSize, 4, 1, writeStrm);
 			fwrite(&labelTable.commentTable.header.totalCount, 4, 1, writeStrm);
+
+			int commentOffs = 0;
+
+			for (int i = 0; i < labelTable.commentTable.header.totalCount; i++) {
+				fwrite(&labelTable.commentTable.entries[i].unk1, 1, 1, writeStrm);
+				fwrite(&labelTable.commentTable.entries[i].id, 2, 1, writeStrm);
+				fwrite(&labelTable.commentTable.entries[i].unk2, 1, 1, writeStrm);
+				fwrite(&commentOffs, 4, 1, writeStrm);
+
+				commentOffs += strlen(labelTable.commentTable.comments[i].val) + 1;
+			}
 			for (int i = 0; i < labelTable.commentTable.header.totalCount; i++) {
 				fwrite(&labelTable.commentTable.comments[i].val, 1, strlen(labelTable.commentTable.comments[i].val) + 1, writeStrm);
 			}
