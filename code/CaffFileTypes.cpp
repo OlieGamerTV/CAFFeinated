@@ -276,11 +276,11 @@ void Loctext::ReadLabelData() {
 	int32_t dataOffs = 0;
 	int32_t dataSize = 6;
 	
-	if (strstr(labelTable.header.magic, LOCTEXT_LSBL)) {
+	if (labelTable.header.magic[0] == LOCTEXT_LSBL[0] && labelTable.header.magic[1] == LOCTEXT_LSBL[1] && labelTable.header.magic[2] == LOCTEXT_LSBL[2] && labelTable.header.magic[3] == LOCTEXT_LSBL[3]) {
 		endianness = SRC_ENDIANLITTLE;
 	}
 
-	if (strstr(labelTable.header.magic, LOCTEXT_LBSL)) {
+	if (labelTable.header.magic[0] == LOCTEXT_LBSL[0] && labelTable.header.magic[1] == LOCTEXT_LBSL[1] && labelTable.header.magic[2] == LOCTEXT_LBSL[2] && labelTable.header.magic[3] == LOCTEXT_LBSL[3]) {
 		endianness = SRC_ENDIANBIG;
 	}
 

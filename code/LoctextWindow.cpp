@@ -229,7 +229,7 @@ void DisplayLoctextEditorBaseWindow() {
 					// Check if there is any comment tied to this IDX.
 					if (loctextWindowParameters.activeLoctext->IsIdxConnectedToComment(idx)) {
 						// Slight cheat to get around in-text formatting.
-						ImGui::Text("%s", loctextWindowParameters.activeLoctext->labelTable.commentTable.comments[loctextWindowParameters.activeLoctext->GetIdxOfConnectedComment(idx)].val);
+						ImGui::TextDisabled("%s", loctextWindowParameters.activeLoctext->labelTable.commentTable.comments[loctextWindowParameters.activeLoctext->GetIdxOfConnectedComment(idx)].val);
 					}
 
 					//Buffer for the text.

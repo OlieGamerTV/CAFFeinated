@@ -1130,7 +1130,11 @@ void displayFileInfo(float barHeight) {
 
 void displayBundleInfo() {
 	char filename[256];
+#if _WIN32
 	char* end = strrchr(currentFileName, '\\');
+#else
+	char* end = strrchr(currentFileName, '/');
+#endif
 	int32_t strLen = strlen(currentFileName);
 	int32_t remainLeft = strLen - (end - currentFileName);
 
@@ -1178,7 +1182,11 @@ void displayBundleInfo() {
 
 void displayBundleV31Info() {
 	char filename[256];
+#if _WIN32
 	char* end = strrchr(currentFileName, '\\');
+#else
+	char* end = strrchr(currentFileName, '/');
+#endif
 	int32_t strLen = strlen(currentFileName);
 	int32_t remainLeft = strLen - (end - currentFileName);
 
@@ -1204,7 +1212,11 @@ void displayBundleV31Info() {
 
 void displayStreamBundleInfo() {
 	char filename[256];
+#if _WIN32
 	char* end = strrchr(currentFileName, '\\');
+#else
+	char* end = strrchr(currentFileName, '/');
+#endif
 	int32_t strLen = strlen(currentFileName);
 	int32_t remainLeft = strLen - (end - currentFileName);
 
@@ -1237,7 +1249,11 @@ void displayStreamBundleInfo() {
 
 void displayGhoulBundleInfo() {
 	char filename[256];
+#if _WIN32
 	char* end = strrchr(currentFileName, '\\');
+#else
+	char* end = strrchr(currentFileName, '/');
+#endif
 	int32_t strLen = strlen(currentFileName);
 	int32_t remainLeft = strLen - (end - currentFileName);
 
@@ -1264,7 +1280,11 @@ void displayGhoulBundleInfo() {
 
 void displayGhoulDemandInfo() {
 	char filename[256];
+#if _WIN32
 	char* end = strrchr(currentFileName, '\\');
+#else
+	char* end = strrchr(currentFileName, '/');
+#endif
 	int32_t strLen = strlen(currentFileName);
 	int32_t remainLeft = strLen - (end - currentFileName);
 
@@ -1293,7 +1313,11 @@ void displayGhoulDemandInfo() {
 
 void displayRPKInfo() {
 	char filename[256];
+#if _WIN32
 	char* end = strrchr(currentFileName, '\\');
+#else
+	char* end = strrchr(currentFileName, '/');
+#endif
 	int32_t strLen = strlen(currentFileName);
 	int32_t remainLeft = strLen - (end - currentFileName);
 
@@ -1766,7 +1790,11 @@ void displayActiveBundleV31Property() {
 
 
 	char filename[256];
+#if _WIN32
 	char* end = strrchr(currentFileName, '\\');
+#else
+	char* end = strrchr(currentFileName, '/');
+#endif
 	int32_t strLen = strlen(currentFileName);
 	int32_t remainLeft = strLen - (end - currentFileName);
 
@@ -2114,7 +2142,11 @@ void displayActiveBundleV26Property() {
 	ImGui::PopID();
 
 	char filename[256];
+#if _WIN32
 	char* end = strrchr(currentFileName, '\\');
+#else
+	char* end = strrchr(currentFileName, '/');
+#endif
 	int32_t strLen = strlen(currentFileName);
 	int32_t remainLeft = strLen - (end - currentFileName);
 
