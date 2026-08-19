@@ -1,45 +1,46 @@
 #pragma once
+#include <cstdint>
 
-static const int NORMAL_GAME_FLAG_COUNT = 0x719;
-static const int GLOBAL_GAME_FLAG_COUNT = 0x112;
-static const int VOLATILE_GAME_FLAG_COUNT = 0x2;
+static const int32_t NORMAL_GAME_FLAG_COUNT = 0x719;
+static const int32_t GLOBAL_GAME_FLAG_COUNT = 0x112;
+static const int32_t VOLATILE_GAME_FLAG_COUNT = 0x2;
 
-static const int DATA_START = 0x28;
-const unsigned int SAVE_PREFIX1 = 0x48E19A3F;
-const unsigned int SAVE_PREFIX2 = 0xE17A5440;
+static const int32_t DATA_START = 0x28;
+const int32_t SAVE_PREFIX1 = 0x48E19A3F;
+const int32_t SAVE_PREFIX2 = 0xE17A5440;
 
 struct BitFlag {
-	int value;
+	uint32_t value;
 
-	bool isFlagSet(int pos) {
+	bool isFlagSet(int32_t pos) {
 
 	}
 };
 
 struct SaveData {
 	float unk1;
-	int unk2;
+	int32_t unk2;
 
-	int gameFlagNormalByteCount;
-	int gameFlagGlobalByteCount;
-	int gameFlagVolatileByteCount;
-	int gameCounterCount;
-	int byteCount5;
-	int byteCount6;
+	int32_t gameFlagNormalByteCount;
+	int32_t gameFlagGlobalByteCount;
+	int32_t gameFlagVolatileByteCount;
+	int32_t gameCounterCount;
+	int32_t byteCount5;
+	int32_t byteCount6;
 
 	char* gameFlagNormalArr;
 	char* gameFlagGlobalArr;
 	char* GameFlagVolatileArr;
-	unsigned int* gameCountersArr;
+	uint32_t* gameCountersArr;
 	char* flag4Arr;
 	char* flag5Arr;
 
 	void LoadSaveFile(char* data);
 	char* CompileToDataArray();
 
-	bool GetNormalGameFlag(int idx) {
-		int remainIdx = idx % 8;
-		int flagPos = idx / 8;
+	bool GetNormalGameFlag(int32_t idx) {
+		int32_t remainIdx = idx % 8;
+		int32_t flagPos = idx / 8;
 
 		bool val = false;
 
@@ -73,13 +74,13 @@ struct SaveData {
 		return val;
 	}
 
-	void SetNormalGameFlag(bool val, int idx) {
-		int remainIdx = idx % 8;
-		int flagPos = idx / 8;
+	void SetNormalGameFlag(bool val, int32_t idx) {
+		int32_t remainIdx = idx % 8;
+		int32_t flagPos = idx / 8;
 
 		char newVal = 0;
 
-		for (int i = 0; i < 8; i++) {
+		for (int32_t i = 0; i < 8; i++) {
 			if (i == remainIdx) {
 				newVal = newVal | idx << remainIdx;
 			}
@@ -91,12 +92,12 @@ struct SaveData {
 		gameFlagNormalArr[flagPos] = newVal;
 	}
 
-	int GetGameCounter(int idx) {
+	int32_t GetGameCounter(int32_t idx) {
 		if (idx < 0 || idx >= gameCounterCount) return 0;
 		return gameCountersArr[idx];
 	}
 
-	void SetGameCounter(int val, int idx) {
+	void SetGameCounter(int32_t val, int32_t idx) {
 		if (idx < 0 || idx >= gameCounterCount) return;
 		gameCountersArr[idx] = val;
 	}

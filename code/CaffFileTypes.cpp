@@ -15,18 +15,18 @@ void Script::ReadScript(char* data) {
 		printf("Script::ReadScript() called while scriptPtr is null.\n");
 		return;
 	}
-	int pos = 0;
+	int32_t pos = 0;
 
-	int count = 0;
+	int32_t count = 0;
 
 	// First, get the entire count of entries. We need to go through all the entries first in order to get that.
-	int size = 0;
-	int type = 0xFFFFFFFF;
+	int32_t size = 0;
+	int32_t type = 0xFFFFFFFF;
 
-	int indention = 0;
+	int32_t indention = 0;
 	while (type != dbScript_Null) {
-		memcpy(&size, scriptPtr + pos, sizeof(int));
-		memcpy(&type, scriptPtr + pos + 4, sizeof(int));
+		memcpy(&size, scriptPtr + pos, sizeof(int32_t));
+		memcpy(&type, scriptPtr + pos + 4, sizeof(int32_t));
 
 		size = flipEndian(size);
 		type = flipEndian(type);
@@ -39,7 +39,7 @@ void Script::ReadScript(char* data) {
 		    }
 		}
 
-		for (int i = 0; i < indention; i++) {
+		for (int32_t i = 0; i < indention; i++) {
 			printf("\t");
 		}
 
@@ -90,12 +90,12 @@ void Script::ReadScript(char* data) {
 			case dbScript_Condition_CounterGreaterThan:
 			case dbScript_Flow_WaitOnGameFlag: {
 				char flag[0x40];
-				int compVal = 0;
+				int32_t compVal = 0;
 				memset(flag, 0, 0x40);
 
 				strncpy_s(flag, 0x40, scriptPtr + pos + 8, 0x40);
 
-				memcpy(&compVal, scriptPtr + pos + 0x48, sizeof(int));
+				memcpy(&compVal, scriptPtr + pos + 0x48, sizeof(int32_t));
 
 				compVal = flipEndian(compVal);
 
@@ -104,9 +104,9 @@ void Script::ReadScript(char* data) {
 			break;
 			case dbScript_Play_Dialog:
 			case dbScript_Execute_ScriptAsset: {
-				unsigned int aid = 0;
+				uint32_t aid = 0;
 
-				memcpy(&aid, scriptPtr + pos + 0x8, sizeof(int));
+				memcpy(&aid, scriptPtr + pos + 0x8, sizeof(int32_t));
 
 				aid = flipEndian(aid);
 
@@ -116,7 +116,7 @@ void Script::ReadScript(char* data) {
 			case dbScript_Logic_IfRandomFloatLessThanOrEqualsProb: {
 				float prob = 0;
 
-				memcpy(&prob, scriptPtr + pos + 0x8, sizeof(int));
+				memcpy(&prob, scriptPtr + pos + 0x8, sizeof(int32_t));
 
 				prob = flipEndian_f32((char*)&prob, SRC_ENDIANBIG);
 
@@ -143,10 +143,10 @@ void Loctext::ReadLoctext(char* data) {
 	loctextPtr = data;
 
 	try{
-		unsigned int MAGCHECK = 0;
-		memcpy(&MAGCHECK, loctextPtr, sizeof(int));
+		uint32_t MAGCHECK = 0;
+		memcpy(&MAGCHECK, loctextPtr, sizeof(int32_t));
 
-		int isMagic = 0;
+		int32_t isMagic = 0;
 
 		if (MAGCHECK == LOCTEXT_LBSL_MAGIC) {
 			isMagic = 1;
@@ -167,7 +167,7 @@ void Loctext::ReadLoctext(char* data) {
 		// Small hack for if a file is provided right at the magic, skip needing to deal with the initial table offsets entirely if we are.
 		if (isMagic == 0) {
 			// Really stupid hack for Goldeneye 007 (XBLA), which has a dumbass header offsetting the entire file.
-			int offs = 0;
+			int32_t offs = 0;
 			if (strcmp(loctextPtr, "text") == 0) {
 				if (strcmp(loctextPtr + 5, "02.09.05.0034") == 0) {
 					offs = 0x14;
@@ -182,15 +182,15 @@ void Loctext::ReadLoctext(char* data) {
 				}
 			}
 
-			int labelDataOffsetVar = 0;
-			int unkTableOffsetVar = 0;
-			short unkTableCountVar = 0;
-			short unk1Var = 0;
+			int32_t labelDataOffsetVar = 0;
+			int32_t unkTableOffsetVar = 0;
+			int16_t unkTableCountVar = 0;
+			int16_t unk1Var = 0;
 
-			memcpy(&labelDataOffsetVar, loctextPtr + offs, sizeof(int));
-			memcpy(&unkTableOffsetVar, loctextPtr + 4 + offs, sizeof(int));
-			memcpy(&unkTableCountVar, loctextPtr + 8 + offs, sizeof(short));
-			memcpy(&unk1Var, loctextPtr + 0xA + offs, sizeof(short));
+			memcpy(&labelDataOffsetVar, loctextPtr + offs, sizeof(int32_t));
+			memcpy(&unkTableOffsetVar, loctextPtr + 4 + offs, sizeof(int32_t));
+			memcpy(&unkTableCountVar, loctextPtr + 8 + offs, sizeof(int16_t));
+			memcpy(&unk1Var, loctextPtr + 0xA + offs, sizeof(int16_t));
 
 			labelDataOffset = flipEndian(labelDataOffsetVar);
 			unkTableOffset = flipEndian(unkTableOffsetVar);
@@ -199,7 +199,7 @@ void Loctext::ReadLoctext(char* data) {
 
 			printf("Main File - <%d %d>\n", labelDataOffset, flipEndian(labelDataOffset));
 
-			int end = SRC_ENDIANBIG;
+			int32_t end = SRC_ENDIANBIG;
 
 			if (labelDataOffset >= 4096 || labelDataOffset < 0) {
 				end = SRC_ENDIANLITTLE;
@@ -215,20 +215,20 @@ void Loctext::ReadLoctext(char* data) {
 			unknownTable.unkEntries = new UnkEntry[unkTableCount];
 			unknownTable.unkTags = new TagStr[unkTableCount];
 
-			for (int i = 0; i < unkTableCount; i++) {
-				int offset = 0;
-				short id = 0;
-				short idx = 0;
+			for (int32_t i = 0; i < unkTableCount; i++) {
+				int32_t offset = 0;
+				int16_t id = 0;
+				int16_t idx = 0;
 
 				if (end == SRC_ENDIANLITTLE) {
-					memcpy(&unknownTable.unkEntries[i].tagoffset, loctextPtr + unkTableOffset + (8 * i), sizeof(int));
-					memcpy(&unknownTable.unkEntries[i].id, loctextPtr + unkTableOffset + (8 * i) + 4, sizeof(short));
-					memcpy(&unknownTable.unkEntries[i].idx, loctextPtr + unkTableOffset + (8 * i) + 6, sizeof(short));
+					memcpy(&unknownTable.unkEntries[i].tagoffset, loctextPtr + unkTableOffset + (8 * i), sizeof(int32_t));
+					memcpy(&unknownTable.unkEntries[i].id, loctextPtr + unkTableOffset + (8 * i) + 4, sizeof(int16_t));
+					memcpy(&unknownTable.unkEntries[i].idx, loctextPtr + unkTableOffset + (8 * i) + 6, sizeof(int16_t));
 				}
 				else if (end == SRC_ENDIANBIG) {
-					memcpy(&offset, loctextPtr + unkTableOffset + (8 * i), sizeof(int));
-					memcpy(&id, loctextPtr + unkTableOffset + (8 * i) + 4, sizeof(short));
-					memcpy(&idx, loctextPtr + unkTableOffset + (8 * i) + 6, sizeof(short));
+					memcpy(&offset, loctextPtr + unkTableOffset + (8 * i), sizeof(int32_t));
+					memcpy(&id, loctextPtr + unkTableOffset + (8 * i) + 4, sizeof(int16_t));
+					memcpy(&idx, loctextPtr + unkTableOffset + (8 * i) + 6, sizeof(int16_t));
 
 					unknownTable.unkEntries[i].tagoffset = flipEndian(offset);
 					unknownTable.unkEntries[i].id = flipEndian(id);
@@ -239,7 +239,7 @@ void Loctext::ReadLoctext(char* data) {
 			}
 		}
 
-		memcpy(&labelTable.header.magic, loctextPtr + labelDataOffset, sizeof(int));
+		memcpy(&labelTable.header.magic, loctextPtr + labelDataOffset, sizeof(int32_t));
 
 		// The only section that cares about endianness is the label data. Every other section treats it as little endian.
 		ReadLabelData();
@@ -262,7 +262,7 @@ void Loctext::ReadLoctext(char* data) {
 			ReadPosData();
 		}
 	}
-	catch(int ex){
+	catch(int32_t ex){
 		printf("Loctext::ReadLoctext() - An error occured while reading the loctext file.\n");
 	}
 }
@@ -273,8 +273,8 @@ void Loctext::ReadLabelData() {
 		return;
 	}
 
-	int dataOffs = 0;
-	int dataSize = 6;
+	int32_t dataOffs = 0;
+	int32_t dataSize = 6;
 	
 	if (strstr(labelTable.header.magic, LOCTEXT_LSBL)) {
 		endianness = SRC_ENDIANLITTLE;
@@ -292,30 +292,30 @@ void Loctext::ReadLabelData() {
 	printf("Loctext::ReadLabelData() ENDIAN - %08x.\n", labelTable.header.magic);
 
 	if (endianness == SRC_ENDIANLITTLE) {
-		memcpy(&labelTable.header.headerLen, loctextPtr + labelDataOffset + 4 + dataOffs, sizeof(int));
-		memcpy(&labelTable.header.entryTotal, loctextPtr + labelDataOffset + 8 + dataOffs, sizeof(int));
-		memcpy(&labelTable.header.stringTableOffset, loctextPtr + labelDataOffset + 0xC + dataOffs, sizeof(int));
-		memcpy(&labelTable.header.tagTableOffset, loctextPtr + labelDataOffset + 0x10 + dataOffs, sizeof(int));
-		memcpy(&labelTable.header.commentTableOffset, loctextPtr + labelDataOffset + 0x14 + dataOffs, sizeof(int));
-		memcpy(&labelTable.header.positionTableOffset, loctextPtr + labelDataOffset + 0x18 + dataOffs, sizeof(int));
+		memcpy(&labelTable.header.headerLen, loctextPtr + labelDataOffset + 4 + dataOffs, sizeof(int32_t));
+		memcpy(&labelTable.header.entryTotal, loctextPtr + labelDataOffset + 8 + dataOffs, sizeof(int32_t));
+		memcpy(&labelTable.header.stringTableOffset, loctextPtr + labelDataOffset + 0xC + dataOffs, sizeof(int32_t));
+		memcpy(&labelTable.header.tagTableOffset, loctextPtr + labelDataOffset + 0x10 + dataOffs, sizeof(int32_t));
+		memcpy(&labelTable.header.commentTableOffset, loctextPtr + labelDataOffset + 0x14 + dataOffs, sizeof(int32_t));
+		memcpy(&labelTable.header.positionTableOffset, loctextPtr + labelDataOffset + 0x18 + dataOffs, sizeof(int32_t));
 
-		memcpy(&labelTable.stringTable.header.totalSectLen, loctextPtr + labelDataOffset + labelTable.header.stringTableOffset, sizeof(int));
-		memcpy(&labelTable.stringTable.header.totalCount, loctextPtr + labelDataOffset + labelTable.header.stringTableOffset + 4, sizeof(int));
+		memcpy(&labelTable.stringTable.header.totalSectLen, loctextPtr + labelDataOffset + labelTable.header.stringTableOffset, sizeof(int32_t));
+		memcpy(&labelTable.stringTable.header.totalCount, loctextPtr + labelDataOffset + labelTable.header.stringTableOffset + 4, sizeof(int32_t));
 	}
 	else if (endianness == SRC_ENDIANBIG) {
-		int unk1; // 0x4
-		int unk2; // 0x8
-		int stringTableOffset; // 0xC
-		int tagTableOffset; // 0x10
-		int commentTableOffset; // 0x14
-		int unkTableOffset; // 0x18
+		int32_t unk1; // 0x4
+		int32_t unk2; // 0x8
+		int32_t stringTableOffset; // 0xC
+		int32_t tagTableOffset; // 0x10
+		int32_t commentTableOffset; // 0x14
+		int32_t unkTableOffset; // 0x18
 
-		memcpy(&unk1, loctextPtr + labelDataOffset + 4 + dataOffs, sizeof(int));
-		memcpy(&unk2, loctextPtr + labelDataOffset + 8 + dataOffs, sizeof(int));
-		memcpy(&stringTableOffset, loctextPtr + labelDataOffset + 0xC + dataOffs, sizeof(int));
-		memcpy(&tagTableOffset, loctextPtr + labelDataOffset + 0x10 + dataOffs, sizeof(int));
-		memcpy(&commentTableOffset, loctextPtr + labelDataOffset + 0x14 + dataOffs, sizeof(int));
-		memcpy(&unkTableOffset, loctextPtr + labelDataOffset + 0x18 + dataOffs, sizeof(int));
+		memcpy(&unk1, loctextPtr + labelDataOffset + 4 + dataOffs, sizeof(int32_t));
+		memcpy(&unk2, loctextPtr + labelDataOffset + 8 + dataOffs, sizeof(int32_t));
+		memcpy(&stringTableOffset, loctextPtr + labelDataOffset + 0xC + dataOffs, sizeof(int32_t));
+		memcpy(&tagTableOffset, loctextPtr + labelDataOffset + 0x10 + dataOffs, sizeof(int32_t));
+		memcpy(&commentTableOffset, loctextPtr + labelDataOffset + 0x14 + dataOffs, sizeof(int32_t));
+		memcpy(&unkTableOffset, loctextPtr + labelDataOffset + 0x18 + dataOffs, sizeof(int32_t));
 
 		labelTable.header.headerLen = flipEndian(unk1);
 		labelTable.header.entryTotal = flipEndian(unk2);
@@ -324,11 +324,11 @@ void Loctext::ReadLabelData() {
 		labelTable.header.commentTableOffset = flipEndian(commentTableOffset);
 		labelTable.header.positionTableOffset = flipEndian(unkTableOffset);
 
-		int totalSectLenVar = 0;
-		int totalStrings = 0;
+		int32_t totalSectLenVar = 0;
+		int32_t totalStrings = 0;
 
-		memcpy(&totalSectLenVar, loctextPtr + labelDataOffset + labelTable.header.stringTableOffset + dataOffs, sizeof(int));
-		memcpy(&totalStrings, loctextPtr + labelDataOffset + labelTable.header.stringTableOffset + 4 + dataOffs, sizeof(int));
+		memcpy(&totalSectLenVar, loctextPtr + labelDataOffset + labelTable.header.stringTableOffset + dataOffs, sizeof(int32_t));
+		memcpy(&totalStrings, loctextPtr + labelDataOffset + labelTable.header.stringTableOffset + 4 + dataOffs, sizeof(int32_t));
 
 		labelTable.stringTable.header.totalSectLen = flipEndian(totalSectLenVar);
 		labelTable.stringTable.header.totalCount = flipEndian(totalStrings);
@@ -337,39 +337,39 @@ void Loctext::ReadLabelData() {
 	printf("Loctext File: %d %d %d %d\n", labelTable.header.stringTableOffset, labelTable.header.tagTableOffset, labelTable.header.commentTableOffset, labelTable.header.positionTableOffset);
 	printf("String Table: %d %d\n", labelTable.stringTable.header.totalSectLen, labelTable.stringTable.header.totalCount);
 
-	int strInfoOffset = labelDataOffset + labelTable.header.stringTableOffset + 8;
+	int32_t strInfoOffset = labelDataOffset + labelTable.header.stringTableOffset + 8;
 	labelTable.stringTable.infoEntries = new LabelStrInfoEntry[labelTable.stringTable.header.totalCount];
 	labelTable.stringTable.strings = new LabelStrEntry[labelTable.stringTable.header.totalCount];
-	for (int i = 0; i < labelTable.stringTable.header.totalCount; i++) {
+	for (int32_t i = 0; i < labelTable.stringTable.header.totalCount; i++) {
 		if (endianness == SRC_ENDIANLITTLE) {
-			memcpy(&labelTable.stringTable.infoEntries[i].hash, loctextPtr + strInfoOffset + (6 * i), sizeof(short));
-			memcpy(&labelTable.stringTable.infoEntries[i].offset, loctextPtr + strInfoOffset + (6 * i) + 2, sizeof(int));
+			memcpy(&labelTable.stringTable.infoEntries[i].hash, loctextPtr + strInfoOffset + (6 * i), sizeof(int16_t));
+			memcpy(&labelTable.stringTable.infoEntries[i].offset, loctextPtr + strInfoOffset + (6 * i) + 2, sizeof(int32_t));
 		}
 		else if (endianness == SRC_ENDIANBIG) {
-			unsigned short strUnkVal; // 0x0 (Only on LSB2 W/ no Tag Table.)
-			unsigned short strIdVar; // 0x0 (0x2 on LSB2 W/ no Tag Table.)
-			int strOffsetVar; // 0x2 (0x4 on LSB2 W/ no Tag Table.)
+			uint16_t strUnkVal; // 0x0 (Only on LSB2 W/ no Tag Table.)
+			uint16_t strIdVar; // 0x0 (0x2 on LSB2 W/ no Tag Table.)
+			int32_t strOffsetVar; // 0x2 (0x4 on LSB2 W/ no Tag Table.)
 
 			/*if (labelTable.header.magic == LOCTEXT_LSBTWO_MAGIC) {
 				if (labelTable.header.tagTableOffset == 0) {
-					memcpy(&strUnkVal, loctextPtr + strInfoOffset + (dataSize * i), sizeof(short));
-					memcpy(&strIdVar, loctextPtr + strInfoOffset + (dataSize * i) + 2, sizeof(short));
-					memcpy(&strOffsetVar, loctextPtr + strInfoOffset + (dataSize * i) + 4, sizeof(int));
+					memcpy(&strUnkVal, loctextPtr + strInfoOffset + (dataSize * i), sizeof(int16_t));
+					memcpy(&strIdVar, loctextPtr + strInfoOffset + (dataSize * i) + 2, sizeof(int16_t));
+					memcpy(&strOffsetVar, loctextPtr + strInfoOffset + (dataSize * i) + 4, sizeof(int32_t));
 
 					labelTable.stringTable.infoEntries[i].unk = flipEndian(strUnkVal);
 				}
 				else {
-					memcpy(&strIdVar, loctextPtr + strInfoOffset + (dataSize * i), sizeof(short));
-					memcpy(&strOffsetVar, loctextPtr + strInfoOffset + (dataSize * i) + 2, sizeof(int));
+					memcpy(&strIdVar, loctextPtr + strInfoOffset + (dataSize * i), sizeof(int16_t));
+					memcpy(&strOffsetVar, loctextPtr + strInfoOffset + (dataSize * i) + 2, sizeof(int32_t));
 				}
 			}
 			else {
-				memcpy(&strIdVar, loctextPtr + strInfoOffset + (dataSize * i), sizeof(short));
-				memcpy(&strOffsetVar, loctextPtr + strInfoOffset + (dataSize * i) + 2, sizeof(int));
+				memcpy(&strIdVar, loctextPtr + strInfoOffset + (dataSize * i), sizeof(int16_t));
+				memcpy(&strOffsetVar, loctextPtr + strInfoOffset + (dataSize * i) + 2, sizeof(int32_t));
 			}*/
 
-			memcpy(&strIdVar, loctextPtr + strInfoOffset + (dataSize * i), sizeof(short));
-			memcpy(&strOffsetVar, loctextPtr + strInfoOffset + (dataSize * i) + 2, sizeof(int));
+			memcpy(&strIdVar, loctextPtr + strInfoOffset + (dataSize * i), sizeof(int16_t));
+			memcpy(&strOffsetVar, loctextPtr + strInfoOffset + (dataSize * i) + 2, sizeof(int32_t));
 
 			labelTable.stringTable.infoEntries[i].hash = flipEndian(strIdVar);
 			labelTable.stringTable.infoEntries[i].offset = flipEndian(strOffsetVar);
@@ -377,15 +377,15 @@ void Loctext::ReadLabelData() {
 		printf("String Table Entry %d: %04x %d\n", i, labelTable.stringTable.infoEntries[i].hash, labelTable.stringTable.infoEntries[i].offset);
 	}
 
-	int strEntryBaseOffset = strInfoOffset + ((labelTable.stringTable.header.totalCount + 1) * dataSize);
-	for (int i = 0; i < labelTable.stringTable.header.totalCount; i++) {
-		int offs = strEntryBaseOffset + (labelTable.stringTable.infoEntries[i].offset * 2);
+	int32_t strEntryBaseOffset = strInfoOffset + ((labelTable.stringTable.header.totalCount + 1) * dataSize);
+	for (int32_t i = 0; i < labelTable.stringTable.header.totalCount; i++) {
+		int32_t offs = strEntryBaseOffset + (labelTable.stringTable.infoEntries[i].offset * 2);
 
 		wchar_t chr = 0xFFFF;
-		int idx = 0;
+		int32_t idx = 0;
 		if (endianness == SRC_ENDIANLITTLE) {
 			while (chr != '\0') {
-				memcpy(&chr, loctextPtr + offs, sizeof(wchar_t));
+				memcpy(&chr, loctextPtr + offs, sizeof(char16_t));
 				labelTable.stringTable.strings[i].string[idx] = chr;
 				idx++;
 				offs += 2;
@@ -393,14 +393,14 @@ void Loctext::ReadLabelData() {
 		}
 		else if (endianness == SRC_ENDIANBIG) {
 			while (chr != '\0') {
-				memcpy(&chr, loctextPtr + offs, sizeof(wchar_t));
+				memcpy(&chr, loctextPtr + offs, sizeof(char16_t));
 				labelTable.stringTable.strings[i].string[idx] = flipEndian(chr);
 				idx++;
 				offs += 2;
 			}
 		}
 
-		printf(u8"String Table Val %d: (Length %d) %ws", i, (int)wcslen(labelTable.stringTable.strings[i].string), labelTable.stringTable.strings[i].string);
+		printf(u8"String Table Val %d: (Length %d) %ws", i, (int32_t)wcslen(labelTable.stringTable.strings[i].string), labelTable.stringTable.strings[i].string);
 		printf("\n");
 	}
 }
@@ -418,27 +418,27 @@ void Loctext::ReadTagData() {
 	}*/
 
 	if (doesEndMatter) {
-		int totalSectLen = 0;
-		int totalCount = 0;
+		int32_t totalSectLen = 0;
+		int32_t totalCount = 0;
 
 		// Endianness doesn't matter here for some reason. All games that use this always treats these as little endian.
-		memcpy(&totalSectLen, loctextPtr + labelDataOffset + labelTable.header.tagTableOffset, sizeof(int));
-		memcpy(&totalCount, loctextPtr + labelDataOffset + labelTable.header.tagTableOffset + 4, sizeof(int));
+		memcpy(&totalSectLen, loctextPtr + labelDataOffset + labelTable.header.tagTableOffset, sizeof(int32_t));
+		memcpy(&totalCount, loctextPtr + labelDataOffset + labelTable.header.tagTableOffset + 4, sizeof(int32_t));
 
 		labelTable.tagTable.header.totalSectLen = flipEndian(totalSectLen);
 		labelTable.tagTable.header.totalCount = flipEndian(totalCount);
 
-		int tagTableOffset = labelDataOffset + labelTable.header.tagTableOffset + 8;
+		int32_t tagTableOffset = labelDataOffset + labelTable.header.tagTableOffset + 8;
 		labelTable.tagTable.infoEntries = new TagInfo[labelTable.tagTable.header.totalCount];
 		labelTable.tagTable.tags = new TagStr[labelTable.tagTable.header.totalCount];
-		for (int i = 0; i < labelTable.tagTable.header.totalCount; i++) {
-			short id = 0;
-			short unk1 = 0;
-			int offset = 0;
+		for (int32_t i = 0; i < labelTable.tagTable.header.totalCount; i++) {
+			int16_t id = 0;
+			int16_t unk1 = 0;
+			int32_t offset = 0;
 
-			memcpy(&id, loctextPtr + tagTableOffset + (8 * i), sizeof(short));
-			memcpy(&unk1, loctextPtr + tagTableOffset + (8 * i) + 2, sizeof(short));
-			memcpy(&offset, loctextPtr + tagTableOffset + (8 * i) + 4, sizeof(int));
+			memcpy(&id, loctextPtr + tagTableOffset + (8 * i), sizeof(int16_t));
+			memcpy(&unk1, loctextPtr + tagTableOffset + (8 * i) + 2, sizeof(int16_t));
+			memcpy(&offset, loctextPtr + tagTableOffset + (8 * i) + 4, sizeof(int32_t));
 
 			labelTable.tagTable.infoEntries[i].id = flipEndian(id);
 			labelTable.tagTable.infoEntries[i].unk1 = flipEndian(unk1);
@@ -447,9 +447,9 @@ void Loctext::ReadTagData() {
 			printf("Tag Table Entry %d: %04x %04x %d\n", i, labelTable.tagTable.infoEntries[i].id, labelTable.tagTable.infoEntries[i].unk1, labelTable.tagTable.infoEntries[i].offset);
 		}
 
-		int strEntryBaseOffset = tagTableOffset + (labelTable.stringTable.header.totalCount * 8);
-		for (int i = 0; i < labelTable.tagTable.header.totalCount; i++) {
-			int offs = strEntryBaseOffset + labelTable.tagTable.infoEntries[i].offset;
+		int32_t strEntryBaseOffset = tagTableOffset + (labelTable.stringTable.header.totalCount * 8);
+		for (int32_t i = 0; i < labelTable.tagTable.header.totalCount; i++) {
+			int32_t offs = strEntryBaseOffset + labelTable.tagTable.infoEntries[i].offset;
 
 			strcpy(labelTable.tagTable.tags[i].val, loctextPtr + offs);
 
@@ -458,24 +458,24 @@ void Loctext::ReadTagData() {
 	}
 	else {
 		// Endianness doesn't matter here for some reason. All games that use this always treats these as little endian.
-		memcpy(&labelTable.tagTable.header.totalSectLen, loctextPtr + labelDataOffset + labelTable.header.tagTableOffset, sizeof(int));
-		memcpy(&labelTable.tagTable.header.totalCount, loctextPtr + labelDataOffset + labelTable.header.tagTableOffset + 4, sizeof(int));
+		memcpy(&labelTable.tagTable.header.totalSectLen, loctextPtr + labelDataOffset + labelTable.header.tagTableOffset, sizeof(int32_t));
+		memcpy(&labelTable.tagTable.header.totalCount, loctextPtr + labelDataOffset + labelTable.header.tagTableOffset + 4, sizeof(int32_t));
 
-		int tagTableOffset = labelDataOffset + labelTable.header.tagTableOffset + 8;
+		int32_t tagTableOffset = labelDataOffset + labelTable.header.tagTableOffset + 8;
 		labelTable.tagTable.infoEntries = new TagInfo[labelTable.tagTable.header.totalCount];
 		labelTable.tagTable.tags = new TagStr[labelTable.tagTable.header.totalCount];
-		for (int i = 0; i < labelTable.tagTable.header.totalCount; i++) {
+		for (int32_t i = 0; i < labelTable.tagTable.header.totalCount; i++) {
 
-			memcpy(&labelTable.tagTable.infoEntries[i].id, loctextPtr + tagTableOffset + (8 * i), sizeof(short));
-			memcpy(&labelTable.tagTable.infoEntries[i].unk1, loctextPtr + tagTableOffset + (8 * i) + 2, sizeof(short));
-			memcpy(&labelTable.tagTable.infoEntries[i].offset, loctextPtr + tagTableOffset + (8 * i) + 4, sizeof(int));
+			memcpy(&labelTable.tagTable.infoEntries[i].id, loctextPtr + tagTableOffset + (8 * i), sizeof(int16_t));
+			memcpy(&labelTable.tagTable.infoEntries[i].unk1, loctextPtr + tagTableOffset + (8 * i) + 2, sizeof(int16_t));
+			memcpy(&labelTable.tagTable.infoEntries[i].offset, loctextPtr + tagTableOffset + (8 * i) + 4, sizeof(int32_t));
 
 			printf("Tag Table Entry %d: %04x %04x %d\n", i, labelTable.tagTable.infoEntries[i].id, labelTable.tagTable.infoEntries[i].unk1, labelTable.tagTable.infoEntries[i].offset);
 		}
 
-		int strEntryBaseOffset = tagTableOffset + (labelTable.stringTable.header.totalCount * 8);
-		for (int i = 0; i < labelTable.tagTable.header.totalCount; i++) {
-			int offs = strEntryBaseOffset + labelTable.tagTable.infoEntries[i].offset;
+		int32_t strEntryBaseOffset = tagTableOffset + (labelTable.stringTable.header.totalCount * 8);
+		for (int32_t i = 0; i < labelTable.tagTable.header.totalCount; i++) {
+			int32_t offs = strEntryBaseOffset + labelTable.tagTable.infoEntries[i].offset;
 
 			strcpy(labelTable.tagTable.tags[i].val, loctextPtr + offs);
 
@@ -497,26 +497,26 @@ void Loctext::ReadCommentData() {
 	}*/
 
 	if (doesEndMatter) {
-		int sectLen = 0;
-		int totalCount = 0;
+		int32_t sectLen = 0;
+		int32_t totalCount = 0;
 
-		memcpy(&sectLen, loctextPtr + labelDataOffset + labelTable.header.commentTableOffset, sizeof(int));
-		memcpy(&totalCount, loctextPtr + labelDataOffset + labelTable.header.commentTableOffset + 4, sizeof(int));
+		memcpy(&sectLen, loctextPtr + labelDataOffset + labelTable.header.commentTableOffset, sizeof(int32_t));
+		memcpy(&totalCount, loctextPtr + labelDataOffset + labelTable.header.commentTableOffset + 4, sizeof(int32_t));
 
 		labelTable.commentTable.header.totalSectLen = flipEndian(sectLen);
 		labelTable.commentTable.header.totalCount = flipEndian(totalCount);
 
-		int commentTableOffset = labelDataOffset + labelTable.header.commentTableOffset + 8;
+		int32_t commentTableOffset = labelDataOffset + labelTable.header.commentTableOffset + 8;
 		labelTable.commentTable.entries = new CommentEntry[labelTable.commentTable.header.totalCount];
 		labelTable.commentTable.comments = new CommentStr[labelTable.commentTable.header.totalCount];
 
-		for (int i = 0; i < labelTable.commentTable.header.totalCount; i++) {
-			short id = 0;
-			int offset = 0;
+		for (int32_t i = 0; i < labelTable.commentTable.header.totalCount; i++) {
+			int16_t id = 0;
+			int32_t offset = 0;
 			memcpy(&labelTable.commentTable.entries[i].unk1, loctextPtr + commentTableOffset + (8 * i), sizeof(char));
-			memcpy(&id, loctextPtr + commentTableOffset + (8 * i) + 1, sizeof(short));
+			memcpy(&id, loctextPtr + commentTableOffset + (8 * i) + 1, sizeof(int16_t));
 			memcpy(&labelTable.commentTable.entries[i].unk2, loctextPtr + commentTableOffset + (8 * i) + 3, sizeof(char));
-			memcpy(&offset, loctextPtr + commentTableOffset + (8 * i) + 4, sizeof(int));
+			memcpy(&offset, loctextPtr + commentTableOffset + (8 * i) + 4, sizeof(int32_t));
 
 			labelTable.commentTable.entries[i].id = flipEndian(id);
 			labelTable.commentTable.entries[i].offset = flipEndian(offset);
@@ -524,9 +524,9 @@ void Loctext::ReadCommentData() {
 			printf("Comment Table Entry %d: %04x %d\n", i, labelTable.commentTable.entries[i].id, labelTable.commentTable.entries[i].offset);
 		}
 
-		int strEntryBaseOffset = commentTableOffset + (labelTable.commentTable.header.totalCount * 8);
-		for (int i = 0; i < labelTable.commentTable.header.totalCount; i++) {
-			int offs = strEntryBaseOffset + labelTable.commentTable.entries[i].offset;
+		int32_t strEntryBaseOffset = commentTableOffset + (labelTable.commentTable.header.totalCount * 8);
+		for (int32_t i = 0; i < labelTable.commentTable.header.totalCount; i++) {
+			int32_t offs = strEntryBaseOffset + labelTable.commentTable.entries[i].offset;
 
 			strcpy(labelTable.commentTable.comments[i].val, loctextPtr + offs);
 
@@ -535,25 +535,25 @@ void Loctext::ReadCommentData() {
 	}
 	else {
 		// Endianness doesn't matter here for some reason. All games that use this always treats these as little endian.
-		memcpy(&labelTable.commentTable.header.totalSectLen, loctextPtr + labelDataOffset + labelTable.header.commentTableOffset, sizeof(int));
-		memcpy(&labelTable.commentTable.header.totalCount, loctextPtr + labelDataOffset + labelTable.header.commentTableOffset + 4, sizeof(int));
+		memcpy(&labelTable.commentTable.header.totalSectLen, loctextPtr + labelDataOffset + labelTable.header.commentTableOffset, sizeof(int32_t));
+		memcpy(&labelTable.commentTable.header.totalCount, loctextPtr + labelDataOffset + labelTable.header.commentTableOffset + 4, sizeof(int32_t));
 
-		int commentTableOffset = labelDataOffset + labelTable.header.commentTableOffset + 8;
+		int32_t commentTableOffset = labelDataOffset + labelTable.header.commentTableOffset + 8;
 		labelTable.commentTable.entries = new CommentEntry[labelTable.commentTable.header.totalCount];
 		labelTable.commentTable.comments = new CommentStr[labelTable.commentTable.header.totalCount];
 
-		for (int i = 0; i < labelTable.commentTable.header.totalCount; i++) {
+		for (int32_t i = 0; i < labelTable.commentTable.header.totalCount; i++) {
 			memcpy(&labelTable.commentTable.entries[i].unk1, loctextPtr + commentTableOffset + (8 * i), sizeof(char));
-			memcpy(&labelTable.commentTable.entries[i].id, loctextPtr + commentTableOffset + (8 * i) + 1, sizeof(short));
+			memcpy(&labelTable.commentTable.entries[i].id, loctextPtr + commentTableOffset + (8 * i) + 1, sizeof(int16_t));
 			memcpy(&labelTable.commentTable.entries[i].unk2, loctextPtr + commentTableOffset + (8 * i) + 3, sizeof(char));
-			memcpy(&labelTable.commentTable.entries[i].offset, loctextPtr + commentTableOffset + (8 * i) + 4, sizeof(int));
+			memcpy(&labelTable.commentTable.entries[i].offset, loctextPtr + commentTableOffset + (8 * i) + 4, sizeof(int32_t));
 
 			printf("Comment Table Entry %d: %04x %d\n", i, labelTable.commentTable.entries[i].id, labelTable.commentTable.entries[i].offset);
 		}
 
-		int strEntryBaseOffset = commentTableOffset + (labelTable.commentTable.header.totalCount * 8);
-		for (int i = 0; i < labelTable.commentTable.header.totalCount; i++) {
-			int offs = strEntryBaseOffset + labelTable.commentTable.entries[i].offset;
+		int32_t strEntryBaseOffset = commentTableOffset + (labelTable.commentTable.header.totalCount * 8);
+		for (int32_t i = 0; i < labelTable.commentTable.header.totalCount; i++) {
+			int32_t offs = strEntryBaseOffset + labelTable.commentTable.entries[i].offset;
 
 			strcpy(labelTable.commentTable.comments[i].val, loctextPtr + offs);
 
@@ -575,21 +575,21 @@ void Loctext::ReadPosData() {
 	}*/
 
 	if (doesEndMatter) {
-		int sectLen = 0;
-		int totalCount = 0;
+		int32_t sectLen = 0;
+		int32_t totalCount = 0;
 
-		memcpy(&sectLen, loctextPtr + labelDataOffset + labelTable.header.positionTableOffset, sizeof(int));
-		memcpy(&totalCount, loctextPtr + labelDataOffset + labelTable.header.positionTableOffset + 4, sizeof(int));
+		memcpy(&sectLen, loctextPtr + labelDataOffset + labelTable.header.positionTableOffset, sizeof(int32_t));
+		memcpy(&totalCount, loctextPtr + labelDataOffset + labelTable.header.positionTableOffset + 4, sizeof(int32_t));
 
 		labelTable.posTable.header.totalSectLen = flipEndian(sectLen);
 		labelTable.posTable.header.totalCount = flipEndian(totalCount);
 
-		int posTableOffset = labelDataOffset + labelTable.header.positionTableOffset + 8;
-		labelTable.posTable.entries = new unsigned short[labelTable.posTable.header.totalCount];
-		for (int i = 0; i < labelTable.tagTable.header.totalCount; i++) {
-			unsigned short posIdVar = 0; // 0x0
+		int32_t posTableOffset = labelDataOffset + labelTable.header.positionTableOffset + 8;
+		labelTable.posTable.entries = new uint16_t[labelTable.posTable.header.totalCount];
+		for (int32_t i = 0; i < labelTable.tagTable.header.totalCount; i++) {
+			uint16_t posIdVar = 0; // 0x0
 
-			memcpy(&posIdVar, loctextPtr + posTableOffset + (2 * i), sizeof(short));
+			memcpy(&posIdVar, loctextPtr + posTableOffset + (2 * i), sizeof(int16_t));
 
 			labelTable.posTable.entries[i] = flipEndian(posIdVar);
 
@@ -598,15 +598,15 @@ void Loctext::ReadPosData() {
 	}
 	else {
 		// Endianness doesn't matter here for some reason. All games that use this always treats these as little endian.
-		memcpy(&labelTable.posTable.header.totalSectLen, loctextPtr + labelDataOffset + labelTable.header.positionTableOffset, sizeof(int));
-		memcpy(&labelTable.posTable.header.totalCount, loctextPtr + labelDataOffset + labelTable.header.positionTableOffset + 4, sizeof(int));
+		memcpy(&labelTable.posTable.header.totalSectLen, loctextPtr + labelDataOffset + labelTable.header.positionTableOffset, sizeof(int32_t));
+		memcpy(&labelTable.posTable.header.totalCount, loctextPtr + labelDataOffset + labelTable.header.positionTableOffset + 4, sizeof(int32_t));
 
-		int posTableOffset = labelDataOffset + labelTable.header.positionTableOffset + 8;
-		labelTable.posTable.entries = new unsigned short[labelTable.posTable.header.totalCount];
-		for (int i = 0; i < labelTable.tagTable.header.totalCount; i++) {
-			unsigned short posIdVar = 0; // 0x0
+		int32_t posTableOffset = labelDataOffset + labelTable.header.positionTableOffset + 8;
+		labelTable.posTable.entries = new uint16_t[labelTable.posTable.header.totalCount];
+		for (int32_t i = 0; i < labelTable.tagTable.header.totalCount; i++) {
+			uint16_t posIdVar = 0; // 0x0
 
-			memcpy(&posIdVar, loctextPtr + posTableOffset + (2 * i), sizeof(short));
+			memcpy(&posIdVar, loctextPtr + posTableOffset + (2 * i), sizeof(int16_t));
 
 			labelTable.posTable.entries[i] = posIdVar;
 
@@ -616,7 +616,7 @@ void Loctext::ReadPosData() {
 }
 
 void Loctext::ExportToFileRaw(char* fileName) {
-	int position = 0;
+	int32_t position = 0;
 
 	std::ofstream is(fileName, std::ios_base::trunc);
 
@@ -627,13 +627,13 @@ void Loctext::ExportToFileRaw(char* fileName) {
 	}
 
 	if (!usesTags) {
-		for (int i = 0; i < labelTable.stringTable.header.totalCount; i++) {
+		for (int32_t i = 0; i < labelTable.stringTable.header.totalCount; i++) {
 
 			char fullStr[4096];
 
 			char conv[2048];
 
-			int total = wcstombs(conv, labelTable.stringTable.strings[i].string, 2048);
+			int32_t total = wcstombs(conv, labelTable.stringTable.strings[i].string, 2048);
 
 			sprintf(fullStr, "%s\n", conv);
 
@@ -642,8 +642,8 @@ void Loctext::ExportToFileRaw(char* fileName) {
 	}
 
 	if (usesTags) {
-		for (int i = 0; i < labelTable.tagTable.header.totalCount; i++) {
-			unsigned short idx = 0;
+		for (int32_t i = 0; i < labelTable.tagTable.header.totalCount; i++) {
+			uint16_t idx = 0;
 
 			// Check if the position table is present. If it is, get the value from that. If not then fallback on the tag table entries.
 			if (usesPos) {
@@ -668,7 +668,7 @@ void Loctext::ExportToFileRaw(char* fileName) {
 
 				char conv[2048];
 
-				int total = wcstombs(conv, labelTable.stringTable.strings[GetIdxOfConnectedString(idx)].string, 2048);
+				int32_t total = wcstombs(conv, labelTable.stringTable.strings[GetIdxOfConnectedString(idx)].string, 2048);
 				
 				// If a comment doesn't have a new line, apply one before we write our next value. Otherwise just write as normal.
 				if (hasCommentGotNewLine) {
@@ -691,16 +691,16 @@ void Loctext::ExportToFileRaw(char* fileName) {
 	is.close();
 }
 
-void Loctext::ExportToFileBank(char* fileName, int endianness) {
-	int bufSize = 0xC + labelTable.header.headerLen + labelTable.stringTable.header.totalSectLen + labelTable.tagTable.header.totalSectLen + labelTable.commentTable.header.totalSectLen + labelTable.posTable.header.totalSectLen;
+void Loctext::ExportToFileBank(char* fileName, int32_t endianness) {
+	int32_t bufSize = 0xC + labelTable.header.headerLen + labelTable.stringTable.header.totalSectLen + labelTable.tagTable.header.totalSectLen + labelTable.commentTable.header.totalSectLen + labelTable.posTable.header.totalSectLen;
 
 	char* buffer = (char*)malloc(bufSize);
-	int position = 0;
+	int32_t position = 0;
 
 	std::ofstream is(fileName, std::ios_base::trunc);
 
-	for (int i = 0; i < labelTable.tagTable.header.totalCount; i++) {
-		unsigned short idx = 0;
+	for (int32_t i = 0; i < labelTable.tagTable.header.totalCount; i++) {
+		uint16_t idx = 0;
 
 		// Check if the position table is present. If it is, get the value from that. If not then fallback on the tag table entries.
 		if (labelTable.header.positionTableOffset != 0) {
@@ -725,7 +725,7 @@ void Loctext::ExportToFileBank(char* fileName, int endianness) {
 
 			char conv[2048];
 
-			int total = wcstombs(conv, labelTable.stringTable.strings[GetIdxOfConnectedString(idx)].string, 2048);
+			int32_t total = wcstombs(conv, labelTable.stringTable.strings[GetIdxOfConnectedString(idx)].string, 2048);
 
 			// If a comment doesn't have a new line, apply one before we write our next value. Otherwise just write as normal.
 			if (hasCommentGotNewLine) {
@@ -748,7 +748,7 @@ void Loctext::ExportToFileBank(char* fileName, int endianness) {
 }
 
 void Loctext::WriteLoctext(char* filename) {
-	int position = 0;
+	int32_t position = 0;
 
 	FILE* writeStrm = fopen(filename, "wb");
 
@@ -758,8 +758,8 @@ void Loctext::WriteLoctext(char* filename) {
 	}
 
 	try {
-		int CVal = 0xC;
-		int zeroVal = 0;
+		int32_t CVal = 0xC;
+		int32_t zeroVal = 0;
 
 		if (startEndianness == SRC_ENDIANLITTLE) {
 			fwrite(&CVal, 4, 1, writeStrm);
@@ -773,18 +773,18 @@ void Loctext::WriteLoctext(char* filename) {
 			fwrite(&zeroVal, 4, 1, writeStrm);
 		}
 
-		int lableTableSize = 16 + (labelTable.stringTable.header.totalCount * 6);
-		int tagTableSize = 8 + (labelTable.tagTable.header.totalCount * 8);
-		int commentTableSize = 8 + (labelTable.commentTable.header.totalCount * 8);
-		int posTableSize = 8 + (labelTable.posTable.header.totalCount * 2);
+		int32_t lableTableSize = 16 + (labelTable.stringTable.header.totalCount * 6);
+		int32_t tagTableSize = 8 + (labelTable.tagTable.header.totalCount * 8);
+		int32_t commentTableSize = 8 + (labelTable.commentTable.header.totalCount * 8);
+		int32_t posTableSize = 8 + (labelTable.posTable.header.totalCount * 2);
 
 		//Precalculate some offs.
-		for (int i = 0; i < labelTable.stringTable.header.totalCount; i++) {
+		for (int32_t i = 0; i < labelTable.stringTable.header.totalCount; i++) {
 			lableTableSize += (wcslen(labelTable.stringTable.strings[i].string) * 2) + 2;
 		}
 
 		if (usesTags) {
-			for (int i = 0; i < labelTable.tagTable.header.totalCount; i++) {
+			for (int32_t i = 0; i < labelTable.tagTable.header.totalCount; i++) {
 				tagTableSize += strlen(labelTable.tagTable.tags[i].val) + 1;
 			}
 		}
@@ -793,7 +793,7 @@ void Loctext::WriteLoctext(char* filename) {
 		}
 
 		if (usesComments) {
-			for (int i = 0; i < labelTable.commentTable.header.totalCount; i++) {
+			for (int32_t i = 0; i < labelTable.commentTable.header.totalCount; i++) {
 				commentTableSize += strlen(labelTable.commentTable.comments[i].val) + 1;
 			}
 		}
@@ -803,12 +803,12 @@ void Loctext::WriteLoctext(char* filename) {
 
 		if (!usesPos) posTableSize = 0;
 
-		int locBankHeadSize = 0x1C;
-		int locEntryCount = 4;
-		int lableTableOffs = 0x1C;
-		int tagTableOffs = 0;
-		int commentTableOffs = 0;
-		int posTableOffs = 0;
+		int32_t locBankHeadSize = 0x1C;
+		int32_t locEntryCount = 4;
+		int32_t lableTableOffs = 0x1C;
+		int32_t tagTableOffs = 0;
+		int32_t commentTableOffs = 0;
+		int32_t posTableOffs = 0;
 
 		if (usesTags) {
 			tagTableOffs = locBankHeadSize + lableTableSize;
@@ -854,15 +854,15 @@ void Loctext::WriteLoctext(char* filename) {
 		}
 		else {
 			lableTableSize = flipEndian(lableTableSize);
-			int strTableTotalCount = flipEndian(labelTable.stringTable.header.totalCount);
+			int32_t strTableTotalCount = flipEndian(labelTable.stringTable.header.totalCount);
 			fwrite(&lableTableSize, 4, 1, writeStrm);
 			fwrite(&strTableTotalCount, 4, 1, writeStrm);
 		}
 
-		int currOffset = 0;
-		for (int i = 0; i < labelTable.stringTable.header.totalCount; i++) {
-			short hash = labelTable.stringTable.infoEntries[i].hash;
-			int offset = currOffset;
+		int32_t currOffset = 0;
+		for (int32_t i = 0; i < labelTable.stringTable.header.totalCount; i++) {
+			int16_t hash = labelTable.stringTable.infoEntries[i].hash;
+			int32_t offset = currOffset;
 
 			if (endianness == SRC_ENDIANLITTLE) {
 				fwrite(&hash, 2, 1, writeStrm);
@@ -878,30 +878,30 @@ void Loctext::WriteLoctext(char* filename) {
 			currOffset += wcslen(labelTable.stringTable.strings[i].string) + 1;
 		}
 
-		short blankHash = -1;
+		int16_t blankHash = -1;
 		// Insert a blank entry
 		fwrite(&blankHash, 2, 1, writeStrm);
 		if (endianness == SRC_ENDIANLITTLE) {
 			fwrite(&currOffset, 4, 1, writeStrm);
 		}
 		else {
-			int lastOffs = flipEndian(currOffset);
+			int32_t lastOffs = flipEndian(currOffset);
 			fwrite(&lastOffs, 4, 1, writeStrm);
 		}
 		
-		for (int i = 0; i < labelTable.stringTable.header.totalCount; i++) {
+		for (int32_t i = 0; i < labelTable.stringTable.header.totalCount; i++) {
 			if (endianness == SRC_ENDIANLITTLE) {
 				fwrite(&labelTable.stringTable.strings[i].string, 2, wcslen(labelTable.stringTable.strings[i].string) + 1, writeStrm);
 			}
 			else {
-				for (int c = 0; c < wcslen(labelTable.stringTable.strings[i].string) + 1; c++) {
+				for (int32_t c = 0; c < wcslen(labelTable.stringTable.strings[i].string) + 1; c++) {
 					wchar_t val = flipEndian(labelTable.stringTable.strings[i].string[c]);
 					fwrite(&val, 2, 1, writeStrm);
 				}
 			}
 		}
 
-		short blank = 0;
+		int16_t blank = 0;
 		fwrite(&blank, 2, 1, writeStrm);
 
 		//Tag Table Time
@@ -910,14 +910,14 @@ void Loctext::WriteLoctext(char* filename) {
 			fwrite(&labelTable.tagTable.header.totalCount, 4, 1, writeStrm);
 
 			currOffset = 0;
-			for (int i = 0; i < labelTable.tagTable.header.totalCount; i++) {
+			for (int32_t i = 0; i < labelTable.tagTable.header.totalCount; i++) {
 				fwrite(&labelTable.tagTable.infoEntries[i].id, 2, 1, writeStrm);
 				fwrite(&labelTable.tagTable.infoEntries[i].unk1, 2, 1, writeStrm);
 				fwrite(&currOffset, 4, 1, writeStrm);
 				currOffset += strlen(labelTable.tagTable.tags[i].val) + 1;
 			}
 
-			for (int i = 0; i < labelTable.tagTable.header.totalCount; i++) {
+			for (int32_t i = 0; i < labelTable.tagTable.header.totalCount; i++) {
 				fwrite(&labelTable.tagTable.tags[i].val, 1, strlen(labelTable.tagTable.tags[i].val) + 1, writeStrm);
 			}
 		}
@@ -927,9 +927,9 @@ void Loctext::WriteLoctext(char* filename) {
 			fwrite(&commentTableSize, 4, 1, writeStrm);
 			fwrite(&labelTable.commentTable.header.totalCount, 4, 1, writeStrm);
 
-			int commentOffs = 0;
+			int32_t commentOffs = 0;
 
-			for (int i = 0; i < labelTable.commentTable.header.totalCount; i++) {
+			for (int32_t i = 0; i < labelTable.commentTable.header.totalCount; i++) {
 				fwrite(&labelTable.commentTable.entries[i].unk1, 1, 1, writeStrm);
 				fwrite(&labelTable.commentTable.entries[i].id, 2, 1, writeStrm);
 				fwrite(&labelTable.commentTable.entries[i].unk2, 1, 1, writeStrm);
@@ -937,7 +937,7 @@ void Loctext::WriteLoctext(char* filename) {
 
 				commentOffs += strlen(labelTable.commentTable.comments[i].val) + 1;
 			}
-			for (int i = 0; i < labelTable.commentTable.header.totalCount; i++) {
+			for (int32_t i = 0; i < labelTable.commentTable.header.totalCount; i++) {
 				fwrite(&labelTable.commentTable.comments[i].val, 1, strlen(labelTable.commentTable.comments[i].val) + 1, writeStrm);
 			}
 		}
@@ -947,7 +947,7 @@ void Loctext::WriteLoctext(char* filename) {
 			fwrite(&posTableSize, 4, 1, writeStrm);
 			fwrite(&labelTable.posTable.header.totalCount, 4, 1, writeStrm);
 
-			for (int i = 0; i < labelTable.posTable.header.totalCount; i++) {
+			for (int32_t i = 0; i < labelTable.posTable.header.totalCount; i++) {
 				fwrite(&labelTable.posTable.entries[i], 2, 1, writeStrm);
 			}
 		}
@@ -966,10 +966,10 @@ void LocTwo::ReadLoctext(char* data) {
 	loctextPtr = data;
 
 	try {
-		unsigned int MAGCHECK = 0;
-		memcpy(&MAGCHECK, loctextPtr, sizeof(int));
+		uint32_t MAGCHECK = 0;
+		memcpy(&MAGCHECK, loctextPtr, sizeof(int32_t));
 
-		int isMagic = 0;
+		int32_t isMagic = 0;
 
 		if (MAGCHECK == LOCTEXT_LSBTWO_MAGIC) {
 			isMagic = 1;
@@ -982,20 +982,20 @@ void LocTwo::ReadLoctext(char* data) {
 		// Small hack for if a file is provided right at the magic, skip needing to deal with the initial table offsets entirely if we are.
 		if (isMagic == 0) {
 			// Really stupid hack for Goldeneye 007 (XBLA), which has a dumbass header offsetting the entire file.
-			int offs = 0;
+			int32_t offs = 0;
 			if (strcmp(loctextPtr, "text") == 0) {
 				offs = 0x14;
 			}
 
-			int labelDataOffsetVar = 0;
-			int unkTableOffsetVar = 0;
-			short unkTableCountVar = 0;
-			short unk1Var = 0;
+			int32_t labelDataOffsetVar = 0;
+			int32_t unkTableOffsetVar = 0;
+			int16_t unkTableCountVar = 0;
+			int16_t unk1Var = 0;
 
-			memcpy(&labelDataOffsetVar, loctextPtr + offs, sizeof(int));
-			memcpy(&unkTableOffsetVar, loctextPtr + 4 + offs, sizeof(int));
-			memcpy(&unkTableCountVar, loctextPtr + 8 + offs, sizeof(short));
-			memcpy(&unk1Var, loctextPtr + 0xA + offs, sizeof(short));
+			memcpy(&labelDataOffsetVar, loctextPtr + offs, sizeof(int32_t));
+			memcpy(&unkTableOffsetVar, loctextPtr + 4 + offs, sizeof(int32_t));
+			memcpy(&unkTableCountVar, loctextPtr + 8 + offs, sizeof(int16_t));
+			memcpy(&unk1Var, loctextPtr + 0xA + offs, sizeof(int16_t));
 
 			labelDataOffset = flipEndian(labelDataOffsetVar);
 			unkTableOffset = flipEndian(unkTableOffsetVar);
@@ -1004,7 +1004,7 @@ void LocTwo::ReadLoctext(char* data) {
 
 			printf("Main File - <%d %d>\n", labelDataOffset, flipEndian(labelDataOffset));
 
-			int end = SRC_ENDIANBIG;
+			int32_t end = SRC_ENDIANBIG;
 
 			if (labelDataOffset >= 4096 || labelDataOffset < 0) {
 				end = SRC_ENDIANLITTLE;
@@ -1020,20 +1020,20 @@ void LocTwo::ReadLoctext(char* data) {
 			unknownTable.unkEntries = new UnkEntry[unkTableCount];
 			unknownTable.unkTags = new TagStr[unkTableCount];
 
-			for (int i = 0; i < unkTableCount; i++) {
-				int offset = 0;
-				short id = 0;
-				short idx = 0;
+			for (int32_t i = 0; i < unkTableCount; i++) {
+				int32_t offset = 0;
+				int16_t id = 0;
+				int16_t idx = 0;
 
 				if (end == SRC_ENDIANLITTLE) {
-					memcpy(&unknownTable.unkEntries[i].tagoffset, loctextPtr + unkTableOffset + (8 * i), sizeof(int));
-					memcpy(&unknownTable.unkEntries[i].id, loctextPtr + unkTableOffset + (8 * i) + 4, sizeof(short));
-					memcpy(&unknownTable.unkEntries[i].idx, loctextPtr + unkTableOffset + (8 * i) + 6, sizeof(short));
+					memcpy(&unknownTable.unkEntries[i].tagoffset, loctextPtr + unkTableOffset + (8 * i), sizeof(int32_t));
+					memcpy(&unknownTable.unkEntries[i].id, loctextPtr + unkTableOffset + (8 * i) + 4, sizeof(int16_t));
+					memcpy(&unknownTable.unkEntries[i].idx, loctextPtr + unkTableOffset + (8 * i) + 6, sizeof(int16_t));
 				}
 				else if (end == SRC_ENDIANBIG) {
-					memcpy(&offset, loctextPtr + unkTableOffset + (8 * i), sizeof(int));
-					memcpy(&id, loctextPtr + unkTableOffset + (8 * i) + 4, sizeof(short));
-					memcpy(&idx, loctextPtr + unkTableOffset + (8 * i) + 6, sizeof(short));
+					memcpy(&offset, loctextPtr + unkTableOffset + (8 * i), sizeof(int32_t));
+					memcpy(&id, loctextPtr + unkTableOffset + (8 * i) + 4, sizeof(int16_t));
+					memcpy(&idx, loctextPtr + unkTableOffset + (8 * i) + 6, sizeof(int16_t));
 
 					unknownTable.unkEntries[i].tagoffset = flipEndian(offset);
 					unknownTable.unkEntries[i].id = flipEndian(id);
@@ -1044,7 +1044,7 @@ void LocTwo::ReadLoctext(char* data) {
 			}
 		}
 
-		memcpy(&labelTable.header.magic, loctextPtr + labelDataOffset, sizeof(int));
+		memcpy(&labelTable.header.magic, loctextPtr + labelDataOffset, sizeof(int32_t));
 
 		// The only section that cares about endianness is the label data. Every other section treats it as little endian.
 		ReadLabelData();
@@ -1063,7 +1063,7 @@ void LocTwo::ReadLoctext(char* data) {
 			ReadPosData();
 		}
 	}
-	catch (int ex) {
+	catch (int32_t ex) {
 		printf("Loctext::ReadLoctext() - An error occured while reading the loctext file.\n");
 	}
 }
@@ -1074,9 +1074,9 @@ void LocTwo::ReadLabelData() {
 		return;
 	}
 
-	int endiannes = -1;
-	int dataOffs = 0;
-	int dataSize = 6;
+	int32_t endiannes = -1;
+	int32_t dataOffs = 0;
+	int32_t dataSize = 6;
 
 	if (labelTable.header.magic == LOCTEXT_LBSL_MAGIC) {
 		endiannes = SRC_ENDIANLITTLE;
@@ -1110,30 +1110,30 @@ void LocTwo::ReadLabelData() {
 	printf("Loctext::ReadLabelData() ENDIAN - %08x.\n", labelTable.header.magic);
 
 	if (endiannes == SRC_ENDIANLITTLE) {
-		memcpy(&labelTable.header.headerLen, loctextPtr + labelDataOffset + 4 + dataOffs, sizeof(int));
-		memcpy(&labelTable.header.entryTotal, loctextPtr + labelDataOffset + 8 + dataOffs, sizeof(int));
-		memcpy(&labelTable.header.stringTableOffset, loctextPtr + labelDataOffset + 0xC + dataOffs, sizeof(int));
-		memcpy(&labelTable.header.tagTableOffset, loctextPtr + labelDataOffset + 0x10 + dataOffs, sizeof(int));
-		memcpy(&labelTable.header.commentTableOffset, loctextPtr + labelDataOffset + 0x14 + dataOffs, sizeof(int));
-		memcpy(&labelTable.header.positionTableOffset, loctextPtr + labelDataOffset + 0x18 + dataOffs, sizeof(int));
+		memcpy(&labelTable.header.headerLen, loctextPtr + labelDataOffset + 4 + dataOffs, sizeof(int32_t));
+		memcpy(&labelTable.header.entryTotal, loctextPtr + labelDataOffset + 8 + dataOffs, sizeof(int32_t));
+		memcpy(&labelTable.header.stringTableOffset, loctextPtr + labelDataOffset + 0xC + dataOffs, sizeof(int32_t));
+		memcpy(&labelTable.header.tagTableOffset, loctextPtr + labelDataOffset + 0x10 + dataOffs, sizeof(int32_t));
+		memcpy(&labelTable.header.commentTableOffset, loctextPtr + labelDataOffset + 0x14 + dataOffs, sizeof(int32_t));
+		memcpy(&labelTable.header.positionTableOffset, loctextPtr + labelDataOffset + 0x18 + dataOffs, sizeof(int32_t));
 
-		memcpy(&labelTable.stringTable.header.totalSectLen, loctextPtr + labelDataOffset + labelTable.header.stringTableOffset, sizeof(int));
-		memcpy(&labelTable.stringTable.header.totalCount, loctextPtr + labelDataOffset + labelTable.header.stringTableOffset + 4, sizeof(int));
+		memcpy(&labelTable.stringTable.header.totalSectLen, loctextPtr + labelDataOffset + labelTable.header.stringTableOffset, sizeof(int32_t));
+		memcpy(&labelTable.stringTable.header.totalCount, loctextPtr + labelDataOffset + labelTable.header.stringTableOffset + 4, sizeof(int32_t));
 	}
 	else if (endiannes == SRC_ENDIANBIG) {
-		int unk1; // 0x4
-		int unk2; // 0x8
-		int stringTableOffset; // 0xC
-		int tagTableOffset; // 0x10
-		int commentTableOffset; // 0x14
-		int unkTableOffset; // 0x18
+		int32_t unk1; // 0x4
+		int32_t unk2; // 0x8
+		int32_t stringTableOffset; // 0xC
+		int32_t tagTableOffset; // 0x10
+		int32_t commentTableOffset; // 0x14
+		int32_t unkTableOffset; // 0x18
 
-		memcpy(&unk1, loctextPtr + labelDataOffset + 4 + dataOffs, sizeof(int));
-		memcpy(&unk2, loctextPtr + labelDataOffset + 8 + dataOffs, sizeof(int));
-		memcpy(&stringTableOffset, loctextPtr + labelDataOffset + 0xC + dataOffs, sizeof(int));
-		memcpy(&tagTableOffset, loctextPtr + labelDataOffset + 0x10 + dataOffs, sizeof(int));
-		memcpy(&commentTableOffset, loctextPtr + labelDataOffset + 0x14 + dataOffs, sizeof(int));
-		memcpy(&unkTableOffset, loctextPtr + labelDataOffset + 0x18 + dataOffs, sizeof(int));
+		memcpy(&unk1, loctextPtr + labelDataOffset + 4 + dataOffs, sizeof(int32_t));
+		memcpy(&unk2, loctextPtr + labelDataOffset + 8 + dataOffs, sizeof(int32_t));
+		memcpy(&stringTableOffset, loctextPtr + labelDataOffset + 0xC + dataOffs, sizeof(int32_t));
+		memcpy(&tagTableOffset, loctextPtr + labelDataOffset + 0x10 + dataOffs, sizeof(int32_t));
+		memcpy(&commentTableOffset, loctextPtr + labelDataOffset + 0x14 + dataOffs, sizeof(int32_t));
+		memcpy(&unkTableOffset, loctextPtr + labelDataOffset + 0x18 + dataOffs, sizeof(int32_t));
 
 		labelTable.header.headerLen = flipEndian(unk1);
 		labelTable.header.entryTotal = flipEndian(unk2);
@@ -1142,11 +1142,11 @@ void LocTwo::ReadLabelData() {
 		labelTable.header.commentTableOffset = flipEndian(commentTableOffset);
 		labelTable.header.positionTableOffset = flipEndian(unkTableOffset);
 
-		int totalSectLenVar = 0;
-		int totalStrings = 0;
+		int32_t totalSectLenVar = 0;
+		int32_t totalStrings = 0;
 
-		memcpy(&totalSectLenVar, loctextPtr + labelDataOffset + labelTable.header.stringTableOffset + dataOffs, sizeof(int));
-		memcpy(&totalStrings, loctextPtr + labelDataOffset + labelTable.header.stringTableOffset + 4 + dataOffs, sizeof(int));
+		memcpy(&totalSectLenVar, loctextPtr + labelDataOffset + labelTable.header.stringTableOffset + dataOffs, sizeof(int32_t));
+		memcpy(&totalStrings, loctextPtr + labelDataOffset + labelTable.header.stringTableOffset + 4 + dataOffs, sizeof(int32_t));
 
 		labelTable.stringTable.header.totalSectLen = flipEndian(totalSectLenVar);
 		labelTable.stringTable.header.totalCount = flipEndian(totalStrings);
@@ -1155,35 +1155,35 @@ void LocTwo::ReadLabelData() {
 	printf("Loctext File: %d %d %d %d\n", labelTable.header.stringTableOffset, labelTable.header.tagTableOffset, labelTable.header.commentTableOffset, labelTable.header.positionTableOffset);
 	printf("String Table: %d %d\n", labelTable.stringTable.header.totalSectLen, labelTable.stringTable.header.totalCount);
 
-	int strInfoOffset = labelDataOffset + labelTable.header.stringTableOffset + 8;
+	int32_t strInfoOffset = labelDataOffset + labelTable.header.stringTableOffset + 8;
 	labelTable.stringTable.infoEntries = new LabelStrInfoEntry[labelTable.stringTable.header.totalCount];
 	labelTable.stringTable.strings = new LabelStrEntry[labelTable.stringTable.header.totalCount];
-	for (int i = 0; i < labelTable.stringTable.header.totalCount; i++) {
+	for (int32_t i = 0; i < labelTable.stringTable.header.totalCount; i++) {
 		if (endiannes == SRC_ENDIANLITTLE) {
-			memcpy(&labelTable.stringTable.infoEntries[i].hash, loctextPtr + strInfoOffset + (6 * i), sizeof(short));
-			memcpy(&labelTable.stringTable.infoEntries[i].offset, loctextPtr + strInfoOffset + (6 * i) + 2, sizeof(int));
+			memcpy(&labelTable.stringTable.infoEntries[i].hash, loctextPtr + strInfoOffset + (6 * i), sizeof(int16_t));
+			memcpy(&labelTable.stringTable.infoEntries[i].offset, loctextPtr + strInfoOffset + (6 * i) + 2, sizeof(int32_t));
 		}
 		else if (endiannes == SRC_ENDIANBIG) {
-			unsigned short strUnkVal; // 0x0 (Only on LSB2 W/ no Tag Table.)
-			unsigned short strIdVar; // 0x0 (0x2 on LSB2 W/ no Tag Table.)
-			int strOffsetVar; // 0x2 (0x4 on LSB2 W/ no Tag Table.)
+			uint16_t strUnkVal; // 0x0 (Only on LSB2 W/ no Tag Table.)
+			uint16_t strIdVar; // 0x0 (0x2 on LSB2 W/ no Tag Table.)
+			int32_t strOffsetVar; // 0x2 (0x4 on LSB2 W/ no Tag Table.)
 
 			if (labelTable.header.magic == LOCTEXT_LSBTWO_MAGIC) {
 				if (labelTable.header.tagTableOffset == 0) {
-					memcpy(&strUnkVal, loctextPtr + strInfoOffset + (dataSize * i), sizeof(short));
-					memcpy(&strIdVar, loctextPtr + strInfoOffset + (dataSize * i) + 2, sizeof(short));
-					memcpy(&strOffsetVar, loctextPtr + strInfoOffset + (dataSize * i) + 4, sizeof(int));
+					memcpy(&strUnkVal, loctextPtr + strInfoOffset + (dataSize * i), sizeof(int16_t));
+					memcpy(&strIdVar, loctextPtr + strInfoOffset + (dataSize * i) + 2, sizeof(int16_t));
+					memcpy(&strOffsetVar, loctextPtr + strInfoOffset + (dataSize * i) + 4, sizeof(int32_t));
 
 					labelTable.stringTable.infoEntries[i].unk = flipEndian(strUnkVal);
 				}
 				else {
-					memcpy(&strIdVar, loctextPtr + strInfoOffset + (dataSize * i), sizeof(short));
-					memcpy(&strOffsetVar, loctextPtr + strInfoOffset + (dataSize * i) + 2, sizeof(int));
+					memcpy(&strIdVar, loctextPtr + strInfoOffset + (dataSize * i), sizeof(int16_t));
+					memcpy(&strOffsetVar, loctextPtr + strInfoOffset + (dataSize * i) + 2, sizeof(int32_t));
 				}
 			}
 			else {
-				memcpy(&strIdVar, loctextPtr + strInfoOffset + (dataSize * i), sizeof(short));
-				memcpy(&strOffsetVar, loctextPtr + strInfoOffset + (dataSize * i) + 2, sizeof(int));
+				memcpy(&strIdVar, loctextPtr + strInfoOffset + (dataSize * i), sizeof(int16_t));
+				memcpy(&strOffsetVar, loctextPtr + strInfoOffset + (dataSize * i) + 2, sizeof(int32_t));
 			}
 
 			labelTable.stringTable.infoEntries[i].hash = flipEndian(strIdVar);
@@ -1192,15 +1192,15 @@ void LocTwo::ReadLabelData() {
 		printf("String Table Entry %d: %04x %d\n", i, labelTable.stringTable.infoEntries[i].hash, labelTable.stringTable.infoEntries[i].offset);
 	}
 
-	int strEntryBaseOffset = strInfoOffset + ((labelTable.stringTable.header.totalCount + 1) * dataSize);
-	for (int i = 0; i < labelTable.stringTable.header.totalCount; i++) {
-		int offs = strEntryBaseOffset + (labelTable.stringTable.infoEntries[i].offset * 2);
+	int32_t strEntryBaseOffset = strInfoOffset + ((labelTable.stringTable.header.totalCount + 1) * dataSize);
+	for (int32_t i = 0; i < labelTable.stringTable.header.totalCount; i++) {
+		int32_t offs = strEntryBaseOffset + (labelTable.stringTable.infoEntries[i].offset * 2);
 
 		wchar_t chr = 0xFFFF;
-		int idx = 0;
+		int32_t idx = 0;
 		if (endiannes == SRC_ENDIANLITTLE) {
 			while (chr != '\0') {
-				memcpy(&chr, loctextPtr + offs, sizeof(wchar_t));
+				memcpy(&chr, loctextPtr + offs, sizeof(char16_t));
 				labelTable.stringTable.strings[i].string[idx] = chr;
 				idx++;
 				offs += 2;
@@ -1208,14 +1208,14 @@ void LocTwo::ReadLabelData() {
 		}
 		else if (endiannes == SRC_ENDIANBIG) {
 			while (chr != '\0') {
-				memcpy(&chr, loctextPtr + offs, sizeof(wchar_t));
+				memcpy(&chr, loctextPtr + offs, sizeof(char16_t));
 				labelTable.stringTable.strings[i].string[idx] = flipEndian(chr);
 				idx++;
 				offs += 2;
 			}
 		}
 
-		printf(u8"String Table Val %d: (Length %d) %ws", i, (int)wcslen(labelTable.stringTable.strings[i].string), labelTable.stringTable.strings[i].string);
+		printf(u8"String Table Val %d: (Length %d) %ws", i, (int32_t)wcslen(labelTable.stringTable.strings[i].string), labelTable.stringTable.strings[i].string);
 		printf("\n");
 	}
 }
@@ -1233,27 +1233,27 @@ void LocTwo::ReadTagData() {
 	}
 
 	if (doesEndMatter) {
-		int totalSectLen = 0;
-		int totalCount = 0;
+		int32_t totalSectLen = 0;
+		int32_t totalCount = 0;
 
 		// Endianness doesn't matter here for some reason. All games that use this always treats these as little endian.
-		memcpy(&totalSectLen, loctextPtr + labelDataOffset + labelTable.header.tagTableOffset, sizeof(int));
-		memcpy(&totalCount, loctextPtr + labelDataOffset + labelTable.header.tagTableOffset + 4, sizeof(int));
+		memcpy(&totalSectLen, loctextPtr + labelDataOffset + labelTable.header.tagTableOffset, sizeof(int32_t));
+		memcpy(&totalCount, loctextPtr + labelDataOffset + labelTable.header.tagTableOffset + 4, sizeof(int32_t));
 
 		labelTable.tagTable.header.totalSectLen = flipEndian(totalSectLen);
 		labelTable.tagTable.header.totalCount = flipEndian(totalCount);
 
-		int tagTableOffset = labelDataOffset + labelTable.header.tagTableOffset + 8;
+		int32_t tagTableOffset = labelDataOffset + labelTable.header.tagTableOffset + 8;
 		labelTable.tagTable.infoEntries = new TagInfo[labelTable.tagTable.header.totalCount];
 		labelTable.tagTable.tags = new TagStr[labelTable.tagTable.header.totalCount];
-		for (int i = 0; i < labelTable.tagTable.header.totalCount; i++) {
-			short id = 0;
-			short unk1 = 0;
-			int offset = 0;
+		for (int32_t i = 0; i < labelTable.tagTable.header.totalCount; i++) {
+			int16_t id = 0;
+			int16_t unk1 = 0;
+			int32_t offset = 0;
 
-			memcpy(&id, loctextPtr + tagTableOffset + (8 * i), sizeof(short));
-			memcpy(&unk1, loctextPtr + tagTableOffset + (8 * i) + 2, sizeof(short));
-			memcpy(&offset, loctextPtr + tagTableOffset + (8 * i) + 4, sizeof(int));
+			memcpy(&id, loctextPtr + tagTableOffset + (8 * i), sizeof(int16_t));
+			memcpy(&unk1, loctextPtr + tagTableOffset + (8 * i) + 2, sizeof(int16_t));
+			memcpy(&offset, loctextPtr + tagTableOffset + (8 * i) + 4, sizeof(int32_t));
 
 			labelTable.tagTable.infoEntries[i].id = flipEndian(id);
 			labelTable.tagTable.infoEntries[i].unk1 = flipEndian(unk1);
@@ -1262,9 +1262,9 @@ void LocTwo::ReadTagData() {
 			printf("Tag Table Entry %d: %04x %04x %d\n", i, labelTable.tagTable.infoEntries[i].id, labelTable.tagTable.infoEntries[i].unk1, labelTable.tagTable.infoEntries[i].offset);
 		}
 
-		int strEntryBaseOffset = tagTableOffset + (labelTable.stringTable.header.totalCount * 8);
-		for (int i = 0; i < labelTable.tagTable.header.totalCount; i++) {
-			int offs = strEntryBaseOffset + labelTable.tagTable.infoEntries[i].offset;
+		int32_t strEntryBaseOffset = tagTableOffset + (labelTable.stringTable.header.totalCount * 8);
+		for (int32_t i = 0; i < labelTable.tagTable.header.totalCount; i++) {
+			int32_t offs = strEntryBaseOffset + labelTable.tagTable.infoEntries[i].offset;
 
 			strcpy(labelTable.tagTable.tags[i].val, loctextPtr + offs);
 
@@ -1273,24 +1273,24 @@ void LocTwo::ReadTagData() {
 	}
 	else {
 		// Endianness doesn't matter here for some reason. All games that use this always treats these as little endian.
-		memcpy(&labelTable.tagTable.header.totalSectLen, loctextPtr + labelDataOffset + labelTable.header.tagTableOffset, sizeof(int));
-		memcpy(&labelTable.tagTable.header.totalCount, loctextPtr + labelDataOffset + labelTable.header.tagTableOffset + 4, sizeof(int));
+		memcpy(&labelTable.tagTable.header.totalSectLen, loctextPtr + labelDataOffset + labelTable.header.tagTableOffset, sizeof(int32_t));
+		memcpy(&labelTable.tagTable.header.totalCount, loctextPtr + labelDataOffset + labelTable.header.tagTableOffset + 4, sizeof(int32_t));
 
-		int tagTableOffset = labelDataOffset + labelTable.header.tagTableOffset + 8;
+		int32_t tagTableOffset = labelDataOffset + labelTable.header.tagTableOffset + 8;
 		labelTable.tagTable.infoEntries = new TagInfo[labelTable.tagTable.header.totalCount];
 		labelTable.tagTable.tags = new TagStr[labelTable.tagTable.header.totalCount];
-		for (int i = 0; i < labelTable.tagTable.header.totalCount; i++) {
+		for (int32_t i = 0; i < labelTable.tagTable.header.totalCount; i++) {
 
-			memcpy(&labelTable.tagTable.infoEntries[i].id, loctextPtr + tagTableOffset + (8 * i), sizeof(short));
-			memcpy(&labelTable.tagTable.infoEntries[i].unk1, loctextPtr + tagTableOffset + (8 * i) + 2, sizeof(short));
-			memcpy(&labelTable.tagTable.infoEntries[i].offset, loctextPtr + tagTableOffset + (8 * i) + 4, sizeof(int));
+			memcpy(&labelTable.tagTable.infoEntries[i].id, loctextPtr + tagTableOffset + (8 * i), sizeof(int16_t));
+			memcpy(&labelTable.tagTable.infoEntries[i].unk1, loctextPtr + tagTableOffset + (8 * i) + 2, sizeof(int16_t));
+			memcpy(&labelTable.tagTable.infoEntries[i].offset, loctextPtr + tagTableOffset + (8 * i) + 4, sizeof(int32_t));
 
 			printf("Tag Table Entry %d: %04x %04x %d\n", i, labelTable.tagTable.infoEntries[i].id, labelTable.tagTable.infoEntries[i].unk1, labelTable.tagTable.infoEntries[i].offset);
 		}
 
-		int strEntryBaseOffset = tagTableOffset + (labelTable.stringTable.header.totalCount * 8);
-		for (int i = 0; i < labelTable.tagTable.header.totalCount; i++) {
-			int offs = strEntryBaseOffset + labelTable.tagTable.infoEntries[i].offset;
+		int32_t strEntryBaseOffset = tagTableOffset + (labelTable.stringTable.header.totalCount * 8);
+		for (int32_t i = 0; i < labelTable.tagTable.header.totalCount; i++) {
+			int32_t offs = strEntryBaseOffset + labelTable.tagTable.infoEntries[i].offset;
 
 			strcpy(labelTable.tagTable.tags[i].val, loctextPtr + offs);
 
@@ -1312,26 +1312,26 @@ void LocTwo::ReadCommentData() {
 	}
 
 	if (doesEndMatter) {
-		int sectLen = 0;
-		int totalCount = 0;
+		int32_t sectLen = 0;
+		int32_t totalCount = 0;
 
-		memcpy(&sectLen, loctextPtr + labelDataOffset + labelTable.header.commentTableOffset, sizeof(int));
-		memcpy(&totalCount, loctextPtr + labelDataOffset + labelTable.header.commentTableOffset + 4, sizeof(int));
+		memcpy(&sectLen, loctextPtr + labelDataOffset + labelTable.header.commentTableOffset, sizeof(int32_t));
+		memcpy(&totalCount, loctextPtr + labelDataOffset + labelTable.header.commentTableOffset + 4, sizeof(int32_t));
 
 		labelTable.commentTable.header.totalSectLen = flipEndian(sectLen);
 		labelTable.commentTable.header.totalCount = flipEndian(totalCount);
 
-		int commentTableOffset = labelDataOffset + labelTable.header.commentTableOffset + 8;
+		int32_t commentTableOffset = labelDataOffset + labelTable.header.commentTableOffset + 8;
 		labelTable.commentTable.entries = new CommentEntry[labelTable.commentTable.header.totalCount];
 		labelTable.commentTable.comments = new CommentStr[labelTable.commentTable.header.totalCount];
 
-		for (int i = 0; i < labelTable.commentTable.header.totalCount; i++) {
-			short id = 0;
-			int offset = 0;
+		for (int32_t i = 0; i < labelTable.commentTable.header.totalCount; i++) {
+			int16_t id = 0;
+			int32_t offset = 0;
 			memcpy(&labelTable.commentTable.entries[i].unk1, loctextPtr + commentTableOffset + (8 * i), sizeof(char));
-			memcpy(&id, loctextPtr + commentTableOffset + (8 * i) + 1, sizeof(short));
+			memcpy(&id, loctextPtr + commentTableOffset + (8 * i) + 1, sizeof(int16_t));
 			memcpy(&labelTable.commentTable.entries[i].unk2, loctextPtr + commentTableOffset + (8 * i) + 3, sizeof(char));
-			memcpy(&offset, loctextPtr + commentTableOffset + (8 * i) + 4, sizeof(int));
+			memcpy(&offset, loctextPtr + commentTableOffset + (8 * i) + 4, sizeof(int32_t));
 
 			labelTable.commentTable.entries[i].id = flipEndian(id);
 			labelTable.commentTable.entries[i].offset = flipEndian(offset);
@@ -1339,9 +1339,9 @@ void LocTwo::ReadCommentData() {
 			printf("Comment Table Entry %d: %04x %d\n", i, labelTable.commentTable.entries[i].id, labelTable.commentTable.entries[i].offset);
 		}
 
-		int strEntryBaseOffset = commentTableOffset + (labelTable.commentTable.header.totalCount * 8);
-		for (int i = 0; i < labelTable.commentTable.header.totalCount; i++) {
-			int offs = strEntryBaseOffset + labelTable.commentTable.entries[i].offset;
+		int32_t strEntryBaseOffset = commentTableOffset + (labelTable.commentTable.header.totalCount * 8);
+		for (int32_t i = 0; i < labelTable.commentTable.header.totalCount; i++) {
+			int32_t offs = strEntryBaseOffset + labelTable.commentTable.entries[i].offset;
 
 			strcpy(labelTable.commentTable.comments[i].val, loctextPtr + offs);
 
@@ -1350,25 +1350,25 @@ void LocTwo::ReadCommentData() {
 	}
 	else {
 		// Endianness doesn't matter here for some reason. All games that use this always treats these as little endian.
-		memcpy(&labelTable.commentTable.header.totalSectLen, loctextPtr + labelDataOffset + labelTable.header.commentTableOffset, sizeof(int));
-		memcpy(&labelTable.commentTable.header.totalCount, loctextPtr + labelDataOffset + labelTable.header.commentTableOffset + 4, sizeof(int));
+		memcpy(&labelTable.commentTable.header.totalSectLen, loctextPtr + labelDataOffset + labelTable.header.commentTableOffset, sizeof(int32_t));
+		memcpy(&labelTable.commentTable.header.totalCount, loctextPtr + labelDataOffset + labelTable.header.commentTableOffset + 4, sizeof(int32_t));
 
-		int commentTableOffset = labelDataOffset + labelTable.header.commentTableOffset + 8;
+		int32_t commentTableOffset = labelDataOffset + labelTable.header.commentTableOffset + 8;
 		labelTable.commentTable.entries = new CommentEntry[labelTable.commentTable.header.totalCount];
 		labelTable.commentTable.comments = new CommentStr[labelTable.commentTable.header.totalCount];
 
-		for (int i = 0; i < labelTable.commentTable.header.totalCount; i++) {
+		for (int32_t i = 0; i < labelTable.commentTable.header.totalCount; i++) {
 			memcpy(&labelTable.commentTable.entries[i].unk1, loctextPtr + commentTableOffset + (8 * i), sizeof(char));
-			memcpy(&labelTable.commentTable.entries[i].id, loctextPtr + commentTableOffset + (8 * i) + 1, sizeof(short));
+			memcpy(&labelTable.commentTable.entries[i].id, loctextPtr + commentTableOffset + (8 * i) + 1, sizeof(int16_t));
 			memcpy(&labelTable.commentTable.entries[i].unk2, loctextPtr + commentTableOffset + (8 * i) + 3, sizeof(char));
-			memcpy(&labelTable.commentTable.entries[i].offset, loctextPtr + commentTableOffset + (8 * i) + 4, sizeof(int));
+			memcpy(&labelTable.commentTable.entries[i].offset, loctextPtr + commentTableOffset + (8 * i) + 4, sizeof(int32_t));
 
 			printf("Comment Table Entry %d: %04x %d\n", i, labelTable.commentTable.entries[i].id, labelTable.commentTable.entries[i].offset);
 		}
 
-		int strEntryBaseOffset = commentTableOffset + (labelTable.commentTable.header.totalCount * 8);
-		for (int i = 0; i < labelTable.commentTable.header.totalCount; i++) {
-			int offs = strEntryBaseOffset + labelTable.commentTable.entries[i].offset;
+		int32_t strEntryBaseOffset = commentTableOffset + (labelTable.commentTable.header.totalCount * 8);
+		for (int32_t i = 0; i < labelTable.commentTable.header.totalCount; i++) {
+			int32_t offs = strEntryBaseOffset + labelTable.commentTable.entries[i].offset;
 
 			strcpy(labelTable.commentTable.comments[i].val, loctextPtr + offs);
 
@@ -1390,21 +1390,21 @@ void LocTwo::ReadPosData() {
 	}
 
 	if (doesEndMatter) {
-		int sectLen = 0;
-		int totalCount = 0;
+		int32_t sectLen = 0;
+		int32_t totalCount = 0;
 
-		memcpy(&sectLen, loctextPtr + labelDataOffset + labelTable.header.positionTableOffset, sizeof(int));
-		memcpy(&totalCount, loctextPtr + labelDataOffset + labelTable.header.positionTableOffset + 4, sizeof(int));
+		memcpy(&sectLen, loctextPtr + labelDataOffset + labelTable.header.positionTableOffset, sizeof(int32_t));
+		memcpy(&totalCount, loctextPtr + labelDataOffset + labelTable.header.positionTableOffset + 4, sizeof(int32_t));
 
 		labelTable.posTable.header.totalSectLen = flipEndian(sectLen);
 		labelTable.posTable.header.totalCount = flipEndian(totalCount);
 
-		int posTableOffset = labelDataOffset + labelTable.header.positionTableOffset + 8;
-		labelTable.posTable.entries = new unsigned short[labelTable.posTable.header.totalCount];
-		for (int i = 0; i < labelTable.tagTable.header.totalCount; i++) {
-			unsigned short posIdVar = 0; // 0x0
+		int32_t posTableOffset = labelDataOffset + labelTable.header.positionTableOffset + 8;
+		labelTable.posTable.entries = new uint16_t[labelTable.posTable.header.totalCount];
+		for (int32_t i = 0; i < labelTable.tagTable.header.totalCount; i++) {
+			uint16_t posIdVar = 0; // 0x0
 
-			memcpy(&posIdVar, loctextPtr + posTableOffset + (2 * i), sizeof(short));
+			memcpy(&posIdVar, loctextPtr + posTableOffset + (2 * i), sizeof(int16_t));
 
 			labelTable.posTable.entries[i] = flipEndian(posIdVar);
 
@@ -1413,15 +1413,15 @@ void LocTwo::ReadPosData() {
 	}
 	else {
 		// Endianness doesn't matter here for some reason. All games that use this always treats these as little endian.
-		memcpy(&labelTable.posTable.header.totalSectLen, loctextPtr + labelDataOffset + labelTable.header.positionTableOffset, sizeof(int));
-		memcpy(&labelTable.posTable.header.totalCount, loctextPtr + labelDataOffset + labelTable.header.positionTableOffset + 4, sizeof(int));
+		memcpy(&labelTable.posTable.header.totalSectLen, loctextPtr + labelDataOffset + labelTable.header.positionTableOffset, sizeof(int32_t));
+		memcpy(&labelTable.posTable.header.totalCount, loctextPtr + labelDataOffset + labelTable.header.positionTableOffset + 4, sizeof(int32_t));
 
-		int posTableOffset = labelDataOffset + labelTable.header.positionTableOffset + 8;
-		labelTable.posTable.entries = new unsigned short[labelTable.posTable.header.totalCount];
-		for (int i = 0; i < labelTable.tagTable.header.totalCount; i++) {
-			unsigned short posIdVar = 0; // 0x0
+		int32_t posTableOffset = labelDataOffset + labelTable.header.positionTableOffset + 8;
+		labelTable.posTable.entries = new uint16_t[labelTable.posTable.header.totalCount];
+		for (int32_t i = 0; i < labelTable.tagTable.header.totalCount; i++) {
+			uint16_t posIdVar = 0; // 0x0
 
-			memcpy(&posIdVar, loctextPtr + posTableOffset + (2 * i), sizeof(short));
+			memcpy(&posIdVar, loctextPtr + posTableOffset + (2 * i), sizeof(int16_t));
 
 			labelTable.posTable.entries[i] = posIdVar;
 
@@ -1431,12 +1431,12 @@ void LocTwo::ReadPosData() {
 }
 
 void LocTwo::ExportToFile(char* fileName) {
-	int position = 0;
+	int32_t position = 0;
 
 	std::ofstream is(fileName, std::ios_base::trunc);
 
-	for (int i = 0; i < labelTable.tagTable.header.totalCount; i++) {
-		unsigned short idx = 0;
+	for (int32_t i = 0; i < labelTable.tagTable.header.totalCount; i++) {
+		uint16_t idx = 0;
 
 		// Check if the position table is present. If it is, get the value from that. If not then fallback on the tag table entries.
 		if (labelTable.header.positionTableOffset != 0) {
@@ -1455,7 +1455,7 @@ void LocTwo::ExportToFile(char* fileName) {
 
 			char conv[2048];
 
-			int total = wcstombs(conv, labelTable.stringTable.strings[GetIdxOfConnectedString(idx)].string, 2048);
+			int32_t total = wcstombs(conv, labelTable.stringTable.strings[GetIdxOfConnectedString(idx)].string, 2048);
 
 			sprintf(fullStr, "%s\t\t\t= \"%s\"\n", labelTable.tagTable.tags[GetIdxOfConnectedTag(idx)].val, conv);
 
@@ -1498,22 +1498,22 @@ void Vehicle::WriteHeaderFile(char* fileName) {
 
 	FILE* writeHeadStrm = fopen(headerPath, "wb");
 
-	int unk1 = flipEndian(1);
-	int unk2 = flipEndian(1);
-	int unk3 = 0;
+	int32_t unk1 = flipEndian(1);
+	int32_t unk2 = flipEndian(1);
+	int32_t unk3 = 0;
 
-	fwrite(&unk1, sizeof(int), 1, writeHeadStrm);
-	fwrite(&unk2, sizeof(int), 1, writeHeadStrm);
+	fwrite(&unk1, sizeof(int32_t), 1, writeHeadStrm);
+	fwrite(&unk2, sizeof(int32_t), 1, writeHeadStrm);
 
-	for (int i = 0; i < 0x80; i++) {
+	for (int32_t i = 0; i < 0x80; i++) {
 		wchar_t flippedChar = flipEndian(vehicleName[i]);
 		fwrite(&flippedChar, sizeof(wchar_t), 1, writeHeadStrm);
 	}
 
 	fwrite(&filename, sizeof(char), 0x38, writeHeadStrm);
 
-	fwrite(&VEHICLE_HEAD_GAMEID, sizeof(unsigned int), 1, writeHeadStrm);
-	fwrite(&unk3, sizeof(int), 1, writeHeadStrm);
+	fwrite(&VEHICLE_HEAD_GAMEID, sizeof(uint32_t), 1, writeHeadStrm);
+	fwrite(&unk3, sizeof(int32_t), 1, writeHeadStrm);
 
 	fflush(writeHeadStrm);
 	fclose(writeHeadStrm);
@@ -1522,31 +1522,31 @@ void Vehicle::WriteHeaderFile(char* fileName) {
 char* Vehicle::WriteToArray() {
 	char* buf = new char[0x7C * (0x24 * numOfParts)];
 	memset(buf, 0, 0x7C * (0x24 * numOfParts));
-	int position = 0;
+	int32_t position = 0;
 
-	unsigned short numOfPartsVal = flipEndian(numOfParts);
-	short unk1Val = flipEndian(unk1);
+	uint16_t numOfPartsVal = flipEndian(numOfParts);
+	int16_t unk1Val = flipEndian(unk1);
 	float preloadPowerVal = flipEndian_f32((char*)&preloadPower, SRC_ENDIANLITTLE);
 	float preloadFuelVal = flipEndian_f32((char*)&preloadFuel, SRC_ENDIANLITTLE);
 	float preloadAmmoVal = flipEndian_f32((char*)&preloadAmmo, SRC_ENDIANLITTLE);
 	float preloadWeightVal = flipEndian_f32((char*)&preloadWeight, SRC_ENDIANLITTLE);
 	float preloadBlocksUsedVal = flipEndian_f32((char*)&preloadBlocksUsed, SRC_ENDIANLITTLE);
-	int unk2Val = flipEndian(unk2);
-	int unk3Val = flipEndian(unk3);
+	int32_t unk2Val = flipEndian(unk2);
+	int32_t unk3Val = flipEndian(unk3);
 
-	memcpy(buf, &numOfPartsVal, sizeof(short));
-	memcpy(buf + 2, &unk1Val, sizeof(short));
+	memcpy(buf, &numOfPartsVal, sizeof(int16_t));
+	memcpy(buf + 2, &unk1Val, sizeof(int16_t));
 	memcpy(buf + 4,  &preloadPowerVal, sizeof(float));
 	memcpy(buf + 8, &preloadFuelVal, sizeof(float));
 	memcpy(buf + 0xC, &preloadAmmoVal, sizeof(float));
 	memcpy(buf + 0x10, &preloadWeightVal, sizeof(float));
 	memcpy(buf + 0x14, &preloadBlocksUsedVal, sizeof(float));
-	memcpy(buf + 0x18, &unk2Val, sizeof(int));
-	memcpy(buf + 0x1C, &unk3Val, sizeof(int));
+	memcpy(buf + 0x18, &unk2Val, sizeof(int32_t));
+	memcpy(buf + 0x1C, &unk3Val, sizeof(int32_t));
 
 	// If the name type is 1, we need to save the data as wchar_t. Otherwise just write it as a char string.
 	if (nameType == 1) {
-		for (int i = 0; i < 0x20; i++) {
+		for (int32_t i = 0; i < 0x20; i++) {
 			wchar_t flippedChar = flipEndian(vehicleUnicodeName[i]);
 			memcpy(buf + 0x20 + (i * 2), &flippedChar, sizeof(wchar_t));
 		}
@@ -1555,26 +1555,26 @@ char* Vehicle::WriteToArray() {
 		memcpy(buf + 0x20, vehicleName, 0x40);
 	}
 
-	unsigned int aButtonAssignmentVal = flipEndian(aButtonAssignment);
-	unsigned int bButtonAssignmentVal = flipEndian(bButtonAssignment);
-	unsigned int xButtonAssignmentVal = flipEndian(xButtonAssignment);
+	uint32_t aButtonAssignmentVal = flipEndian(aButtonAssignment);
+	uint32_t bButtonAssignmentVal = flipEndian(bButtonAssignment);
+	uint32_t xButtonAssignmentVal = flipEndian(xButtonAssignment);
 
-	int unk4Val = flipEndian(unk4);
-	int unk5Val = flipEndian(unk5);
-	int unk6Val = flipEndian(unk6);
+	int32_t unk4Val = flipEndian(unk4);
+	int32_t unk5Val = flipEndian(unk5);
+	int32_t unk6Val = flipEndian(unk6);
 
-	memcpy(buf + 0x60, &aButtonAssignmentVal, sizeof(int));
-	memcpy(buf + 0x64, &bButtonAssignmentVal, sizeof(int));
-	memcpy(buf + 0x68, &xButtonAssignmentVal, sizeof(int));
-	memcpy(buf + 0x6C, &unk4Val, sizeof(int));
-	memcpy(buf + 0x70, &unk5Val, sizeof(int));
-	memcpy(buf + 0x74, &unk6Val, sizeof(int));
+	memcpy(buf + 0x60, &aButtonAssignmentVal, sizeof(int32_t));
+	memcpy(buf + 0x64, &bButtonAssignmentVal, sizeof(int32_t));
+	memcpy(buf + 0x68, &xButtonAssignmentVal, sizeof(int32_t));
+	memcpy(buf + 0x6C, &unk4Val, sizeof(int32_t));
+	memcpy(buf + 0x70, &unk5Val, sizeof(int32_t));
+	memcpy(buf + 0x74, &unk6Val, sizeof(int32_t));
 	memcpy(buf + 0x78, &nameType, sizeof(char));
 	memcpy(buf + 0x79, &unk7, sizeof(char));
 	memcpy(buf + 0x7A, &unk8, sizeof(char));
 	memcpy(buf + 0x7B, &unk9, sizeof(char));
 
-	for (int i = 0; i < numOfParts; i++) {
+	for (int32_t i = 0; i < numOfParts; i++) {
 		memcpy(buf + 0x7C + (0x24 * i), &parts[i].xPos, sizeof(char));
 		memcpy(buf + 0x7C + (0x24 * i) + 1, &parts[i].yPos, sizeof(char));
 		memcpy(buf + 0x7C + (0x24 * i) + 2, &parts[i].zPos, sizeof(char));
@@ -1584,61 +1584,61 @@ char* Vehicle::WriteToArray() {
 		memcpy(buf + 0x7C + (0x24 * i) + 6, &parts[i].unk2, sizeof(char));
 		memcpy(buf + 0x7C + (0x24 * i) + 7, &parts[i].unk3, sizeof(char));
 
-		unsigned int partIdxVar = flipEndian(parts[i].partIdx);
+		uint32_t partIdxVar = flipEndian(parts[i].partIdx);
 
 		float yawVar = flipEndian_f32((char*)&parts[i].yaw, SRC_ENDIANLITTLE);
 		float pitchVar = flipEndian_f32((char*)&parts[i].pitch, SRC_ENDIANLITTLE);
 		float rollVar = flipEndian_f32((char*)&parts[i].roll, SRC_ENDIANLITTLE);
 
-		int unk2PartVar = flipEndian(parts[i].unk4);
-		int unk3PartVar = flipEndian(parts[i].unk5);
+		int32_t unk2PartVar = flipEndian(parts[i].unk4);
+		int32_t unk3PartVar = flipEndian(parts[i].unk5);
 
-		memcpy(buf + 0x7C + (0x24 * i) + 8, &partIdxVar, sizeof(unsigned int));
+		memcpy(buf + 0x7C + (0x24 * i) + 8, &partIdxVar, sizeof(uint32_t));
 		memcpy(buf + 0x7C + (0x24 * i) + 0xC, &yawVar, sizeof(float));
 		memcpy(buf + 0x7C + (0x24 * i) + 0x10, &pitchVar, sizeof(float));
 		memcpy(buf + 0x7C + (0x24 * i) + 0x14, &rollVar, sizeof(float));
-		memcpy(buf + 0x7C + (0x24 * i) + 0x18, &parts[i].color, sizeof(unsigned int));
-		memcpy(buf + 0x7C + (0x24 * i) + 0x1C, &unk2PartVar, sizeof(int));
-		memcpy(buf + 0x7C + (0x24 * i) + 0x20, &unk3PartVar, sizeof(int));
+		memcpy(buf + 0x7C + (0x24 * i) + 0x18, &parts[i].color, sizeof(uint32_t));
+		memcpy(buf + 0x7C + (0x24 * i) + 0x1C, &unk2PartVar, sizeof(int32_t));
+		memcpy(buf + 0x7C + (0x24 * i) + 0x20, &unk3PartVar, sizeof(int32_t));
 	}
 
 	return buf;
 }
 
 void Vehicle::WriteToFile(char* fileName, bool isSave) {
-	int position = 0;
+	int32_t position = 0;
 
 	FILE* writeStrm = fopen(fileName, "wb");
 
 	// If this is to be written as a save file, write two prefixes first.
 	if (isSave) {
-		fwrite(&VEHICLE_SAVE_PREFIX1, sizeof(unsigned int), 1, writeStrm);
-		fwrite(&VEHICLE_SAVE_PREFIX2, sizeof(unsigned int), 1, writeStrm);
+		fwrite(&VEHICLE_SAVE_PREFIX1, sizeof(uint32_t), 1, writeStrm);
+		fwrite(&VEHICLE_SAVE_PREFIX2, sizeof(uint32_t), 1, writeStrm);
 	}
 
-	unsigned short numOfPartsVal = flipEndian(numOfParts);
-	short unk1Val = flipEndian(unk1);
+	uint16_t numOfPartsVal = flipEndian(numOfParts);
+	int16_t unk1Val = flipEndian(unk1);
 	float preloadPowerVal = flipEndian_f32((char*)&preloadPower, SRC_ENDIANLITTLE);
 	float preloadFuelVal = flipEndian_f32((char*)&preloadFuel, SRC_ENDIANLITTLE);
 	float preloadAmmoVal = flipEndian_f32((char*)&preloadAmmo, SRC_ENDIANLITTLE);
 	float preloadWeightVal = flipEndian_f32((char*)&preloadWeight, SRC_ENDIANLITTLE);
 	float preloadBlocksUsedVal = flipEndian_f32((char*)&preloadBlocksUsed, SRC_ENDIANLITTLE);
-	int unk2Val = flipEndian(unk2);
-	int unk3Val = flipEndian(unk3);
+	int32_t unk2Val = flipEndian(unk2);
+	int32_t unk3Val = flipEndian(unk3);
 
-	fwrite(&numOfPartsVal, sizeof(unsigned short), 1, writeStrm);
-	fwrite(&unk1Val, sizeof(short), 1, writeStrm);
+	fwrite(&numOfPartsVal, sizeof(uint16_t), 1, writeStrm);
+	fwrite(&unk1Val, sizeof(int16_t), 1, writeStrm);
 	fwrite(&preloadPowerVal, sizeof(float), 1, writeStrm);
 	fwrite(&preloadFuelVal, sizeof(float), 1, writeStrm);
 	fwrite(&preloadAmmoVal, sizeof(float), 1, writeStrm);
 	fwrite(&preloadWeightVal, sizeof(float), 1, writeStrm);
 	fwrite(&preloadBlocksUsedVal, sizeof(float), 1, writeStrm);
-	fwrite(&unk2Val, sizeof(int), 1, writeStrm);
-	fwrite(&unk3Val, sizeof(int), 1, writeStrm);
+	fwrite(&unk2Val, sizeof(int32_t), 1, writeStrm);
+	fwrite(&unk3Val, sizeof(int32_t), 1, writeStrm);
 
 	// If the name type is 1, we need to save the data as wchar_t. Otherwise just write it as a char string.
 	if (nameType == 1) {
-		for (int i = 0; i < 0x20; i++) {
+		for (int32_t i = 0; i < 0x20; i++) {
 			wchar_t flippedChar = flipEndian(vehicleUnicodeName[i]);
 			fwrite(&flippedChar, sizeof(wchar_t), 1, writeStrm);
 		}
@@ -1647,34 +1647,34 @@ void Vehicle::WriteToFile(char* fileName, bool isSave) {
 		fwrite(vehicleName, sizeof(char), 0x40, writeStrm);
 	}
 
-	unsigned int aButtonAssignmentVal = flipEndian(aButtonAssignment);
-	unsigned int bButtonAssignmentVal = flipEndian(bButtonAssignment);
-	unsigned int xButtonAssignmentVal = flipEndian(xButtonAssignment);
+	uint32_t aButtonAssignmentVal = flipEndian(aButtonAssignment);
+	uint32_t bButtonAssignmentVal = flipEndian(bButtonAssignment);
+	uint32_t xButtonAssignmentVal = flipEndian(xButtonAssignment);
 
-	int unk4Val = flipEndian(unk4);
-	int unk5Val = flipEndian(unk5);
-	int unk6Val = flipEndian(unk6);
+	int32_t unk4Val = flipEndian(unk4);
+	int32_t unk5Val = flipEndian(unk5);
+	int32_t unk6Val = flipEndian(unk6);
 
-	fwrite(&aButtonAssignmentVal, sizeof(int), 1, writeStrm);
-	fwrite(&bButtonAssignmentVal, sizeof(int), 1, writeStrm);
-	fwrite(&xButtonAssignmentVal, sizeof(int), 1, writeStrm);
-	fwrite(&unk4Val, sizeof(int), 1, writeStrm);
-	fwrite(&unk5Val, sizeof(int), 1, writeStrm);
-	fwrite(&unk6Val, sizeof(int), 1, writeStrm);
+	fwrite(&aButtonAssignmentVal, sizeof(int32_t), 1, writeStrm);
+	fwrite(&bButtonAssignmentVal, sizeof(int32_t), 1, writeStrm);
+	fwrite(&xButtonAssignmentVal, sizeof(int32_t), 1, writeStrm);
+	fwrite(&unk4Val, sizeof(int32_t), 1, writeStrm);
+	fwrite(&unk5Val, sizeof(int32_t), 1, writeStrm);
+	fwrite(&unk6Val, sizeof(int32_t), 1, writeStrm);
 	fwrite(&nameType, sizeof(char), 1, writeStrm);
 	fwrite(&unk7, sizeof(char), 1, writeStrm);
 	fwrite(&unk8, sizeof(char), 1, writeStrm);
 	fwrite(&unk9, sizeof(char), 1, writeStrm);
 
-	for (int i = 0; i < numOfParts; i++) {
-		unsigned int partIdxVar = flipEndian(parts[i].partIdx);
+	for (int32_t i = 0; i < numOfParts; i++) {
+		uint32_t partIdxVar = flipEndian(parts[i].partIdx);
 
 		float yawVar = flipEndian_f32((char*)&parts[i].yaw, SRC_ENDIANLITTLE);
 		float pitchVar = flipEndian_f32((char*)&parts[i].pitch, SRC_ENDIANLITTLE);
 		float rollVar = flipEndian_f32((char*)&parts[i].roll, SRC_ENDIANLITTLE);
 
-		int unk2PartVar = flipEndian(parts[i].unk4);
-		int unk3PartVar = flipEndian(parts[i].unk5);
+		int32_t unk2PartVar = flipEndian(parts[i].unk4);
+		int32_t unk3PartVar = flipEndian(parts[i].unk5);
 
 		fwrite(&parts[i].xPos, 1, 1, writeStrm);
 		fwrite(&parts[i].yPos, 1, 1, writeStrm);
@@ -1685,21 +1685,21 @@ void Vehicle::WriteToFile(char* fileName, bool isSave) {
 		fwrite(&parts[i].unk2, 1, 1, writeStrm);
 		fwrite(&parts[i].unk3, 1, 1, writeStrm);
 
-		fwrite(&partIdxVar, sizeof(unsigned int), 1, writeStrm);
+		fwrite(&partIdxVar, sizeof(uint32_t), 1, writeStrm);
 
 		fwrite(&yawVar, sizeof(float), 1, writeStrm);
 		fwrite(&pitchVar, sizeof(float), 1, writeStrm);
 		fwrite(&rollVar, sizeof(float), 1, writeStrm);
 
-		fwrite(&parts[i].color, sizeof(unsigned int), 1, writeStrm);
+		fwrite(&parts[i].color, sizeof(uint32_t), 1, writeStrm);
 
 		//fwrite(&parts[i].colR, 1, 1, writeStrm);
 		//fwrite(&parts[i].colG, 1, 1, writeStrm);
 		//fwrite(&parts[i].colB, 1, 1, writeStrm);
 		//fwrite(&parts[i].colA, 1, 1, writeStrm);
 
-		fwrite(&unk2PartVar, sizeof(int), 1, writeStrm);
-		fwrite(&unk3PartVar, sizeof(int), 1, writeStrm);
+		fwrite(&unk2PartVar, sizeof(int32_t), 1, writeStrm);
+		fwrite(&unk3PartVar, sizeof(int32_t), 1, writeStrm);
 	}
 
 	fflush(writeStrm);
@@ -1714,7 +1714,7 @@ void Vehicle::ReadVehicle(char* data, bool isFromSave) {
 	isSaveVehicle = isFromSave;
 
 	try {
-		int pos = 0;
+		int32_t pos = 0;
 
 		// Saved vehicles have an additional 8 bytes at the start
 		if (isFromSave) pos = 8;
@@ -1722,15 +1722,15 @@ void Vehicle::ReadVehicle(char* data, bool isFromSave) {
 		printf("Allocating Values\n");
 
 		// Establish the temporary values...
-		unsigned short numOfPartsVal = 0;
-		short unk1Val = 0;
+		uint16_t numOfPartsVal = 0;
+		int16_t unk1Val = 0;
 		char* preloadPowerVal = (char*)malloc(4);
 		char* preloadFuelVal = (char*)malloc(4);;
 		char* preloadAmmoVal = (char*)malloc(4);;
 		char* preloadWeightVal = (char*)malloc(4);;
 		char* preloadBlocksUsedVal = (char*)malloc(4);;
-		int unk2Val = 0;
-		int unk3Val = 0;
+		int32_t unk2Val = 0;
+		int32_t unk3Val = 0;
 
 		memcpy_s(&nameType, sizeof(char), vehiclePtr + (pos + 0x78), sizeof(char));
 		memcpy_s(&unk7, sizeof(char), vehiclePtr + (pos + 0x79), sizeof(char));
@@ -1749,13 +1749,13 @@ void Vehicle::ReadVehicle(char* data, bool isFromSave) {
 			wmemset(vehicleUnicodeName, 0, 0x20);
 		}
 
-		unsigned int aButtonAssignmentVal = 0;
-		unsigned int bButtonAssignmentVal = 0;
-		unsigned int xButtonAssignmentVal = 0;
+		uint32_t aButtonAssignmentVal = 0;
+		uint32_t bButtonAssignmentVal = 0;
+		uint32_t xButtonAssignmentVal = 0;
 
-		int unk4Val = 0;
-		int unk5Val = 0;
-		int unk6Val = 0;
+		int32_t unk4Val = 0;
+		int32_t unk5Val = 0;
+		int32_t unk6Val = 0;
 
 		printf("Reading Vehicle Name\n");
 
@@ -1767,9 +1767,9 @@ void Vehicle::ReadVehicle(char* data, bool isFromSave) {
 
 		// We need to flip the endianness of every applicable character.
 		if (nameType == 1) {
-			int namePos = pos + 0x20;
+			int32_t namePos = pos + 0x20;
 			wchar_t newChar = L'\n';
-			for (int i = 0, c = 0; i < 0x40; i += 2, c++) {
+			for (int32_t i = 0, c = 0; i < 0x40; i += 2, c++) {
 				memcpy_s(&newChar, sizeof(wchar_t), vehiclePtr + namePos + i, sizeof(wchar_t));
 				newChar = flipEndian(newChar);
 
@@ -1786,23 +1786,23 @@ void Vehicle::ReadVehicle(char* data, bool isFromSave) {
 		printf("Reading Vehicle Aspects\n");
 
 		//...and now we read the data.
-		memcpy(&numOfPartsVal, vehiclePtr + pos, sizeof(unsigned short));
-		memcpy(&unk1Val, vehiclePtr + pos + 2, sizeof(short));
+		memcpy(&numOfPartsVal, vehiclePtr + pos, sizeof(uint16_t));
+		memcpy(&unk1Val, vehiclePtr + pos + 2, sizeof(int16_t));
 		memcpy(preloadPowerVal, vehiclePtr + pos + 4, sizeof(float));
 		memcpy(preloadFuelVal, vehiclePtr + pos + 8, sizeof(float));
 		memcpy(preloadAmmoVal, vehiclePtr + pos + 0xC, sizeof(float));
 		memcpy(preloadWeightVal, vehiclePtr + pos + 0x10, sizeof(float));
 		memcpy(preloadBlocksUsedVal, vehiclePtr + pos + 0x14, sizeof(float));
-		memcpy(&unk2Val, vehiclePtr + pos + 0x18, sizeof(int));
-		memcpy(&unk3Val, vehiclePtr + pos + 0x1C, sizeof(int));
+		memcpy(&unk2Val, vehiclePtr + pos + 0x18, sizeof(int32_t));
+		memcpy(&unk3Val, vehiclePtr + pos + 0x1C, sizeof(int32_t));
 
-		memcpy(&aButtonAssignmentVal, vehiclePtr + pos + 0x60, sizeof(int));
-		memcpy(&bButtonAssignmentVal, vehiclePtr + pos + 0x64, sizeof(int));
-		memcpy(&xButtonAssignmentVal, vehiclePtr + pos + 0x68, sizeof(int));
+		memcpy(&aButtonAssignmentVal, vehiclePtr + pos + 0x60, sizeof(int32_t));
+		memcpy(&bButtonAssignmentVal, vehiclePtr + pos + 0x64, sizeof(int32_t));
+		memcpy(&xButtonAssignmentVal, vehiclePtr + pos + 0x68, sizeof(int32_t));
 
-		memcpy(&unk4Val, vehiclePtr + pos + 0x6C, sizeof(int));
-		memcpy(&unk5Val, vehiclePtr + pos + 0x70, sizeof(int));
-		memcpy(&unk6Val, vehiclePtr + pos + 0x74, sizeof(int));
+		memcpy(&unk4Val, vehiclePtr + pos + 0x6C, sizeof(int32_t));
+		memcpy(&unk5Val, vehiclePtr + pos + 0x70, sizeof(int32_t));
+		memcpy(&unk6Val, vehiclePtr + pos + 0x74, sizeof(int32_t));
 
 		numOfParts = flipEndian(numOfPartsVal);
 		unk1 = flipEndian(unk1Val);
@@ -1836,19 +1836,19 @@ void Vehicle::ReadVehicle(char* data, bool isFromSave) {
 		// Read the data from every part.
 		parts = new VehiclePart[numOfParts]();
 
-		int partOffset = pos + 0x7C;
+		int32_t partOffset = pos + 0x7C;
 
-		for (int i = 0; i < numOfParts; i++) {
-			unsigned int partIdxVar; // 0x8
+		for (int32_t i = 0; i < numOfParts; i++) {
+			uint32_t partIdxVar; // 0x8
 
 			float yawVar; // 0xC
 			float pitchVar; // 0x10
 			float rollVar; // 0x14
 
-			unsigned int colour; // 0x8
+			uint32_t colour; // 0x8
 
-			int unk2PartVar;
-			int unk3PartVar;
+			int32_t unk2PartVar;
+			int32_t unk3PartVar;
 
 			memcpy(&parts[i].xPos, vehiclePtr + (partOffset + (i * 0x24)), sizeof(char));
 			memcpy(&parts[i].yPos, vehiclePtr + (partOffset + (i * 0x24)) + 1, sizeof(char));
@@ -1860,17 +1860,17 @@ void Vehicle::ReadVehicle(char* data, bool isFromSave) {
 
 			memcpy(&parts[i].unk3, vehiclePtr + (partOffset + (i * 0x24)) + 7, sizeof(char));
 
-			memcpy(&partIdxVar, vehiclePtr + (partOffset + (i * 0x24)) + 8, sizeof(unsigned int));
+			memcpy(&partIdxVar, vehiclePtr + (partOffset + (i * 0x24)) + 8, sizeof(uint32_t));
 
-			memcpy(&colour, vehiclePtr + (partOffset + (i * 0x24)) + 0x18, sizeof(unsigned int));
+			memcpy(&colour, vehiclePtr + (partOffset + (i * 0x24)) + 0x18, sizeof(uint32_t));
 
 			//memcpy(&parts[i].colR, vehiclePtr + (partOffset + (i * 0x24)) + 0x18, sizeof(char));
 			//memcpy(&parts[i].colG, vehiclePtr + (partOffset + (i * 0x24)) + 0x19, sizeof(char));
 			//memcpy(&parts[i].colB, vehiclePtr + (partOffset + (i * 0x24)) + 0x1A, sizeof(char));
 			//memcpy(&parts[i].colA, vehiclePtr + (partOffset + (i * 0x24)) + 0x1B, sizeof(char));
 
-			memcpy(&unk2PartVar, vehiclePtr + (partOffset + (i * 0x24)) + 0x1C, sizeof(unsigned int));
-			memcpy(&unk3PartVar, vehiclePtr + (partOffset + (i * 0x24)) + 0x20, sizeof(unsigned int));
+			memcpy(&unk2PartVar, vehiclePtr + (partOffset + (i * 0x24)) + 0x1C, sizeof(uint32_t));
+			memcpy(&unk3PartVar, vehiclePtr + (partOffset + (i * 0x24)) + 0x20, sizeof(uint32_t));
 
 			parts[i].color = colour;
 			parts[i].partIdx = flipEndian(partIdxVar);
@@ -1898,26 +1898,26 @@ Manifest::~Manifest() {
 void Manifest::ReadManifest(char* data) {
 	manifestPtr = data;
 
-	unsigned int magicVar = 0;
-	unsigned int hashVar = 0;
+	uint32_t magicVar = 0;
+	uint32_t hashVar = 0;
 
-	int aidTableOffsetVar = 0;
-	int aidTableCountVar = 0;
+	int32_t aidTableOffsetVar = 0;
+	int32_t aidTableCountVar = 0;
 
-	int referenceTableOffsetVar = 0;
-	int referenceTableCountVar = 0;
+	int32_t referenceTableOffsetVar = 0;
+	int32_t referenceTableCountVar = 0;
 
-	int xcueRefTableOffsetVar = 0;
-	int xcueRefTableCountVar = 0;
+	int32_t xcueRefTableOffsetVar = 0;
+	int32_t xcueRefTableCountVar = 0;
 
-	memcpy(&magicVar, manifestPtr, sizeof(unsigned int));
-	memcpy(&hashVar, manifestPtr + 4, sizeof(unsigned int));
-	memcpy(&aidTableOffsetVar, manifestPtr + 8, sizeof(int));
-	memcpy(&aidTableCountVar, manifestPtr + 0xC, sizeof(int));
-	memcpy(&referenceTableOffsetVar, manifestPtr + 0x10, sizeof(int));
-	memcpy(&referenceTableCountVar, manifestPtr + 0x14, sizeof(int));
-	memcpy(&xcueRefTableOffsetVar, manifestPtr + 0x18, sizeof(int));
-	memcpy(&xcueRefTableCountVar, manifestPtr + 0x1C, sizeof(int));
+	memcpy(&magicVar, manifestPtr, sizeof(uint32_t));
+	memcpy(&hashVar, manifestPtr + 4, sizeof(uint32_t));
+	memcpy(&aidTableOffsetVar, manifestPtr + 8, sizeof(int32_t));
+	memcpy(&aidTableCountVar, manifestPtr + 0xC, sizeof(int32_t));
+	memcpy(&referenceTableOffsetVar, manifestPtr + 0x10, sizeof(int32_t));
+	memcpy(&referenceTableCountVar, manifestPtr + 0x14, sizeof(int32_t));
+	memcpy(&xcueRefTableOffsetVar, manifestPtr + 0x18, sizeof(int32_t));
+	memcpy(&xcueRefTableCountVar, manifestPtr + 0x1C, sizeof(int32_t));
 
 	magic = flipEndian(magicVar);
 	timestamp = flipEndian(hashVar);
@@ -1936,16 +1936,16 @@ void Manifest::ReadManifest(char* data) {
 	if (aidTableCount != 0) {
 		aidTable = new AidEntry[aidTableCount]();
 
-		for (int i = 0; i < aidTableCount; i++) {
+		for (int32_t i = 0; i < aidTableCount; i++) {
 			AidEntry entry;
 
-			int aidOffset = aidTableOffset + (sizeof(AidEntry) * i);
+			int32_t aidOffset = aidTableOffset + (sizeof(AidEntry) * i);
 
-			unsigned int aidEntryHash = 0;
-			int aidEntryID = 0;
+			uint32_t aidEntryHash = 0;
+			int32_t aidEntryID = 0;
 
-			memcpy(&aidEntryHash, manifestPtr + aidOffset, sizeof(unsigned int));
-			memcpy(&aidEntryID, manifestPtr + (aidOffset + 4), sizeof(int));
+			memcpy(&aidEntryHash, manifestPtr + aidOffset, sizeof(uint32_t));
+			memcpy(&aidEntryID, manifestPtr + (aidOffset + 4), sizeof(int32_t));
 
 			entry.hash = flipEndian(aidEntryHash);
 			entry.id = flipEndian(aidEntryID);
@@ -1957,11 +1957,11 @@ void Manifest::ReadManifest(char* data) {
 	}
 
 	if (referenceTableCount != 0) {
-		referenceTable = (int*)malloc(sizeof(int) * referenceTableCount);
+		referenceTable = (int32_t*)malloc(sizeof(int32_t) * referenceTableCount);
 	}
 
 	if (xcueRefTableCount != 0) {
-		xcueRefTable = (int*)malloc(sizeof(int) * xcueRefTableCount);
+		xcueRefTable = (int32_t*)malloc(sizeof(int32_t) * xcueRefTableCount);
 	}
 }
 
@@ -1981,11 +1981,11 @@ void Texture::ReadTextureInfo(char* data) {
 	headerSect.isSwizzled = *(textureHeaderPtr + 0x1A);
 	headerSect.textureType = (unsigned char)*(textureHeaderPtr + 0x1B);
 
-	short width = 0;
-	short height = 0;
+	int16_t width = 0;
+	int16_t height = 0;
 
-	memcpy(&width, textureHeaderPtr + 0x24, sizeof(short));
-	memcpy(&height, textureHeaderPtr + 0x26, sizeof(short));
+	memcpy(&width, textureHeaderPtr + 0x24, sizeof(int16_t));
+	memcpy(&height, textureHeaderPtr + 0x26, sizeof(int16_t));
 
 	width = flipEndian(width);
 	height = flipEndian(height);
@@ -1996,9 +1996,9 @@ void Texture::ReadTextureInfo(char* data) {
 	headerSect.width = width;
 	headerSect.height = height;
 
-	int frameCount = 0;
+	int32_t frameCount = 0;
 
-	memcpy(&frameCount, textureHeaderPtr + 0x38, sizeof(int));
+	memcpy(&frameCount, textureHeaderPtr + 0x38, sizeof(int32_t));
 
 	frameCount = flipEndian(frameCount);
 
@@ -2009,27 +2009,27 @@ void Texture::ReadTextureInfo(char* data) {
 		headerSect.frameCount = frameCount;
 	}
 
-	int gpuOffsTableOffset = 0;
+	int32_t gpuOffsTableOffset = 0;
 
-	memcpy(&gpuOffsTableOffset, textureHeaderPtr + 0x3C, sizeof(int));
+	memcpy(&gpuOffsTableOffset, textureHeaderPtr + 0x3C, sizeof(int32_t));
 
 	gpuOffsTableOffset = flipEndian(gpuOffsTableOffset);
 	headerSect.gpuOffsTablePos = gpuOffsTableOffset;
 
 	if (frameCount != 0) {
-		headerSect.gpuOffsTable = new int[frameCount];
+		headerSect.gpuOffsTable = new int32_t[frameCount];
 		
-		for (int i = 0; i < frameCount; i++) {
-			int off = 0;
+		for (int32_t i = 0; i < frameCount; i++) {
+			int32_t off = 0;
 
-			memcpy(&off, textureHeaderPtr + gpuOffsTableOffset + (i * 4), sizeof(int));
+			memcpy(&off, textureHeaderPtr + gpuOffsTableOffset + (i * 4), sizeof(int32_t));
 
 			off = flipEndian(off);
 			headerSect.gpuOffsTable[i] = off;
 		}
 	}
 	else {
-		headerSect.gpuOffsTable = new int[1];
+		headerSect.gpuOffsTable = new int32_t[1];
 		headerSect.gpuOffsTable[0] = 0;
 	}
 }

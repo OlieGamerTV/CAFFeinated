@@ -63,7 +63,7 @@ void DisplayVehicleEditorBaseWindow() {
 						FILE* file = fopen(appendVehPath, "rb");
 
 						fseek(file, 0L, SEEK_END);
-						int len = ftell(file) + 1;
+						int32_t len = ftell(file) + 1;
 						fseek(file, 0L, SEEK_SET);
 
 						char* fileData = (char*)malloc(len);
@@ -73,10 +73,10 @@ void DisplayVehicleEditorBaseWindow() {
 						fclose(file);
 
 						// Need to quickly grab the number of parts first in order to allocate memory
-						unsigned short numOfParts = 0;
-						unsigned int saveCheck = 0;
+						uint16_t numOfParts = 0;
+						uint32_t saveCheck = 0;
 
-						memcpy(&saveCheck, fileData, sizeof(unsigned int));
+						memcpy(&saveCheck, fileData, sizeof(uint32_t));
 
 						bool isSave = false;
 
@@ -85,10 +85,10 @@ void DisplayVehicleEditorBaseWindow() {
 						}
 
 						if (isSave) {
-							memcpy(&numOfParts, fileData + 8, sizeof(unsigned short));
+							memcpy(&numOfParts, fileData + 8, sizeof(uint16_t));
 						}
 						else {
-							memcpy(&numOfParts, fileData, sizeof(unsigned short));
+							memcpy(&numOfParts, fileData, sizeof(uint16_t));
 						}
 
 						numOfParts = flipEndian(numOfParts);
@@ -99,7 +99,7 @@ void DisplayVehicleEditorBaseWindow() {
 
 						free(fileData);
 
-						for (int i = 0; i < appendVeh->numOfParts; i++) {
+						for (int32_t i = 0; i < appendVeh->numOfParts; i++) {
 							if (markerWindowParameters.activeVehicle->IsPositionTaken(appendVeh->parts[i].xPos, appendVeh->parts[i].yPos, appendVeh->parts[i].zPos)) {
 								printf("Part %d on the vehicle we're appending from is at the same position as a part on the vehicle we're appending to. Skipping this part.\n", i);
 								continue;
@@ -213,7 +213,7 @@ void DisplayVehicleEditorBaseWindow() {
 
 			// A Button Assignment
 			if (ImGui::BeginCombo("A Button Assignment", getPartNameFromAid(markerWindowParameters.activeVehicle->aButtonAssignment))) {
-				for (int k = 0; k < getCountOfAssignmentTable(); k++) {
+				for (int32_t k = 0; k < getCountOfAssignmentTable(); k++) {
 					ImGui::PushID(k);
 					if (vehicleAssignments[k].isComment) {
 						ImGui::SeparatorText(vehicleAssignments[k].vehicleName);
@@ -235,7 +235,7 @@ void DisplayVehicleEditorBaseWindow() {
 
 			// B Button Assignment
 			if (ImGui::BeginCombo("B Button Assignment", getPartNameFromAid(markerWindowParameters.activeVehicle->bButtonAssignment))) {
-				for (int k = 0; k < getCountOfAssignmentTable(); k++) {
+				for (int32_t k = 0; k < getCountOfAssignmentTable(); k++) {
 					ImGui::PushID(k);
 					if (vehicleAssignments[k].isComment) {
 						ImGui::SeparatorText(vehicleAssignments[k].vehicleName);
@@ -259,7 +259,7 @@ void DisplayVehicleEditorBaseWindow() {
 
 			// X Button Assignment
 			if (ImGui::BeginCombo("X Button Assignment", getPartNameFromAid(markerWindowParameters.activeVehicle->xButtonAssignment))) {
-				for (int k = 0; k < getCountOfAssignmentTable(); k++) {
+				for (int32_t k = 0; k < getCountOfAssignmentTable(); k++) {
 					ImGui::PushID(k);
 					if (vehicleAssignments[k].isComment) {
 						ImGui::SeparatorText(vehicleAssignments[k].vehicleName);
@@ -285,14 +285,14 @@ void DisplayVehicleEditorBaseWindow() {
 
 			// Vehicle Parts List
 			if (ImGui::BeginChild("Vehicle Parts")) {
-				for (int i = 0; i < markerWindowParameters.activeVehicle->numOfParts; i++) {
+				for (int32_t i = 0; i < markerWindowParameters.activeVehicle->numOfParts; i++) {
 					ImGui::PushID(i);
 					char string[256];
 					memset(string, 0, 256);
 
 					sprintf(string, "Part %d (%s)", i, getPartNameFromAid(markerWindowParameters.activeVehicle->parts[i].partIdx));
 					if (ImGui::TreeNode(string)) {
-						int* valuesInt = compileChar3ToIntArray(markerWindowParameters.activeVehicle->parts[i].xPos, markerWindowParameters.activeVehicle->parts[i].yPos, markerWindowParameters.activeVehicle->parts[i].zPos);
+						int32_t* valuesInt = compileChar3ToIntArray(markerWindowParameters.activeVehicle->parts[i].xPos, markerWindowParameters.activeVehicle->parts[i].yPos, markerWindowParameters.activeVehicle->parts[i].zPos);
 						ImGui::InputInt3("Position", valuesInt);
 						char* valuesChar = compileIntArrayToChar3(valuesInt);
 						markerWindowParameters.activeVehicle->parts[i].xPos = valuesChar[0];
@@ -409,7 +409,7 @@ void DisplayVehicleEditorBaseWindow() {
 
 		if (ImGui::Button("Replace Matched Colours")) {
 			markerWindowParameters.vehicleBlockAddParams.partsChanged = 0;
-			for (int i = 0; i < markerWindowParameters.activeVehicle->numOfParts; i++) {
+			for (int32_t i = 0; i < markerWindowParameters.activeVehicle->numOfParts; i++) {
 				if (markerWindowParameters.activeVehicle->parts[i].color == ImGui::ColorConvertFloat4ToU32(markerWindowParameters.vehicleBlockAddParams.colorSearch)) {
 					markerWindowParameters.activeVehicle->parts[i].color = ImGui::ColorConvertFloat4ToU32(markerWindowParameters.vehicleBlockAddParams.colorToReplace);
 					markerWindowParameters.vehicleBlockAddParams.partsChanged++;
@@ -419,7 +419,7 @@ void DisplayVehicleEditorBaseWindow() {
 		ImGui::SameLine();
 		if (ImGui::Button("Replace All Colours")) {
 			markerWindowParameters.vehicleBlockAddParams.partsChanged = 0;
-			for (int i = 0; i < markerWindowParameters.activeVehicle->numOfParts; i++) {
+			for (int32_t i = 0; i < markerWindowParameters.activeVehicle->numOfParts; i++) {
 				markerWindowParameters.activeVehicle->parts[i].color = ImGui::ColorConvertFloat4ToU32(markerWindowParameters.vehicleBlockAddParams.colorToReplace);
 				markerWindowParameters.vehicleBlockAddParams.partsChanged++;
 			}
@@ -452,7 +452,7 @@ void DisplayVehicleEditorBaseWindow() {
 
 		if (ImGui::Button("Replace Matched Parts")) {
 			markerWindowParameters.vehicleBlockAddParams.partsChanged = 0;
-			for (int i = 0; i < markerWindowParameters.activeVehicle->numOfParts; i++) {
+			for (int32_t i = 0; i < markerWindowParameters.activeVehicle->numOfParts; i++) {
 				if (markerWindowParameters.activeVehicle->parts[i].partIdx == markerWindowParameters.vehicleBlockAddParams.partSearch) {
 					markerWindowParameters.activeVehicle->parts[i].partIdx = markerWindowParameters.vehicleBlockAddParams.partToReplace;
 					markerWindowParameters.vehicleBlockAddParams.partsChanged++;
@@ -499,7 +499,7 @@ void DisplayVehicleEditorBaseWindow() {
 		sprintf(string, "Part %d (%s)", markerWindowParameters.vehicleBlockAddParams.idToRemove, getPartNameFromAid(activeVehicleToRemoveFrom->parts[markerWindowParameters.vehicleBlockAddParams.idToRemove].partIdx));
 
 		if (ImGui::BeginCombo("Part to Remove", string)) {
-			for (int i = 0; i < activeVehicleToRemoveFrom->numOfParts; i++) {
+			for (int32_t i = 0; i < activeVehicleToRemoveFrom->numOfParts; i++) {
 				ImGui::PushID(i);
 				memset(string, 0, 256);
 
@@ -527,7 +527,7 @@ void DisplayVehicleEditorBaseWindow() {
 /// </summary>
 /// <param name="refCol"></param>
 static void DisplayColorBlock(ImVec4* refCol) {
-	unsigned int inputCol = ImGui::ColorConvertFloat4ToU32(*refCol);
+	uint32_t inputCol = ImGui::ColorConvertFloat4ToU32(*refCol);
 
 	// Base-Game Colours
 	if (GetColorMatch(inputCol) != 0) {
@@ -537,7 +537,7 @@ static void DisplayColorBlock(ImVec4* refCol) {
 	ImGui::ColorButton("Base Colour", ImGui::ColorConvertU32ToFloat4(COL_ARR[GetColIdx(inputCol)]), ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_NoLabel);
 	ImGui::SameLine();
 	if (ImGui::BeginCombo(COLNAME_ARR[GetColIdx(inputCol)], COLNAME_ARR[GetColIdx(inputCol)], ImGuiComboFlags_NoPreview)) {
-		for (int k = 0; k < getCountOfColorTable(); k++) {
+		for (int32_t k = 0; k < getCountOfColorTable(); k++) {
 			if (ImGui::Selectable(COLNAME_ARR[k], inputCol == COL_ARR[k])) {
 				*refCol = ImGui::ColorConvertU32ToFloat4(COL_ARR[k]);
 			}
@@ -570,7 +570,7 @@ static void DisplayColorBlock(ImVec4* refCol) {
 /// Handles drawing an ImGui block that allows picking from either default colours or a custom colour.
 /// </summary>
 /// <param name="refCol"></param>
-static void DisplayColorBlock(unsigned int* refCol) {
+static void DisplayColorBlock(uint32_t* refCol) {
 	ImVec4 inputCol = ImGui::ColorConvertU32ToFloat4(*refCol);
 
 	DisplayColorBlock(&inputCol);
@@ -579,9 +579,9 @@ static void DisplayColorBlock(unsigned int* refCol) {
 }
 
 // Handles drawing an ImGui block that allows picking from a list of available parts.
-static void DisplayPartTable(unsigned int* refUUID, const char* name) {
+static void DisplayPartTable(uint32_t* refUUID, const char* name) {
 	if (ImGui::BeginCombo(name, getPartNameFromAid(*refUUID))) {
-		for (int k = 0; k < getCountOfPartsTable(); k++) {
+		for (int32_t k = 0; k < getCountOfPartsTable(); k++) {
 			if (vehicleParts[k].isComment) {
 				ImGui::SeparatorText(vehicleParts[k].vehicleName);
 			}
@@ -602,7 +602,7 @@ static void openLoadVehicleFile() {
 		FILE* file = fopen(markerWindowParameters.vehicleFilePath, "rb");
 
 		fseek(file, 0L, SEEK_END);
-		int len = ftell(file) + 1;
+		int32_t len = ftell(file) + 1;
 		fseek(file, 0L, SEEK_SET);
 
 		char* fileData = (char*)malloc(len);
@@ -612,10 +612,10 @@ static void openLoadVehicleFile() {
 		fclose(file);
 
 		// Need to quickly grab the number of parts first in order to allocate memory
-		unsigned short numOfParts = 0;
-		unsigned int saveCheck = 0;
+		uint16_t numOfParts = 0;
+		uint32_t saveCheck = 0;
 
-		memcpy(&saveCheck, fileData, sizeof(unsigned int));
+		memcpy(&saveCheck, fileData, sizeof(uint32_t));
 
 		bool isSave = false;
 
@@ -624,10 +624,10 @@ static void openLoadVehicleFile() {
 		}
 
 		if (isSave) {
-			memcpy(&numOfParts, fileData + 8, sizeof(unsigned short));
+			memcpy(&numOfParts, fileData + 8, sizeof(uint16_t));
 		}
 		else {
-			memcpy(&numOfParts, fileData, sizeof(unsigned short));
+			memcpy(&numOfParts, fileData, sizeof(uint16_t));
 		}
 
 		numOfParts = flipEndian(numOfParts);
@@ -674,6 +674,6 @@ void FreeVehicleWindowVehicleMemory() {
 	}
 }
 
-void AllocateVehicleWindowVehicleMemory(int numberOfParts) {
+void AllocateVehicleWindowVehicleMemory(int32_t numberOfParts) {
 	markerWindowParameters.activeVehicle = (Vehicle*)malloc(0x7C + (0x24 * numberOfParts));
 }

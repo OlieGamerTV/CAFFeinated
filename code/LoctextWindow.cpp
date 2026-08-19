@@ -68,8 +68,8 @@ void DisplayLoctextEditorBaseWindow() {
 							char str[8192] = { 0 };
 							char tag[256] = { 0 };
 							char text[2048] = { 0 };
-							int strCount = -1;
-							int commentCount = 0;
+							int32_t strCount = -1;
+							int32_t commentCount = 0;
 
 							fseek(data, 0, SEEK_SET);
 
@@ -100,15 +100,15 @@ void DisplayLoctextEditorBaseWindow() {
 							loctextWindowParameters.activeLoctext->labelTable.tagTable.tags = new TagStr[strCount];
 							loctextWindowParameters.activeLoctext->labelTable.commentTable.comments = new CommentStr[commentCount];
 							loctextWindowParameters.activeLoctext->labelTable.commentTable.entries = new CommentEntry[commentCount];
-							loctextWindowParameters.activeLoctext->labelTable.posTable.entries = new unsigned short[strCount];
+							loctextWindowParameters.activeLoctext->labelTable.posTable.entries = new uint16_t[strCount];
 
-							int tiedComment = -1;
-							int currentStr = -1;
+							int32_t tiedComment = -1;
+							int32_t currentStr = -1;
 							bool isCurrentlyReadingComment = false;
 
-							int totalStrOffs = 0;
-							int totalTagOffs = 0;
-							int totalCommentOffs = 0;
+							int32_t totalStrOffs = 0;
+							int32_t totalTagOffs = 0;
+							int32_t totalCommentOffs = 0;
 
 							while (!feof(data)) {
 								memset(str, 0, 8192);
@@ -143,7 +143,7 @@ void DisplayLoctextEditorBaseWindow() {
 
 									currentStr++;
 
-									unsigned short hash = flipEndian(locHashElfHash16(tag));
+									uint16_t hash = flipEndian(locHashElfHash16(tag));
 									printf("%04X %s = %s\n", hash, tag, text);
 
 									memset(loctextWindowParameters.activeLoctext->labelTable.stringTable.strings[currentStr].string, 0, sizeof(wchar_t) * 2048);
@@ -213,10 +213,10 @@ void DisplayLoctextEditorBaseWindow() {
 
 			// Vehicle Parts List
 			if (ImGui::BeginChild("Entries")) {
-				for (int i = 0; i < loctextWindowParameters.activeLoctext->labelTable.stringTable.header.totalCount; i++) {
+				for (int32_t i = 0; i < loctextWindowParameters.activeLoctext->labelTable.stringTable.header.totalCount; i++) {
 					ImGui::PushID(i);
 
-					unsigned short idx = 0;
+					uint16_t idx = 0;
 
 					// Check if the position table is present. If it is, get the value from that. If not then fallback on the tag table entries.
 					if (loctextWindowParameters.activeLoctext->usesPos) {
@@ -237,19 +237,19 @@ void DisplayLoctextEditorBaseWindow() {
 
 					if (loctextWindowParameters.activeLoctext->usesTags && loctextWindowParameters.activeLoctext->IsHashConnectedToTag(idx)) {
 						if (ImGui::TreeNode(loctextWindowParameters.activeLoctext->labelTable.tagTable.tags[loctextWindowParameters.activeLoctext->GetIdxOfConnectedTag(idx)].val)) {
-							//int total = WideCharToMultiByte(CP_UTF8, WC_COMPOSITECHECK, loctextWindowParameters.activeLoctext->labelTable.stringTable.strings[loctextWindowParameters.activeLoctext->GetIdxOfConnectedString(idx)].string, -1, conv, 2048, NULL, NULL);
+							//int32_t total = WideCharToMultiByte(CP_UTF8, WC_COMPOSITECHECK, loctextWindowParameters.activeLoctext->labelTable.stringTable.strings[loctextWindowParameters.activeLoctext->GetIdxOfConnectedString(idx)].string, -1, conv, 2048, NULL, NULL);
 							size_t total = wcstombs(conv, loctextWindowParameters.activeLoctext->labelTable.stringTable.strings[loctextWindowParameters.activeLoctext->GetIdxOfConnectedString(idx)].string, 2048);
 
 							ImGui::InputText("Tag ", loctextWindowParameters.activeLoctext->labelTable.tagTable.tags[loctextWindowParameters.activeLoctext->GetIdxOfConnectedTag(idx)].val, 256);
 							ImGui::InputTextMultiline("Text", conv, 2047); // Cut it down from 2048 to 2047 so we always have a null character.
-							//int retTotal = MultiByteToWideChar(CP_UTF8, MB_COMPOSITE, conv, -1, loctextWindowParameters.activeLoctext->labelTable.stringTable.strings[loctextWindowParameters.activeLoctext->GetIdxOfConnectedString(idx)].string, 2048);
-							int retTotal = mbstowcs(loctextWindowParameters.activeLoctext->labelTable.stringTable.strings[loctextWindowParameters.activeLoctext->GetIdxOfConnectedString(idx)].string, conv, 2048);
+							//int32_t retTotal = MultiByteToWideChar(CP_UTF8, MB_COMPOSITE, conv, -1, loctextWindowParameters.activeLoctext->labelTable.stringTable.strings[loctextWindowParameters.activeLoctext->GetIdxOfConnectedString(idx)].string, 2048);
+							int32_t retTotal = mbstowcs(loctextWindowParameters.activeLoctext->labelTable.stringTable.strings[loctextWindowParameters.activeLoctext->GetIdxOfConnectedString(idx)].string, conv, 2048);
 
 							ImGui::TreePop();
 						}
 					}
 					else {
-						//int total = WideCharToMultiByte(CP_UTF8, WC_COMPOSITECHECK, loctextWindowParameters.activeLoctext->labelTable.stringTable.strings[loctextWindowParameters.activeLoctext->GetIdxOfConnectedString(idx)].string, -1, conv, 2048, NULL, NULL);
+						//int32_t total = WideCharToMultiByte(CP_UTF8, WC_COMPOSITECHECK, loctextWindowParameters.activeLoctext->labelTable.stringTable.strings[loctextWindowParameters.activeLoctext->GetIdxOfConnectedString(idx)].string, -1, conv, 2048, NULL, NULL);
 						size_t total = wcstombs(conv, loctextWindowParameters.activeLoctext->labelTable.stringTable.strings[loctextWindowParameters.activeLoctext->GetIdxOfConnectedString(idx)].string, 2048);
 
 						// Another cheat to get around in-text formatting.
@@ -281,7 +281,7 @@ static void openLoadLoctextFile() {
 		}
 
 		is.seekg(0, is.end);
-		int len = is.tellg();
+		int32_t len = is.tellg();
 		is.seekg(0, is.beg);
 
 		char* fileData = (char*)malloc(len);

@@ -2320,7 +2320,7 @@ static const char* NormalGameFlagNames[] = {
 	"gameFlag_Normal_World_WorldOfSport_SphereDocked",
 };
 
-enum GameFlag_Normal : int {
+enum GameFlag_Normal : int32_t {
 	gameFlag_Normal_Null,
 	gameFlag_Normal_ActVisit_BanjoLand_Act1,
 	gameFlag_Normal_ActVisit_BanjoLand_Act2,

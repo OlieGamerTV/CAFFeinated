@@ -9,18 +9,18 @@ enum EntryType : char {
 };
 
 struct StreamFileEntry {
-	unsigned int aid = 0;
-	int offset = 0;
-	int dataSize = 0;
+	uint32_t aid = 0;
+	int32_t offset = 0;
+	int32_t dataSize = 0;
 };
 
 struct StreamHeader {
-	int offset = 0xC;
-	int totalFileTotal = 0;
-	unsigned int timestamp = 0;
+	int32_t offset = 0xC;
+	int32_t totalFileTotal = 0;
+	uint32_t timestamp = 0;
 
-	int referenceTableCount = 0;
-	unsigned int* referenceTable = nullptr;
+	int32_t referenceTableCount = 0;
+	uint32_t* referenceTable = nullptr;
 };
 
 struct StreamEntry {
@@ -45,13 +45,13 @@ public:
 	void readStreamBundleFile(char* data);
 
 	// Allocates and returns the target file data.
-	char* getFileData(int fileIdx);
-	char* getBundleFileData(char* fileName, int fileAid, int fileIdx);
+	char* getFileData(int32_t fileIdx);
+	char* getBundleFileData(char* fileName, int32_t fileAid, int32_t fileIdx);
 
 	// Gets the offset of the target file by adding the size of the files before it.
-	int getOffsetOfFile(unsigned int aid) {
-		int offset = 0;
-		for (int i = 0; i < header.totalFileTotal; i++) {
+	int32_t getOffsetOfFile(uint32_t aid) {
+		int32_t offset = 0;
+		for (int32_t i = 0; i < header.totalFileTotal; i++) {
 			if (fileEntries[i].aid == aid) {
 				return fileEntries[i].offset;
 			}

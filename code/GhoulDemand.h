@@ -6,16 +6,16 @@ struct GhoulDemand {
 	bool isReady;
 	bool hasErrored;
 
-	int type;
-	unsigned int timestamp;
+	int32_t type;
+	uint32_t timestamp;
 	float fUnk1;
-	int iUnk1;
+	int32_t iUnk1;
 
 	// Actual Section Info
-	int dataSectOffset;
-	int dataSectSize;
-	int gpuSectOffset;
-	int gpuSectSize;
+	int32_t dataSectOffset;
+	int32_t dataSectSize;
+	int32_t gpuSectOffset;
+	int32_t gpuSectSize;
 
 	void ReadDemandFile(char* data);
 	bool readStandaloneDemandFile(char* fileName);

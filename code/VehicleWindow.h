@@ -6,27 +6,27 @@ static void openLoadVehicleFile();
 
 //helpers
 static void DisplayColorBlock(ImVec4* refCol);
-static void DisplayColorBlock(unsigned int* refCol);
-static void DisplayPartTable(unsigned int* refUUID, const char* name);
+static void DisplayColorBlock(uint32_t* refCol);
+static void DisplayPartTable(uint32_t* refUUID, const char* name);
 
 void SetupVehicleEditorWindow(bool canSave, char* fileName);
 Vehicle* GetVehicleWindowVehiclePtr();
 void FreeVehicleWindowVehicleMemory();
-void AllocateVehicleWindowVehicleMemory(int numberOfParts);
+void AllocateVehicleWindowVehicleMemory(int32_t numberOfParts);
 
 struct ImGuiVehicleBlockParams {
-	unsigned int idx = 0;
+	uint32_t idx = 0;
 	ImVec4 color;
 
-	int idToRemove = 0;
+	int32_t idToRemove = 0;
 
 	ImVec4 colorSearch;
 	ImVec4 colorToReplace;
 
-	unsigned int partSearch = 0;
-	unsigned int partToReplace = 0;
+	uint32_t partSearch = 0;
+	uint32_t partToReplace = 0;
 
-	int partsChanged = 0;
+	int32_t partsChanged = 0;
 
 	char* outputPath = nullptr;
 };

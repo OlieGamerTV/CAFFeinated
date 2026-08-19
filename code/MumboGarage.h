@@ -36,20 +36,20 @@ void displayActiveRPKFileProperty();
 
 //Image Functions
 
-static GLuint LoadResourceImage(int resourceName, const wchar_t* resourceType);
-static GLuint LoadImageFromData_Base(char* data, int width, int height, int type);
-static GLuint LoadImageFromData_Pinata(char* data, int width, int height, int type);
-static GLuint LoadImageFromData_Banjo(char* data, int width, int height, int type, int isSwizzled);
-static GLuint LoadImageFromData(unsigned char* data, int width, int height, int format, int type);
-static GLFWimage LoadResourceImageToGLFWImage(int resourceName, const wchar_t* resourceType);
-static unsigned char* GetRawImageData_Base(char* data, int width, int height, int type);
-static unsigned char* GetRawImageData_Banjo(char* data, int width, int height, int type, int isSwizzled);
+static GLuint LoadResourceImage(int32_t  resourceName, const wchar_t* resourceType);
+static GLuint LoadImageFromData_Base(char* data, int32_t  width, int32_t  height, int32_t  type);
+static GLuint LoadImageFromData_Pinata(char* data, int32_t  width, int32_t  height, int32_t  type);
+static GLuint LoadImageFromData_Banjo(char* data, int32_t  width, int32_t  height, int32_t  type, int32_t  isSwizzled);
+static GLuint LoadImageFromData(unsigned char* data, int32_t  width, int32_t  height, int32_t  format, int32_t  type);
+static GLFWimage LoadResourceImageToGLFWImage(int32_t  resourceName, const wchar_t* resourceType);
+static unsigned char* GetRawImageData_Base(char* data, int32_t  width, int32_t  height, int32_t  type);
+static unsigned char* GetRawImageData_Banjo(char* data, int32_t  width, int32_t  height, int32_t  type, int32_t  isSwizzled);
 
-static ImFont* LoadResourceFont(int resourceName, const wchar_t* resourceType, float extraSize);
+static ImFont* LoadResourceFont(int32_t  resourceName, const wchar_t* resourceType, float extraSize);
 
-int mainWindowCode();
+int32_t  mainWindowCode();
 void drawWindow();
-void readOtherSupportedFile(int type);
+void readOtherSupportedFile(int32_t  type);
 
 //Base Window
 void buildBaseImGuiWindow();
@@ -75,13 +75,13 @@ static void ShowMenuFile();
 static void openMenu();
 static void ShowSearchMenu();
 void TestBundleRecompilation();
-void readLoctextFile(char* data, int startEndian);
+void readLoctextFile(char* data, int32_t  startEndian);
 void readMarkerFile(char* data);
 
 //Save Editor
 static void DisplaySaveEditorBaseWindow();
 
-static void DisplayFlagByteValues(char* flag, int idx, int count, const char** nameArr);
+static void DisplayFlagByteValues(char* flag, int32_t  idx, int32_t  count, const char** nameArr);
 
 // Open Functions
 static void openLoadSaveFile();
@@ -89,9 +89,9 @@ static void openLoadSaveFile();
 
 struct BufferedSave {
 	char* savedData;
-	int fileId;
-	int dataSize;
-	int sect;
+	int32_t  fileId;
+	int32_t  dataSize;
+	int32_t  sect;
 };
 
 struct BundleSave {
@@ -100,28 +100,28 @@ struct BundleSave {
 
 struct StreamedBundleSetup {
 	BundleSave* bufferedSaves;
-	int totalBufferedSavesCount;
-	int* modifiedFileBufferIDs;
-	int modifiedFilesCount;
+	int32_t  totalBufferedSavesCount;
+	int32_t * modifiedFileBufferIDs;
+	int32_t  modifiedFilesCount;
 	bool isDirty;
 };
 
 struct BundleSetup {
 public:
 	BufferedSave* bufferedSaves;
-	int totalBufferedSavesCount;
-	int* modifiedFileBufferIDs;
-	int modifiedFilesCount;
+	int32_t  totalBufferedSavesCount;
+	int32_t * modifiedFileBufferIDs;
+	int32_t  modifiedFilesCount;
 	bool isDirty;
 
 	bool haveNewFilesBeenAdded;
-	int newFilesCount;
-	int* newFileBufferIDs;
+	int32_t  newFilesCount;
+	int32_t * newFileBufferIDs;
 
 	bool bundleCompression;
 
-	bool doesBufferedSaveExist(int fileIdx, int sect) {
-		for (int i = 0; i < totalBufferedSavesCount; i++) {
+	bool doesBufferedSaveExist(int32_t  fileIdx, int32_t  sect) {
+		for (int32_t  i = 0; i < totalBufferedSavesCount; i++) {
 			if (bufferedSaves[i].fileId == fileIdx && bufferedSaves[i].sect == sect) {
 				return true;
 			}
@@ -129,8 +129,8 @@ public:
 		return false;
 	}
 
-	int getIdOfBufferedSave(int fileIdx, int sect) {
-		for (int i = 0; i < totalBufferedSavesCount; i++) {
+	int32_t  getIdOfBufferedSave(int32_t  fileIdx, int32_t  sect) {
+		for (int32_t  i = 0; i < totalBufferedSavesCount; i++) {
 			if (bufferedSaves[i].fileId == fileIdx && bufferedSaves[i].sect == sect) {
 				return i;
 			}
@@ -141,14 +141,14 @@ public:
 	void AddToSaveBuffer(BufferedSave itemToSave) {
 		isDirty = true;
 		BufferedSave* tmpBuf = new BufferedSave[totalBufferedSavesCount];
-		for (int i = 0; i < totalBufferedSavesCount; i++) {
+		for (int32_t  i = 0; i < totalBufferedSavesCount; i++) {
 			tmpBuf[i] = bufferedSaves[i];
 		}
 
 		totalBufferedSavesCount++;
 		bufferedSaves = new BufferedSave[totalBufferedSavesCount];
 
-		for (int i = 0; i < totalBufferedSavesCount - 1; i++) {
+		for (int32_t  i = 0; i < totalBufferedSavesCount - 1; i++) {
 			bufferedSaves[i] = tmpBuf[i];
 		}
 
@@ -162,12 +162,12 @@ public:
 	void AddNewFileToSaveBuffer(BufferedSave itemToSave) {
 		isDirty = true;
 		BufferedSave* tmpBuf = new BufferedSave[totalBufferedSavesCount];
-		for (int i = 0; i < totalBufferedSavesCount; i++) {
+		for (int32_t  i = 0; i < totalBufferedSavesCount; i++) {
 			tmpBuf[i] = bufferedSaves[i];
 		}
 
-		int* tmpNFBuf = new int[newFilesCount];
-		for (int i = 0; i < totalBufferedSavesCount; i++) {
+		int32_t * tmpNFBuf = new int32_t [newFilesCount];
+		for (int32_t  i = 0; i < totalBufferedSavesCount; i++) {
 			tmpNFBuf[i] = newFileBufferIDs[i];
 		}
 
@@ -175,13 +175,13 @@ public:
 		newFilesCount++;
 
 		bufferedSaves = new BufferedSave[totalBufferedSavesCount];
-		newFileBufferIDs = new int[newFilesCount];
+		newFileBufferIDs = new int32_t [newFilesCount];
 
-		for (int i = 0; i < totalBufferedSavesCount; i++) {
+		for (int32_t  i = 0; i < totalBufferedSavesCount; i++) {
 			bufferedSaves[i] = tmpBuf[i];
 		}
 
-		for (int i = 0; i < totalBufferedSavesCount; i++) {
+		for (int32_t  i = 0; i < totalBufferedSavesCount; i++) {
 			newFileBufferIDs[i] = tmpNFBuf[i];
 		}
 
@@ -202,12 +202,12 @@ public:
 
 	bool showLoadingPrompt = false;
 	char loadingMessage[1024] = { 0 };
-	int totalAmount = 0;
-	int currentSaved = 0;
+	int32_t  totalAmount = 0;
+	int32_t  currentSaved = 0;
 
-	int loadWheel = 0;
+	int32_t  loadWheel = 0;
 
-	int targetType = 0;
+	int32_t  targetType = 0;
 };
 
 struct AddFileWindow {
@@ -215,7 +215,7 @@ public:
 	char filePath[MAX_PATH];
 	char* fileName = nullptr;
 
-	int fileType = 0;
+	int32_t  fileType = 0;
 };
 
 struct ImGuiGarageWindow {
@@ -241,9 +241,9 @@ struct ImGuiGarageWindow {
 	// Values
 	float titleBarHeight = 20;
 
-	int bundleSelectedItem = -1;
-	int streamBundleSelectedBundle = -1;
-	int streamBundleSelectedItem = -1;
+	int32_t  bundleSelectedItem = -1;
+	int32_t  streamBundleSelectedBundle = -1;
+	int32_t  streamBundleSelectedItem = -1;
 
 	ImFont* defFont;
 	ImFont* jpnFont;
@@ -254,11 +254,11 @@ struct ImGuiGarageWindow {
 	nfdchar_t* saveFilePath;
 	nfdchar_t* loctextExportPath;
 	char* search;
-	unsigned int aidSearch = 0;
+	uint32_t  aidSearch = 0;
 	char* fileNameSearch;
 };
 
 //GLFW
-void framebuffer_size_callback(GLFWwindow* window, int width, int height);
+void framebuffer_size_callback(GLFWwindow* window, int32_t  width, int32_t  height);
 void window_refresh_callback(GLFWwindow* window);
 void processInput(GLFWwindow* window);

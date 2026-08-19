@@ -23,7 +23,7 @@ void StreamBundle::readStandaloneStreamBundleFile(char* fileName) {
 	}
 
 	fseek(currentFile, 0L, SEEK_END);
-	int length = ftell(currentFile);
+	int32_t length = ftell(currentFile);
 	fseek(currentFile, 0L, SEEK_SET);
 
 	char* data = (char*)malloc(length);
@@ -38,30 +38,30 @@ void StreamBundle::readStandaloneStreamBundleFile(char* fileName) {
 
 void StreamBundle::readStreamBundleFile(char* data) {
 	fileData = data;
-	int offsetVar = 0xC;
-	int totalFileTotalVar = 0;
-	unsigned int timestampVar = 0;
+	int32_t offsetVar = 0xC;
+	int32_t totalFileTotalVar = 0;
+	uint32_t timestampVar = 0;
 
-	int referenceTableCountVar = 0;
+	int32_t referenceTableCountVar = 0;
 
-	memcpy(&offsetVar, data + 4, sizeof(int));
-	memcpy(&totalFileTotalVar, data + 8, sizeof(int));
-	memcpy(&timestampVar, data + 0xC, sizeof(int));
-	memcpy(&referenceTableCountVar, data + 0x10, sizeof(int));
+	memcpy(&offsetVar, data + 4, sizeof(int32_t));
+	memcpy(&totalFileTotalVar, data + 8, sizeof(int32_t));
+	memcpy(&timestampVar, data + 0xC, sizeof(int32_t));
+	memcpy(&referenceTableCountVar, data + 0x10, sizeof(int32_t));
 
 	header.offset = flipEndian(offsetVar);
 	header.totalFileTotal = flipEndian(totalFileTotalVar);
 	header.timestamp = flipEndian(timestampVar);
 	header.referenceTableCount = flipEndian(referenceTableCountVar);
 
-	header.referenceTable = new unsigned int[header.referenceTableCount];
+	header.referenceTable = new uint32_t[header.referenceTableCount];
 
 	printf("Total References %d\n", header.referenceTableCount);
 
-	int pos = 0x14;
-	for (int i = 0; i < header.referenceTableCount; i++) {
-		int refAid = 0;
-		memcpy(&refAid, data + pos, sizeof(int));
+	int32_t pos = 0x14;
+	for (int32_t i = 0; i < header.referenceTableCount; i++) {
+		int32_t refAid = 0;
+		memcpy(&refAid, data + pos, sizeof(int32_t));
 		header.referenceTable[i] = flipEndian(refAid);
 		pos += 4;
 
@@ -71,13 +71,13 @@ void StreamBundle::readStreamBundleFile(char* data) {
 	fileEntries = new StreamFileEntry[header.totalFileTotal];
 
 	pos = 0x14 + (header.referenceTableCount * 4);
-	for (int i = 0; i < header.totalFileTotal; i++) {
-		unsigned int aidVar;
-		int offsetVar;
-		int dataSizeVar;
-		memcpy(&aidVar, data + pos, sizeof(int));
-		memcpy(&offsetVar, data + pos + 4, sizeof(int));
-		memcpy(&dataSizeVar, data + pos + 8, sizeof(int));
+	for (int32_t i = 0; i < header.totalFileTotal; i++) {
+		uint32_t aidVar;
+		int32_t offsetVar;
+		int32_t dataSizeVar;
+		memcpy(&aidVar, data + pos, sizeof(int32_t));
+		memcpy(&offsetVar, data + pos + 4, sizeof(int32_t));
+		memcpy(&dataSizeVar, data + pos + 8, sizeof(int32_t));
 		fileEntries[i].aid = flipEndian(aidVar);
 		fileEntries[i].offset = flipEndian(offsetVar);
 		fileEntries[i].dataSize = flipEndian(dataSizeVar);
@@ -87,15 +87,15 @@ void StreamBundle::readStreamBundleFile(char* data) {
 	}
 
 	bundleFiles = new StreamEntry[header.totalFileTotal];
-	unsigned int magic = 0;
+	uint32_t magic = 0;
 	char magicChar[5];
 
-	for (int i = 0; i < header.totalFileTotal; i++) {
+	for (int32_t i = 0; i < header.totalFileTotal; i++) {
 		//char* bundleData = (char*)malloc(fileEntries[i].dataSize);
 
 		memset(magicChar, 0, 5);
 
-		memcpy(&magic, data + fileEntries[i].offset, sizeof(unsigned int));
+		memcpy(&magic, data + fileEntries[i].offset, sizeof(uint32_t));
 		memcpy(&magicChar, data + fileEntries[i].offset, 4);
 
 		printf("File %d Magic %08x (%s)\n", i, magic, magicChar);
@@ -126,7 +126,7 @@ void StreamBundle::readStreamBundleFile(char* data) {
 	isReady = true;
 }
 
-char* StreamBundle::getFileData(int fileIdx) {
+char* StreamBundle::getFileData(int32_t fileIdx) {
 
 	if (fileData == nullptr) {
 		printf("No file data has been supplied.\n");
@@ -143,18 +143,18 @@ char* StreamBundle::getFileData(int fileIdx) {
 bool StreamBundle::addStreamedReference(bool* open) {
 	bool ret = false;
 	if (ImGui::BeginPopupModal("Add Reference", open, ImGuiWindowFlags_NoCollapse)) {
-		unsigned int aid = 0x50000000;
+		uint32_t aid = 0x50000000;
 
 		ImGui::InputScalar("Reference Aid", ImGuiDataType_U32, &aid, 0, 0, "%08X", ImGuiInputTextFlags_CharsHexadecimal);
 
 		if (ImGui::Button("Add")) {
-			unsigned int* tempTable = new unsigned int[header.referenceTableCount];
-			for (int i = 0; i < header.referenceTableCount; i++) {
+			uint32_t* tempTable = new uint32_t[header.referenceTableCount];
+			for (int32_t i = 0; i < header.referenceTableCount; i++) {
 				tempTable[i] = header.referenceTable[i];
 			}
 			header.referenceTableCount++;
-			header.referenceTable = new unsigned int[header.referenceTableCount];
-			for (int i = 0; i < header.referenceTableCount - 1; i++) {
+			header.referenceTable = new uint32_t[header.referenceTableCount];
+			for (int32_t i = 0; i < header.referenceTableCount - 1; i++) {
 				header.referenceTable[i] = tempTable[i];
 			}
 			header.referenceTable[header.referenceTableCount - 1] = aid;

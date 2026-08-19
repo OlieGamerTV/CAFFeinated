@@ -3,7 +3,7 @@
 #include "PinataDBBundle.h"
 #include "Bundle.h"
 
-char* DBBundle::getFileData(int fileIdx, int* dataSize) {
+char* DBBundle::getFileData(int32_t fileIdx, int32_t* dataSize) {
 	if (savedFilePath == nullptr) {
 		return nullptr;
 	}
@@ -30,7 +30,7 @@ char* DBBundle::getFileData(int fileIdx, int* dataSize) {
 
 	tmpBundle.readBundleHeaderV0036(fileData);
 
-	int baseSize = tmpBundle.getBaseSizeOfCompedBundle();
+	int32_t baseSize = tmpBundle.getBaseSizeOfCompedBundle();
 
 	char* baseFileData = (char*)realloc(fileData, baseSize);
 
@@ -40,7 +40,7 @@ char* DBBundle::getFileData(int fileIdx, int* dataSize) {
 
 	tmpBundle.readBundleSectionFileV0036(baseFileData);
 
-	int fullCaffSize = tmpBundle.getTotalSizeOfCompedBundle();
+	int32_t fullCaffSize = tmpBundle.getTotalSizeOfCompedBundle();
 
 	char* fullCaffData = (char*)realloc(baseFileData, fullCaffSize);
 
@@ -103,7 +103,7 @@ bool DBBundle::readStandaloneDbBundleFiles(char* filePath) {
 	}
 
 	fseek(idxFile, 0L, SEEK_END);
-	int length = ftell(idxFile);
+	int32_t length = ftell(idxFile);
 	fseek(idxFile, 0L, SEEK_SET);
 
 	char* indexData = (char*)malloc(length);
@@ -112,8 +112,8 @@ bool DBBundle::readStandaloneDbBundleFiles(char* filePath) {
 
 	fseek(idxFile, 0L, SEEK_SET);
 
-	unsigned int number_of_lines = 0;
-	int ch;
+	uint32_t number_of_lines = 0;
+	int32_t ch;
 	while (EOF != (ch = getc(idxFile)))
 		if ('\n' == ch)
 			++number_of_lines;
@@ -124,7 +124,7 @@ bool DBBundle::readStandaloneDbBundleFiles(char* filePath) {
 
 	char* inputIndexData = indexData;
 	if (isTiPIndexFile) {
-		int uncompedSize = 0;
+		int32_t uncompedSize = 0;
 		memcpy(&uncompedSize, indexData, 4);
 		uncompedSize = flipEndian(uncompedSize);
 
@@ -150,7 +150,7 @@ bool DBBundle::readStandaloneDbBundleFiles(char* filePath) {
 	return true;
 }
 
-void DBBundle::readDbBundleFiles(char* hashData, char* indexData, int totalIndexCount) {
+void DBBundle::readDbBundleFiles(char* hashData, char* indexData, int32_t totalIndexCount) {
 	if (hashData == nullptr || indexData == nullptr) {
 		printf("%s - Either hashData or indexData is null.\n", __func__);
 		hasErrored = true;
@@ -161,7 +161,7 @@ void DBBundle::readDbBundleFiles(char* hashData, char* indexData, int totalIndex
 	indexFileData = indexData;
 	indexCount = totalIndexCount;
 
-	int fileCount = 0;
+	int32_t fileCount = 0;
 
 	memcpy(&fileCount, hashData, 4);
 
@@ -170,18 +170,18 @@ void DBBundle::readDbBundleFiles(char* hashData, char* indexData, int totalIndex
 	printf("%s - %d.\n", __func__, hashFile.fileCount);
 
 	// Parse the Hash File Data first.
-	int hashBasePos = 4;
-	int offsetBasePos = 4 + (hashFile.fileCount * 4);
+	int32_t hashBasePos = 4;
+	int32_t offsetBasePos = 4 + (hashFile.fileCount * 4);
 
 	if (isTiPIndexFile) {
-		hashFile.hash64_Array = new unsigned long long[hashFile.fileCount];
+		hashFile.hash64_Array = new uint64_t[hashFile.fileCount];
 		offsetBasePos = 4 + (hashFile.fileCount * 8);
 	}
 	else {
-		hashFile.hash32_Array = new unsigned int[hashFile.fileCount];
+		hashFile.hash32_Array = new uint32_t[hashFile.fileCount];
 	}
 
-	hashFile.offsetArray = new int[hashFile.fileCount];
+	hashFile.offsetArray = new int32_t[hashFile.fileCount];
 
 	precachedEntries = new PrecacheEntry[hashFile.fileCount];
 
@@ -191,16 +191,16 @@ void DBBundle::readDbBundleFiles(char* hashData, char* indexData, int totalIndex
 	memset(indexFile, 0, sizeof(IndexEntry) * totalIndexCount);
 
 	// Get the hash & offsets first...
-	for (int i = 0; i < hashFile.fileCount; i++) {
-		int offset = 0;
+	for (int32_t i = 0; i < hashFile.fileCount; i++) {
+		int32_t offset = 0;
 
 		if (isTiPIndexFile) {
-			unsigned int hash = 0;
+			uint32_t hash = 0;
 			memcpy(&hash, hashData + hashBasePos + (i * 8), 8);
 			hashFile.hash64_Array[i] = flipEndian(hash);
 		}
 		else {
-			unsigned int hash = 0;
+			uint32_t hash = 0;
 			memcpy(&hash, hashData + hashBasePos + (i * 4), 4);
 			hashFile.hash32_Array[i] = flipEndian(hash);
 		}
@@ -218,8 +218,8 @@ void DBBundle::readDbBundleFiles(char* hashData, char* indexData, int totalIndex
 	}
 
 	// ...and now we get the available names.
-	int charRead = 0;
-	for (int i = 0; i < totalIndexCount; i++) {
+	int32_t charRead = 0;
+	for (int32_t i = 0; i < totalIndexCount; i++) {
 		memset(indexFile[i].filename, 0, 256);
 		sscanf(indexData + charRead, "%s %d %f", indexFile[i].filename, &indexFile[i].timestamp, &indexFile[i].version);
 
@@ -229,7 +229,7 @@ void DBBundle::readDbBundleFiles(char* hashData, char* indexData, int totalIndex
 
 		printf("%s %d %f\n", indexFile[i].filename, indexFile[i].timestamp, indexFile[i].version);
 
-		int idx = getIdxOfFile(indexFile[i].hash);
+		int32_t idx = getIdxOfFile(indexFile[i].hash);
 		if (idx != -1) {
 
 			precachedEntries[idx].hashIdx = idx;

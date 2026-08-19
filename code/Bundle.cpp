@@ -88,7 +88,7 @@ bool BundleV36::readBundleHeaderV0036(char* data) {
 
 	char caffVer[0x10];
 
-	int offset = 0;
+	int32_t offset = 0;
 	bool isValidVersion = false;
 
 	if (memcpy(caffVer, data + 4, 0x10) == nullptr) {
@@ -124,22 +124,22 @@ bool BundleV36::readBundleHeaderV0036(char* data) {
 		printf("CAFF Header - {\n");
 		// Now we read the important information.
 
-		memcpy(&header.headerSize, data + 0x14 + offset, sizeof(int)); // 0x14
-		memcpy(&header.headerHash, data + 0x18 + offset, sizeof(int)); // 0x18
-		memcpy(&header.numAssets, data + 0x1C + offset, sizeof(int)); // 0x1C
-		memcpy(&header.numSections, data + 0x20 + offset, sizeof(int)); // 0x20
+		memcpy(&header.headerSize, data + 0x14 + offset, sizeof(int32_t)); // 0x14
+		memcpy(&header.headerHash, data + 0x18 + offset, sizeof(int32_t)); // 0x18
+		memcpy(&header.numAssets, data + 0x1C + offset, sizeof(int32_t)); // 0x1C
+		memcpy(&header.numSections, data + 0x20 + offset, sizeof(int32_t)); // 0x20
 
 		memcpy(&header.byteswapFlags, data + 0x48 + offset, sizeof(char));
 		memcpy(&header.numSectionTypes, data + 0x49 + offset, sizeof(char));
 		memcpy(&header.compression, data + 0x4A + offset, sizeof(char));
 		memcpy(&header.numPools, data + 0x4B + offset, sizeof(char));
 
-		memcpy(&header.sectionTypeNamesBufferLen, data + 0x4C + offset, sizeof(int)); // 0x4C
+		memcpy(&header.sectionTypeNamesBufferLen, data + 0x4C + offset, sizeof(int32_t)); // 0x4C
 
-		memcpy(&header.sectionTableUncompedSize, data + 0x50 + offset, sizeof(int)); // 0x50
-		memcpy(&header.sectionTableCompedSize, data + 0x60 + offset, sizeof(int)); // 0x60
-		memcpy(&header.fileTableUncompedSize, data + 0x64 + offset, sizeof(int)); // 0x64
-		memcpy(&header.fileTableCompedSize, data + 0x74 + offset, sizeof(int)); // 0x74
+		memcpy(&header.sectionTableUncompedSize, data + 0x50 + offset, sizeof(int32_t)); // 0x50
+		memcpy(&header.sectionTableCompedSize, data + 0x60 + offset, sizeof(int32_t)); // 0x60
+		memcpy(&header.fileTableUncompedSize, data + 0x64 + offset, sizeof(int32_t)); // 0x64
+		memcpy(&header.fileTableCompedSize, data + 0x74 + offset, sizeof(int32_t)); // 0x74
 
 		printf("\tCRC - %08X, NUM SYMBOLS & NUM FILES[%d %d -> %d %d]\n", flipEndian(header.headerHash), header.numAssets, header.numSections, flipEndian(header.numAssets), flipEndian(header.numSections));
 
@@ -159,7 +159,7 @@ bool BundleV36::readBundleHeaderV0036(char* data) {
 		}
 		printf("}\n");
 	}
-	catch (int ex) {
+	catch (int32_t ex) {
 	}
 
 	return true;
@@ -175,7 +175,7 @@ bool BundleV36::readBundleSectionFileV0036(char* data) {
 		printf("CAFF Sections - {\n");
 
 		// Initialize section table arrays.
-		sectionTable.fileLabelOffsets = new int[header.numAssets];
+		sectionTable.fileLabelOffsets = new int32_t[header.numAssets];
 		sectionTable.fileInfos = new FileInfoEntry[header.numSections];
 		sectionTable.fileLabelTable.fileLabels = new FileLabel[header.numAssets];
 
@@ -212,26 +212,26 @@ bool BundleV36::readBundleSectionFileV0036(char* data) {
 		}
 
 		// Section Time
-		int sectPos = header.headerSize;
-		for (int i = 0; i < header.numSectionTypes; i++) {
-			int strOffset = 0;
-			int unk2 = 0;
-			int uncompressedSize = 0;
-			int compressedSize = 0;
+		int32_t sectPos = header.headerSize;
+		for (int32_t i = 0; i < header.numSectionTypes; i++) {
+			int32_t strOffset = 0;
+			int32_t unk2 = 0;
+			int32_t uncompressedSize = 0;
+			int32_t compressedSize = 0;
 
 			memcpy(&sectionTable.entries[i].unk1, uncompedBaseData + (sectPos + 4), sizeof(char)); // 0x4
 
 			if (header.byteswapFlags == 0) {
-				memcpy(&sectionTable.entries[i].strOffset, uncompedBaseData + (sectPos), sizeof(int)); // 0x0
-				memcpy(&sectionTable.entries[i].unk2, uncompedBaseData + (sectPos + 5), sizeof(int)); // 0x5
-				memcpy(&sectionTable.entries[i].uncompressedSize, uncompedBaseData + (sectPos + 9), sizeof(int)); // 0x9
-				memcpy(&sectionTable.entries[i].compressedSize, uncompedBaseData + (sectPos + 0x1D), sizeof(int)); // 0x1D
+				memcpy(&sectionTable.entries[i].strOffset, uncompedBaseData + (sectPos), sizeof(int32_t)); // 0x0
+				memcpy(&sectionTable.entries[i].unk2, uncompedBaseData + (sectPos + 5), sizeof(int32_t)); // 0x5
+				memcpy(&sectionTable.entries[i].uncompressedSize, uncompedBaseData + (sectPos + 9), sizeof(int32_t)); // 0x9
+				memcpy(&sectionTable.entries[i].compressedSize, uncompedBaseData + (sectPos + 0x1D), sizeof(int32_t)); // 0x1D
 			}
 			else if (header.byteswapFlags == 1) {
-				memcpy(&strOffset, uncompedBaseData + (sectPos), sizeof(int)); // 0x0
-				memcpy(&unk2, uncompedBaseData + (sectPos + 5), sizeof(int)); // 0x5
-				memcpy(&uncompressedSize, uncompedBaseData + (sectPos + 9), sizeof(int)); // 0x9
-				memcpy(&compressedSize, uncompedBaseData + (sectPos + 0x1D), sizeof(int)); // 0x1D
+				memcpy(&strOffset, uncompedBaseData + (sectPos), sizeof(int32_t)); // 0x0
+				memcpy(&unk2, uncompedBaseData + (sectPos + 5), sizeof(int32_t)); // 0x5
+				memcpy(&uncompressedSize, uncompedBaseData + (sectPos + 9), sizeof(int32_t)); // 0x9
+				memcpy(&compressedSize, uncompedBaseData + (sectPos + 0x1D), sizeof(int32_t)); // 0x1D
 
 				// Flip all applicable values from big endian to little endian.
 				sectionTable.entries[i].strOffset = flipEndian(strOffset);
@@ -246,56 +246,56 @@ bool BundleV36::readBundleSectionFileV0036(char* data) {
 		}
 
 		// Section Labels
-		int baseOffsetForSectLabels = header.headerSize + (0x21 * header.numSectionTypes);
+		int32_t baseOffsetForSectLabels = header.headerSize + (0x21 * header.numSectionTypes);
 		sectionTable.sectionLabelOffset = baseOffsetForSectLabels;
-		for (int i = 0; i < header.numSectionTypes; i++) {
+		for (int32_t i = 0; i < header.numSectionTypes; i++) {
 			strcpy(sectionTable.sectionLabels[i].label, uncompedBaseData + (baseOffsetForSectLabels + sectionTable.entries[i].strOffset));
 
 			//printf("SECT LABEL %u [%s]\n", i, sectionTable.sectionLabels[i].label);
 		}
 
-		int baseOffsetForFileLabelOffsets = header.headerSize + (0x21 * header.numSectionTypes) + header.sectionTypeNamesBufferLen;
+		int32_t baseOffsetForFileLabelOffsets = header.headerSize + (0x21 * header.numSectionTypes) + header.sectionTypeNamesBufferLen;
 		sectionTable.sectionFileLabelOffset = baseOffsetForFileLabelOffsets;
 
 
 		// Symbol time
-		int totalTableSize = 0;
+		int32_t totalTableSize = 0;
 		if (header.byteswapFlags == 0) {
-			memcpy(&sectionTable.fileLabelTable.totalLabelTableSize, uncompedBaseData + baseOffsetForFileLabelOffsets, sizeof(int)); // 0x00
+			memcpy(&sectionTable.fileLabelTable.totalLabelTableSize, uncompedBaseData + baseOffsetForFileLabelOffsets, sizeof(int32_t)); // 0x00
 		}
 		else if (header.byteswapFlags == 1) {
-			memcpy(&totalTableSize, uncompedBaseData + baseOffsetForFileLabelOffsets, sizeof(int)); // 0x00
+			memcpy(&totalTableSize, uncompedBaseData + baseOffsetForFileLabelOffsets, sizeof(int32_t)); // 0x00
 			sectionTable.fileLabelTable.totalLabelTableSize = flipEndian(totalTableSize);
 		}
 
-		for (int i = 0; i < header.numAssets; i++) {
-			int offset = 0;
+		for (int32_t i = 0; i < header.numAssets; i++) {
+			int32_t offset = 0;
 
 			if (header.byteswapFlags == 0) {
-				memcpy(&sectionTable.fileLabelOffsets[i], uncompedBaseData + (baseOffsetForFileLabelOffsets + (i * 4)) + 4, sizeof(int));
+				memcpy(&sectionTable.fileLabelOffsets[i], uncompedBaseData + (baseOffsetForFileLabelOffsets + (i * 4)) + 4, sizeof(int32_t));
 			}
 			else if (header.byteswapFlags == 1) {
-				memcpy(&offset, uncompedBaseData + (baseOffsetForFileLabelOffsets + (i * 4)) + 4, sizeof(int));
+				memcpy(&offset, uncompedBaseData + (baseOffsetForFileLabelOffsets + (i * 4)) + 4, sizeof(int32_t));
 				sectionTable.fileLabelOffsets[i] = flipEndian(offset);
 			}
 
 			//printf("Symbol %d offset %d\n", i, sectionTable.fileLabelOffsets[i]);
 		}
 
-		int baseOffsetForFileLabels = baseOffsetForFileLabelOffsets + 4 + (header.numAssets * 4);
+		int32_t baseOffsetForFileLabels = baseOffsetForFileLabelOffsets + 4 + (header.numAssets * 4);
 
 
-		for (int i = 0; i < header.numAssets; i++) {
+		for (int32_t i = 0; i < header.numAssets; i++) {
 			strcpy(sectionTable.fileLabelTable.fileLabels[i].label, uncompedBaseData + (baseOffsetForFileLabels + sectionTable.fileLabelOffsets[i]));
 			//printf("Symbol %d - %s\n", i, sectionTable.fileLabelTable.fileLabels[i].label);
 		}
 
-		int adbLen = 0;
+		int32_t adbLen = 0;
 		if (header.byteswapFlags == 0) {
-			memcpy(&sectionTable.adbStringLen, uncompedBaseData + baseOffsetForFileLabels + sectionTable.fileLabelTable.totalLabelTableSize, sizeof(int)); // 0x0
+			memcpy(&sectionTable.adbStringLen, uncompedBaseData + baseOffsetForFileLabels + sectionTable.fileLabelTable.totalLabelTableSize, sizeof(int32_t)); // 0x0
 		}
 		else if (header.byteswapFlags == 1) {
-			memcpy(&adbLen, uncompedBaseData + baseOffsetForFileLabels + sectionTable.fileLabelTable.totalLabelTableSize, sizeof(int)); // 0x0
+			memcpy(&adbLen, uncompedBaseData + baseOffsetForFileLabels + sectionTable.fileLabelTable.totalLabelTableSize, sizeof(int32_t)); // 0x0
 			sectionTable.adbStringLen = flipEndian(adbLen);
 		}
 
@@ -307,24 +307,24 @@ bool BundleV36::readBundleSectionFileV0036(char* data) {
 			printf("\tADB %d %s\n", sectionTable.adbStringLen, sectionTable.adbString);
 		}
 
-		int baseOffsetForFileInfos = baseOffsetForFileLabels + sectionTable.fileLabelTable.totalLabelTableSize + 4 + sectionTable.adbStringLen;
+		int32_t baseOffsetForFileInfos = baseOffsetForFileLabels + sectionTable.fileLabelTable.totalLabelTableSize + 4 + sectionTable.adbStringLen;
 		sectionTable.fileInfosOffset = baseOffsetForFileInfos;
 
 		//printf("File Info Offset - %d\n", sectionTable.fileInfosOffset);
-		for (int i = 0; i < header.numSections; i++) {
-			int infoID = 0;
-			int infoDataOffset = 0;
-			int infoDataSize = 0;
+		for (int32_t i = 0; i < header.numSections; i++) {
+			int32_t infoID = 0;
+			int32_t infoDataOffset = 0;
+			int32_t infoDataSize = 0;
 
 			if (header.byteswapFlags == 0) {
-				memcpy(&sectionTable.fileInfos[i].ID, uncompedBaseData + baseOffsetForFileInfos, sizeof(int)); // 0x0
-				memcpy(&sectionTable.fileInfos[i].dataOffset, uncompedBaseData + baseOffsetForFileInfos + 4, sizeof(int)); // 0x4
-				memcpy(&sectionTable.fileInfos[i].dataSize, uncompedBaseData + baseOffsetForFileInfos + 8, sizeof(int)); // 0x8
+				memcpy(&sectionTable.fileInfos[i].ID, uncompedBaseData + baseOffsetForFileInfos, sizeof(int32_t)); // 0x0
+				memcpy(&sectionTable.fileInfos[i].dataOffset, uncompedBaseData + baseOffsetForFileInfos + 4, sizeof(int32_t)); // 0x4
+				memcpy(&sectionTable.fileInfos[i].dataSize, uncompedBaseData + baseOffsetForFileInfos + 8, sizeof(int32_t)); // 0x8
 			}
 			else if (header.byteswapFlags == 1) {
-				memcpy(&infoID, uncompedBaseData + baseOffsetForFileInfos, sizeof(int)); // 0x0
-				memcpy(&infoDataOffset, uncompedBaseData + baseOffsetForFileInfos + 4, sizeof(int)); // 0x4
-				memcpy(&infoDataSize, uncompedBaseData + baseOffsetForFileInfos + 8, sizeof(int)); // 0x8
+				memcpy(&infoID, uncompedBaseData + baseOffsetForFileInfos, sizeof(int32_t)); // 0x0
+				memcpy(&infoDataOffset, uncompedBaseData + baseOffsetForFileInfos + 4, sizeof(int32_t)); // 0x4
+				memcpy(&infoDataSize, uncompedBaseData + baseOffsetForFileInfos + 8, sizeof(int32_t)); // 0x8
 				sectionTable.fileInfos[i].ID = flipEndian(infoID);
 				sectionTable.fileInfos[i].dataOffset = flipEndian(infoDataOffset);
 				sectionTable.fileInfos[i].dataSize = flipEndian(infoDataSize);
@@ -343,7 +343,7 @@ bool BundleV36::readBundleSectionFileV0036(char* data) {
 		free(uncompedBaseData);
 		uncompedBaseData = nullptr;
 	}
-	catch (int e) {
+	catch (int32_t e) {
 		printf("An error occured while reading the provided bundle file.\n");
 	}
 
@@ -352,7 +352,7 @@ bool BundleV36::readBundleSectionFileV0036(char* data) {
 
 bool BundleV36::readBundleFileV0036(char* data) {
 
-	int end = SRC_ENDIANLITTLE;
+	int32_t end = SRC_ENDIANLITTLE;
 
 	if (data == nullptr) {
 		printf("Passed data array is null.\n");
@@ -374,16 +374,16 @@ bool BundleV36::readBundleFileV0036(char* data) {
 			return false;
 		}
 
-		hashTable = new unsigned int[header.numAssets]();
+		hashTable = new uint32_t[header.numAssets]();
 
 		
 		/*
-		for (int i = 0; i < header.numAssets; i++) {
+		for (int32_t i = 0; i < header.numAssets; i++) {
 			char* lbl = new char[128];
 			memset(lbl, 0, 128);
 
 			char* pos = strchr(sectionTable.fileLabelTable.fileLabels[i].label, ',');
-			int size = pos - sectionTable.fileLabelTable.fileLabels[i].label;
+			int32_t size = pos - sectionTable.fileLabelTable.fileLabels[i].label;
 			strncpy(lbl, sectionTable.fileLabelTable.fileLabels[i].label, size);
 			hashTable[i] = assetIdGetHash_Base(lbl);
 			printf("%s\n", lbl);
@@ -394,7 +394,7 @@ bool BundleV36::readBundleFileV0036(char* data) {
 		isReady = true;
 		printf("The bundle file has finished reading.\n");
 	}
-	catch (int e) {
+	catch (int32_t e) {
 		printf("An error occured while reading the provided bundle file.\n");
 	}
 
@@ -421,7 +421,7 @@ bool BundleV36::readStandaloneBundleFile(char* fileName) {
 	}
 
 	fseek(currentFile, 0L, SEEK_END);
-	int length = ftell(currentFile);
+	int32_t length = ftell(currentFile);
 	fseek(currentFile, 0L, SEEK_SET);
 
 	char* data = (char*)malloc(length);
@@ -444,7 +444,7 @@ void BundleV36::writeStandaloneBundleFile(char* fileName) {
 	}
 
 	fseek(currentFile, 0L, SEEK_END);
-	int length = ftell(currentFile);
+	int32_t length = ftell(currentFile);
 	fseek(currentFile, 0L, SEEK_SET);
 
 	char* data = (char*)malloc(length);
@@ -459,15 +459,15 @@ void BundleV36::writeStandaloneBundleFile(char* fileName) {
 	return;
 }
 
-char* BundleV36::getFileData(char* fileName, int fileInfoIdx) {
+char* BundleV36::getFileData(char* fileName, int32_t fileInfoIdx) {
 	if (bundleData == nullptr) {
 		printf("Error occured while trying to open the file.\n");
 		return NULL;
 	}
 
-	int sectionOffset = getOffsetOfSection(sectionTable.fileInfos[fileInfoIdx].section - 1);
+	int32_t sectionOffset = getOffsetOfSection(sectionTable.fileInfos[fileInfoIdx].section - 1);
 
-	int totalOffsetToDataSect = header.headerSize + header.sectionTableUncompedSize + header.fileTableUncompedSize;
+	int32_t totalOffsetToDataSect = header.headerSize + header.sectionTableUncompedSize + header.fileTableUncompedSize;
 
 	//Initialize our new section.
 	char* sect = (char*)malloc(sectionTable.fileInfos[fileInfoIdx].dataSize);
@@ -520,7 +520,7 @@ bool BundleV31::readBundleFileV0031(char* data) {
 
 	char caffVer[0x10];
 
-	int offset = 0;
+	int32_t offset = 0;
 	bool isValidVersion = false;
 
 	if (memcpy(caffVer, data + 4, 0x10) == nullptr) {
@@ -545,17 +545,17 @@ bool BundleV31::readBundleFileV0031(char* data) {
 		printf("CAFF Header - {\n");
 		// Now we read the important information.
 
-		memcpy(&header.headerHash, data + 0x14 + offset, sizeof(int));
-		memcpy(&header.numOfFiles, data + 0x18 + offset, sizeof(int));
-		memcpy(&header.numOfFileEntries, data + 0x1C + offset, sizeof(int));
-		memcpy(&header.unk3, data + 0x20 + offset, sizeof(int));
-		memcpy(&header.unk4, data + 0x24 + offset, sizeof(int));
-		memcpy(&header.unk5, data + 0x28 + offset, sizeof(int));
-		memcpy(&header.unk6, data + 0x2C + offset, sizeof(int));
-		memcpy(&header.unk7, data + 0x30 + offset, sizeof(int));
-		memcpy(&header.fileInfoTableOffset, data + 0x34 + offset, sizeof(int));
+		memcpy(&header.headerHash, data + 0x14 + offset, sizeof(int32_t));
+		memcpy(&header.numOfFiles, data + 0x18 + offset, sizeof(int32_t));
+		memcpy(&header.numOfFileEntries, data + 0x1C + offset, sizeof(int32_t));
+		memcpy(&header.unk3, data + 0x20 + offset, sizeof(int32_t));
+		memcpy(&header.unk4, data + 0x24 + offset, sizeof(int32_t));
+		memcpy(&header.unk5, data + 0x28 + offset, sizeof(int32_t));
+		memcpy(&header.unk6, data + 0x2C + offset, sizeof(int32_t));
+		memcpy(&header.unk7, data + 0x30 + offset, sizeof(int32_t));
+		memcpy(&header.fileInfoTableOffset, data + 0x34 + offset, sizeof(int32_t));
 
-		memcpy(&header.headerSize, data + 0x38 + offset, sizeof(int));
+		memcpy(&header.headerSize, data + 0x38 + offset, sizeof(int32_t));
 
 		memcpy(&header.byteswapFlags, data + 0x3C + offset, sizeof(char));
 		memcpy(&header.numSectionTypes, data + 0x3D + offset, sizeof(char));
@@ -579,13 +579,13 @@ bool BundleV31::readBundleFileV0031(char* data) {
 		printf("\tCRC - %08X\n", header.headerHash);
 		printf("}\n");
 
-		int position = 0x40;
-		for (int i = 0; i < header.numSectionTypes; i++) {
+		int32_t position = 0x40;
+		for (int32_t i = 0; i < header.numSectionTypes; i++) {
 			memcpy_s(sectionEntries[i].sectionName, 8, data + position, 8);
-			memcpy(&sectionEntries[i].unk1, data + position + 0x8, sizeof(int));
-			memcpy(&sectionEntries[i].unk2, data + position + 0xC, sizeof(int));
-			memcpy(&sectionEntries[i].uncompressedSize, data + position + 0x10, sizeof(int));
-			memcpy(&sectionEntries[i].compressedSize, data + position + 0x24, sizeof(int));
+			memcpy(&sectionEntries[i].unk1, data + position + 0x8, sizeof(int32_t));
+			memcpy(&sectionEntries[i].unk2, data + position + 0xC, sizeof(int32_t));
+			memcpy(&sectionEntries[i].uncompressedSize, data + position + 0x10, sizeof(int32_t));
+			memcpy(&sectionEntries[i].compressedSize, data + position + 0x24, sizeof(int32_t));
 
 			if (header.byteswapFlags == 1) {
 				sectionEntries[i].uncompressedSize = flipEndian(sectionEntries[i].uncompressedSize); // Flip from big endian to little endian.
@@ -598,30 +598,30 @@ bool BundleV31::readBundleFileV0031(char* data) {
 		// Run through the file info table next.
 		char* dataSect = getSectionData(0);
 
-		memcpy(&fileInfoTable.debugTable.sizeOfStringTable, dataSect + header.fileInfoTableOffset, sizeof(int));
+		memcpy(&fileInfoTable.debugTable.sizeOfStringTable, dataSect + header.fileInfoTableOffset, sizeof(int32_t));
 		if (header.byteswapFlags == 1) {
 			fileInfoTable.debugTable.sizeOfStringTable = flipEndian(fileInfoTable.debugTable.sizeOfStringTable); // Flip from big endian to little endian.
 		}
 
-		int offsToTable = header.fileInfoTableOffset + 4;
+		int32_t offsToTable = header.fileInfoTableOffset + 4;
 		if (fileInfoTable.debugTable.sizeOfStringTable != 0) {
 			offsToTable += (0x4 * header.numOfFiles) + fileInfoTable.debugTable.sizeOfStringTable;
 
-			fileInfoTable.debugTable.stringTableOffsets = new int[header.numOfFiles]();
+			fileInfoTable.debugTable.stringTableOffsets = new int32_t[header.numOfFiles]();
 			fileInfoTable.debugTable.fileNames = new char*[header.numOfFiles]();
 
-			int strTablePos = header.fileInfoTableOffset + 4 + (4 * header.numOfFiles);
+			int32_t strTablePos = header.fileInfoTableOffset + 4 + (4 * header.numOfFiles);
 
-			for (int i = 0; i < header.numOfFiles; i++) {
-				memcpy(&fileInfoTable.debugTable.stringTableOffsets[i], dataSect + header.fileInfoTableOffset + 4 + (4 * i), sizeof(int));
+			for (int32_t i = 0; i < header.numOfFiles; i++) {
+				memcpy(&fileInfoTable.debugTable.stringTableOffsets[i], dataSect + header.fileInfoTableOffset + 4 + (4 * i), sizeof(int32_t));
 
 				if (header.byteswapFlags == 1) {
 					fileInfoTable.debugTable.stringTableOffsets[i] = flipEndian(fileInfoTable.debugTable.stringTableOffsets[i]); // Flip from big endian to little endian.
 				}
 			}
 
-			for (int i = 0; i < header.numOfFiles; i++) {
-				int length = strlen(dataSect + strTablePos + fileInfoTable.debugTable.stringTableOffsets[i]);
+			for (int32_t i = 0; i < header.numOfFiles; i++) {
+				int32_t length = strlen(dataSect + strTablePos + fileInfoTable.debugTable.stringTableOffsets[i]);
 				fileInfoTable.debugTable.fileNames[i] = new char[length + 1]();
 				strcpy_s(fileInfoTable.debugTable.fileNames[i], length + 1, dataSect + strTablePos + fileInfoTable.debugTable.stringTableOffsets[i]);
 
@@ -631,10 +631,10 @@ bool BundleV31::readBundleFileV0031(char* data) {
 
 		fileInfoTable.fileInfoEntries = new FileInfoEntry[header.numOfFileEntries]();
 
-		for (int i = 0; i < header.numOfFileEntries; i++) {
-			memcpy(&fileInfoTable.fileInfoEntries[i].ID, dataSect + offsToTable + (0xE * i), sizeof(int));
-			memcpy(&fileInfoTable.fileInfoEntries[i].dataOffset, dataSect + offsToTable + (0xE * i) + 4, sizeof(int));
-			memcpy(&fileInfoTable.fileInfoEntries[i].dataSize, dataSect + offsToTable + (0xE * i) + 8, sizeof(int));
+		for (int32_t i = 0; i < header.numOfFileEntries; i++) {
+			memcpy(&fileInfoTable.fileInfoEntries[i].ID, dataSect + offsToTable + (0xE * i), sizeof(int32_t));
+			memcpy(&fileInfoTable.fileInfoEntries[i].dataOffset, dataSect + offsToTable + (0xE * i) + 4, sizeof(int32_t));
+			memcpy(&fileInfoTable.fileInfoEntries[i].dataSize, dataSect + offsToTable + (0xE * i) + 8, sizeof(int32_t));
 			memcpy(&fileInfoTable.fileInfoEntries[i].section, dataSect + offsToTable + (0xE * i) + 0xC, sizeof(char));
 			memcpy(&fileInfoTable.fileInfoEntries[i].unk1, dataSect + offsToTable + (0xE * i) + 0xD, sizeof(char));
 
@@ -684,7 +684,7 @@ bool BundleV31::readBundleFileV0031(char* data) {
 		isReady = true;
 		printf("V31 Bundle Finished Reading.\n");
 	}
-	catch (int ex) {
+	catch (int32_t ex) {
 	}
 
 	return true;
@@ -712,7 +712,7 @@ BundleV31::~BundleV31() {
 	}
 }
 
-char* BundleV31::getSectionData(int section) {
+char* BundleV31::getSectionData(int32_t section) {
 	if (bundleData == nullptr) {
 		printf("We somehow don't have bundle data for this. This is bad.\n");
 		return nullptr;
@@ -755,15 +755,15 @@ char* BundleV31::getSectionData(int section) {
 	return sectData;
 }
 
-char* BundleV31::getFileData(char* fileName, int fileInfoIdx) {
+char* BundleV31::getFileData(char* fileName, int32_t fileInfoIdx) {
 	if (bundleData == nullptr) {
 		printf("Error occured while trying to open the file.\n");
 		return NULL;
 	}
 
-	int sectionOffset = getOffsetOfSection(fileInfoTable.fileInfoEntries[fileInfoIdx].section - 1);
+	int32_t sectionOffset = getOffsetOfSection(fileInfoTable.fileInfoEntries[fileInfoIdx].section - 1);
 
-	int totalOffsetToDataSect = header.headerSize;
+	int32_t totalOffsetToDataSect = header.headerSize;
 
 	//Initialize our new section.
 	char* sect = (char*)malloc(fileInfoTable.fileInfoEntries[fileInfoIdx].dataSize);
@@ -816,7 +816,7 @@ bool BundleV26::readBundleFileV0026(char* data) {
 
 	char caffVer[0x10];
 
-	int offset = 0;
+	int32_t offset = 0;
 	bool isValidVersion = false;
 
 	if (memcpy(caffVer, data + 4, 0x10) == nullptr) {
@@ -840,27 +840,27 @@ bool BundleV26::readBundleFileV0026(char* data) {
 	try {
 		// Now we read the important information.
 
-		memcpy(&header.numOfFiles, data + 0x14 + offset, sizeof(int));
-		memcpy(&header.numOfFileEntries, data + 0x18 + offset, sizeof(int));
-		memcpy(&header.unk3, data + 0x1C + offset, sizeof(int));
-		memcpy(&header.unk4, data + 0x20 + offset, sizeof(int));
-		memcpy(&header.unk5, data + 0x24 + offset, sizeof(int));
-		memcpy(&header.unk6, data + 0x28 + offset, sizeof(int));
-		memcpy(&header.fileInfoTableOffset, data + 0x2C + offset, sizeof(int));
+		memcpy(&header.numOfFiles, data + 0x14 + offset, sizeof(int32_t));
+		memcpy(&header.numOfFileEntries, data + 0x18 + offset, sizeof(int32_t));
+		memcpy(&header.unk3, data + 0x1C + offset, sizeof(int32_t));
+		memcpy(&header.unk4, data + 0x20 + offset, sizeof(int32_t));
+		memcpy(&header.unk5, data + 0x24 + offset, sizeof(int32_t));
+		memcpy(&header.unk6, data + 0x28 + offset, sizeof(int32_t));
+		memcpy(&header.fileInfoTableOffset, data + 0x2C + offset, sizeof(int32_t));
 
-		memcpy(&header.headerSize, data + 0x30 + offset, sizeof(int));
+		memcpy(&header.headerSize, data + 0x30 + offset, sizeof(int32_t));
 
 		memcpy(&header.unk8, data + 0x34 + offset, sizeof(char));
 		memcpy(&header.numSectionTypes, data + 0x35 + offset, sizeof(char));
 		memcpy(&header.compression, data + 0x36 + offset, sizeof(char));
 		memcpy(&header.unk9, data + 0x37 + offset, sizeof(char));
 
-		int position = 0x38;
-		for (int i = 0; i < header.numSectionTypes; i++) {
+		int32_t position = 0x38;
+		for (int32_t i = 0; i < header.numSectionTypes; i++) {
 			memcpy_s(sectionEntries[i].sectionName, 8, data + position, 8);
-			memcpy(&sectionEntries[i].uncompressedSize, data + position + 0x8, sizeof(int));
-			memcpy(&sectionEntries[i].unk1, data + position + 0xC, sizeof(int));
-			memcpy(&sectionEntries[i].compressedSize, data + position + 0x20, sizeof(int));
+			memcpy(&sectionEntries[i].uncompressedSize, data + position + 0x8, sizeof(int32_t));
+			memcpy(&sectionEntries[i].unk1, data + position + 0xC, sizeof(int32_t));
+			memcpy(&sectionEntries[i].compressedSize, data + position + 0x20, sizeof(int32_t));
 
 			position += 0x24;
 		}
@@ -868,23 +868,23 @@ bool BundleV26::readBundleFileV0026(char* data) {
 		// Run a few checks
 		char* dataSect = getSectionData(0);
 
-		memcpy(&fileInfoTable.debugTable.sizeOfStringTable, dataSect + header.fileInfoTableOffset, sizeof(int));
+		memcpy(&fileInfoTable.debugTable.sizeOfStringTable, dataSect + header.fileInfoTableOffset, sizeof(int32_t));
 
-		int offsToTable = header.fileInfoTableOffset + 4;
+		int32_t offsToTable = header.fileInfoTableOffset + 4;
 		if (fileInfoTable.debugTable.sizeOfStringTable != 0) {
 			offsToTable += (0x4 * header.numOfFiles) + fileInfoTable.debugTable.sizeOfStringTable;
 
-			fileInfoTable.debugTable.stringTableOffsets = new int[header.numOfFiles]();
+			fileInfoTable.debugTable.stringTableOffsets = new int32_t[header.numOfFiles]();
 			fileInfoTable.debugTable.fileNames = new char* [header.numOfFiles]();
 
-			int strTablePos = header.fileInfoTableOffset + 4 + (4 * header.numOfFiles);
+			int32_t strTablePos = header.fileInfoTableOffset + 4 + (4 * header.numOfFiles);
 
-			for (int i = 0; i < header.numOfFiles; i++) {
-				memcpy(&fileInfoTable.debugTable.stringTableOffsets[i], dataSect + header.fileInfoTableOffset + 4 + (4 * i), sizeof(int));
+			for (int32_t i = 0; i < header.numOfFiles; i++) {
+				memcpy(&fileInfoTable.debugTable.stringTableOffsets[i], dataSect + header.fileInfoTableOffset + 4 + (4 * i), sizeof(int32_t));
 			}
 
-			for (int i = 0; i < header.numOfFiles; i++) {
-				int length = strlen(dataSect + strTablePos + fileInfoTable.debugTable.stringTableOffsets[i]);
+			for (int32_t i = 0; i < header.numOfFiles; i++) {
+				int32_t length = strlen(dataSect + strTablePos + fileInfoTable.debugTable.stringTableOffsets[i]);
 				fileInfoTable.debugTable.fileNames[i] = new char[length + 1]();
 				strcpy_s(fileInfoTable.debugTable.fileNames[i], length + 1, dataSect + strTablePos + fileInfoTable.debugTable.stringTableOffsets[i]);
 
@@ -894,10 +894,10 @@ bool BundleV26::readBundleFileV0026(char* data) {
 
 		fileInfoTable.fileInfoEntries = new FileInfoEntry[header.numOfFileEntries]();
 
-		for (int i = 0; i < header.numOfFileEntries; i++) {
-			memcpy(&fileInfoTable.fileInfoEntries[i].ID, dataSect + offsToTable + (0xE * i), sizeof(int));
-			memcpy(&fileInfoTable.fileInfoEntries[i].dataOffset, dataSect + offsToTable + (0xE * i) + 4, sizeof(int));
-			memcpy(&fileInfoTable.fileInfoEntries[i].dataSize, dataSect + offsToTable + (0xE * i) + 8, sizeof(int));
+		for (int32_t i = 0; i < header.numOfFileEntries; i++) {
+			memcpy(&fileInfoTable.fileInfoEntries[i].ID, dataSect + offsToTable + (0xE * i), sizeof(int32_t));
+			memcpy(&fileInfoTable.fileInfoEntries[i].dataOffset, dataSect + offsToTable + (0xE * i) + 4, sizeof(int32_t));
+			memcpy(&fileInfoTable.fileInfoEntries[i].dataSize, dataSect + offsToTable + (0xE * i) + 8, sizeof(int32_t));
 			memcpy(&fileInfoTable.fileInfoEntries[i].section, dataSect + offsToTable + (0xE * i) + 0xC, sizeof(char));
 			memcpy(&fileInfoTable.fileInfoEntries[i].unk1, dataSect + offsToTable + (0xE * i) + 0xD, sizeof(char));
 
@@ -942,7 +942,7 @@ bool BundleV26::readBundleFileV0026(char* data) {
 		isReady = true;
 		printf("V26 Bundle Finished Reading.\n");
 	}
-	catch (int ex) {
+	catch (int32_t ex) {
 	}
 
 	return true;
@@ -955,7 +955,7 @@ BundleV26::~BundleV26() {
 	}
 }
 
-char* BundleV26::getSectionData(int section) {
+char* BundleV26::getSectionData(int32_t section) {
 	if (bundleData == nullptr) {
 		printf("We somehow don't have bundle data for this. This is bad.\n");
 		return nullptr;
@@ -998,15 +998,15 @@ char* BundleV26::getSectionData(int section) {
 	return sectData;
 }
 
-char* BundleV26::getFileData(char* fileName, int fileInfoIdx) {
+char* BundleV26::getFileData(char* fileName, int32_t fileInfoIdx) {
 	if (bundleData == nullptr) {
 		printf("Error occured while trying to open the file.\n");
 		return NULL;
 	}
 
-	int sectionOffset = getOffsetOfSection(fileInfoTable.fileInfoEntries[fileInfoIdx].section - 1);
+	int32_t sectionOffset = getOffsetOfSection(fileInfoTable.fileInfoEntries[fileInfoIdx].section - 1);
 
-	int totalOffsetToDataSect = header.headerSize;
+	int32_t totalOffsetToDataSect = header.headerSize;
 
 	//Initialize our new section.
 	char* sect = (char*)malloc(fileInfoTable.fileInfoEntries[fileInfoIdx].dataSize);

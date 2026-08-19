@@ -3,7 +3,7 @@
 #include "MLTypes.h"
 #include "AssetId.h"
 
-const int markerSizes[] = {
+const int32_t markerSizes[] = {
 	0x34,
 0x34,
 0x40,
@@ -119,7 +119,7 @@ enum dbMarkerGame : unsigned char {
 	markerBanjo
 };
 
-enum dbMarkerEnum : short {
+enum dbMarkerEnum : int16_t {
 	marker_Null,
 	marker_Dummy,
 	marker_LiveGroup,
@@ -174,19 +174,19 @@ enum dbMarkerEnum : short {
 	marker_MultiPlayerCamera
 };
 
-const unsigned int ResetForChallengeFlag = 0x10000;
+const uint32_t ResetForChallengeFlag = 0x10000;
 
 class MarkerBase
 {
 public:
 	char* markerData;
 
-	int sizeOf;
+	int32_t sizeOf;
 	dbMarkerEnum markerId;
-	short uniqueId;
-	short childId;
-	short parentId;
-	int challengeAid;
+	int16_t uniqueId;
+	int16_t childId;
+	int16_t parentId;
+	int32_t challengeAid;
 
 	char unk1;
 	char unk2;
@@ -197,17 +197,17 @@ public:
 	MLRot pyr;
 
 	float scale;
-	unsigned int flags;
+	uint32_t flags;
 
 	void readCommonMarkerData(char* data) {
 		markerData = data;
 
-		int entrySizeVar = 0;
-		short typeVar = 0;
-		short idxVar = 0;
-		short childIdVar = 0;
-		short parentIdVar = 0;
-		int challengeAidVar = 0;
+		int32_t entrySizeVar = 0;
+		int16_t typeVar = 0;
+		int16_t idxVar = 0;
+		int16_t childIdVar = 0;
+		int16_t parentIdVar = 0;
+		int32_t challengeAidVar = 0;
 
 		float xPosVar;
 		float yPosVar;
@@ -217,14 +217,14 @@ public:
 		float zRotVar;
 
 		float scaleVar;
-		unsigned int flagsVar;
+		uint32_t flagsVar;
 
-		memcpy(&entrySizeVar, markerData, sizeof(int));
-		memcpy(&typeVar, markerData + 4, sizeof(short));
-		memcpy(&idxVar, markerData + 6, sizeof(short));
-		memcpy(&childIdVar, markerData + 8, sizeof(short));
-		memcpy(&parentIdVar, markerData + 0xA, sizeof(short));
-		memcpy(&challengeAidVar, markerData + 0xC, sizeof(int));
+		memcpy(&entrySizeVar, markerData, sizeof(int32_t));
+		memcpy(&typeVar, markerData + 4, sizeof(int16_t));
+		memcpy(&idxVar, markerData + 6, sizeof(int16_t));
+		memcpy(&childIdVar, markerData + 8, sizeof(int16_t));
+		memcpy(&parentIdVar, markerData + 0xA, sizeof(int16_t));
+		memcpy(&challengeAidVar, markerData + 0xC, sizeof(int32_t));
 
 		memcpy(&xPosVar, markerData + 0x14, sizeof(float));
 		memcpy(&yPosVar, markerData + 0x18, sizeof(float));
@@ -233,7 +233,7 @@ public:
 		memcpy(&yRotVar, markerData + 0x24, sizeof(float));
 		memcpy(&zRotVar, markerData + 0x28, sizeof(float));
 		memcpy(&scaleVar, markerData + 0x2C, sizeof(float));
-		memcpy(&flagsVar, markerData + 0x30, sizeof(int));
+		memcpy(&flagsVar, markerData + 0x30, sizeof(int32_t));
 
 		unk1 = markerData[0x10];
 		unk2 = markerData[0x11];
@@ -285,7 +285,7 @@ public:
 // Tied to an entry type of 0x4. Defines a player spawn.
 class MarkerPlayer : public MarkerBase {
 public:
-	int controllerId;
+	int32_t controllerId;
 
 	void readMarkerData(char* data) {
 		readCommonMarkerData(data);
@@ -295,14 +295,14 @@ public:
 // Tied to an entry type of 0x12
 class MarkerCollectible : public MarkerBase {
 public:
-	unsigned int objParamAid = 0;
-	int collectibleID = 0;
+	uint32_t objParamAid = 0;
+	int32_t collectibleID = 0;
 
 	void readMarkerData(char* data) {
 		readCommonMarkerData(data);
 
-		memcpy(&objParamAid, markerData + 0x34, sizeof(int));
-		memcpy(&collectibleID, markerData + 0x38, sizeof(int));
+		memcpy(&objParamAid, markerData + 0x34, sizeof(int32_t));
+		memcpy(&collectibleID, markerData + 0x38, sizeof(int32_t));
 
 		objParamAid = flipEndian(objParamAid);
 		collectibleID = flipEndian(collectibleID);
@@ -311,22 +311,22 @@ public:
 
 class MarkerWeapon : public MarkerBase {
 public:
-	unsigned int parameters;
-	unsigned int spawnActorAid;
-	unsigned int attributes;
-	unsigned int aidModelExtraAvatar;
-	int droneAction;
-	int spawnId;
-	int probability;
+	uint32_t parameters;
+	uint32_t spawnActorAid;
+	uint32_t attributes;
+	uint32_t aidModelExtraAvatar;
+	int32_t droneAction;
+	int32_t spawnId;
+	int32_t probability;
 	float proximityRadius;
-	int proximityProb;
-	int proximityOnceOnly;
-	int cannotPickup;
-	int cannotAttack;
+	int32_t proximityProb;
+	int32_t proximityOnceOnly;
+	int32_t cannotPickup;
+	int32_t cannotAttack;
 	float scareScale;
-	int respawn;
+	int32_t respawn;
 	float respawnDelay;
-	int insideBreakable;
+	int32_t insideBreakable;
 
 	void readMarkerData(char* data) {
 		readCommonMarkerData(data);
@@ -335,20 +335,20 @@ public:
 
 class MarkerVehicle : public MarkerBase {
 public:
-	int playerId;
-	unsigned int aid;
-	unsigned int addPlayer;
+	int32_t playerId;
+	uint32_t aid;
+	uint32_t addPlayer;
 
 	void readMarkerData(char* data) {
 		readCommonMarkerData(data);
 
-		int playerIdVar;
-		unsigned int aidVar;
-		unsigned int addPlayerVar;
+		int32_t playerIdVar;
+		uint32_t aidVar;
+		uint32_t addPlayerVar;
 
-		memcpy(&playerIdVar, markerData + 0x3C, sizeof(int));
-		memcpy(&aidVar, markerData + 0x40, sizeof(int));
-		memcpy(&addPlayerVar, markerData + 0x44, sizeof(int));
+		memcpy(&playerIdVar, markerData + 0x3C, sizeof(int32_t));
+		memcpy(&aidVar, markerData + 0x40, sizeof(int32_t));
+		memcpy(&addPlayerVar, markerData + 0x44, sizeof(int32_t));
 
 		playerId = flipEndian(playerIdVar);
 		aid = flipEndian(aidVar);
@@ -358,12 +358,12 @@ public:
 
 class MarkerPortal : public MarkerBase {
 public:
-	unsigned int objParamAid;
-	unsigned int scriptAid;
-	unsigned int cutsceneAid;
+	uint32_t objParamAid;
+	uint32_t scriptAid;
+	uint32_t cutsceneAid;
 	char gameFlag[0x40];
-	int jiggyRequirement;
-	unsigned int flagListAid;
+	int32_t jiggyRequirement;
+	uint32_t flagListAid;
 	char sceneIndicator[0x40];
 
 	void readMarkerData(char* data) {
@@ -372,17 +372,17 @@ public:
 		memset(gameFlag, 0, 0x40);
 		memset(sceneIndicator, 0, 0x40);
 
-		unsigned int objParamAidVar;
-		unsigned int scriptAidVar;
-		unsigned int cutsceneAidVar;
-		unsigned int flagListAidVar;
+		uint32_t objParamAidVar;
+		uint32_t scriptAidVar;
+		uint32_t cutsceneAidVar;
+		uint32_t flagListAidVar;
 
-		memcpy(&objParamAid, markerData + 0x3C, sizeof(int));
-		memcpy(&scriptAid, markerData + 0x40, sizeof(int));
-		memcpy(&cutsceneAid, markerData + 0x44, sizeof(int));
+		memcpy(&objParamAid, markerData + 0x3C, sizeof(int32_t));
+		memcpy(&scriptAid, markerData + 0x40, sizeof(int32_t));
+		memcpy(&cutsceneAid, markerData + 0x44, sizeof(int32_t));
 		strncpy(gameFlag, markerData + 0x48, 0x40);
-		memcpy(&jiggyRequirement, markerData + 0x88, sizeof(int));
-		memcpy(&flagListAid, markerData + 0x8C, sizeof(int));
+		memcpy(&jiggyRequirement, markerData + 0x88, sizeof(int32_t));
+		memcpy(&flagListAid, markerData + 0x8C, sizeof(int32_t));
 		strncpy(sceneIndicator, markerData + 0x90, 0x40);
 
 		objParamAid = flipEndian(objParamAid);
@@ -395,11 +395,11 @@ public:
 
 class MarkerComponentCrate : public MarkerBase {
 public:
-	unsigned int objParamAid;
-	unsigned int blockSetAid;
+	uint32_t objParamAid;
+	uint32_t blockSetAid;
 	char collectedCrate[0x40];
 	char unlockedCrate[0x40];
-	int flag;
+	int32_t flag;
 	char useColorPalette;
 	char colorPaletteId;
 	char unk1;
@@ -407,7 +407,7 @@ public:
 
 	char sceneIndicator[0x40];
 
-	unsigned int blockageAid;
+	uint32_t blockageAid;
 	char blockadeGameFlag[0x40];
 
 	void readMarkerData(char* data) {
@@ -418,12 +418,12 @@ public:
 		memset(sceneIndicator, 0, 0x40);
 		memset(blockadeGameFlag, 0, 0x40);
 
-		unsigned int objParamAidVar = 0;
-		unsigned int blockSetAidVar = 0;
-		int flagVar = 0;
+		uint32_t objParamAidVar = 0;
+		uint32_t blockSetAidVar = 0;
+		int32_t flagVar = 0;
 
-		memcpy(&objParamAidVar, markerData + 0x34, sizeof(int));
-		memcpy(&blockSetAidVar, markerData + 0x38, sizeof(int));
+		memcpy(&objParamAidVar, markerData + 0x34, sizeof(int32_t));
+		memcpy(&blockSetAidVar, markerData + 0x38, sizeof(int32_t));
 		strncpy(collectedCrate, markerData + 0x3C, 0x40);
 		strncpy(unlockedCrate, markerData + 0x7C, 0x40);
 
@@ -447,7 +447,7 @@ public:
 
 	bool isReady = false;
 
-	int numOfMarkerEntries = 0;
+	int32_t numOfMarkerEntries = 0;
 	MarkerBase** markerEntries;
 
 	void ReadMarkerFile(char* data) {
@@ -455,12 +455,12 @@ public:
 		fileData = data;
 
 		bool hasInitialEntryStarted = false;
-		int offs = 0;
+		int32_t offs = 0;
 
 		// settle the marker count.
 		while (true) {
-			int size = 0;
-			short id = 0;
+			int32_t size = 0;
+			int16_t id = 0;
 
 			memcpy(&size, fileData + offs, 4);
 			memcpy(&id, fileData + offs + 6, 2);
@@ -488,9 +488,9 @@ public:
 		markerEntries = new MarkerBase*[numOfMarkerEntries];
 
 		// set up the markers.
-		for (int i = 0; i < numOfMarkerEntries; i++) {
-			int size = 0;
-			short type = 0;
+		for (int32_t i = 0; i < numOfMarkerEntries; i++) {
+			int32_t size = 0;
+			int16_t type = 0;
 
 			memcpy(&size, fileData + offs, 4);
 			memcpy(&type, fileData + offs + 4, 2);

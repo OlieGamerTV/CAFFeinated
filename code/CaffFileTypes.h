@@ -7,22 +7,22 @@
 #endif
 #include <stdlib.h>
 
-const unsigned int VEHICLE_HEAD_GAMEID = 0xED07534D;
-const unsigned int VEHICLE_SAVE_PREFIX1 = 0x48E19A3F;
-const unsigned int VEHICLE_SAVE_PREFIX2 = 0xE17A5440;
+const uint32_t VEHICLE_HEAD_GAMEID = 0xED07534D;
+const uint32_t VEHICLE_SAVE_PREFIX1 = 0x48E19A3F;
+const uint32_t VEHICLE_SAVE_PREFIX2 = 0xE17A5440;
 
-const unsigned int LOCTEXT_LSBTWO_MAGIC = 0x3242534C;
-const unsigned int LOCTEXT_LBSTWO_MAGIC = 0x3253424C;
+const uint32_t LOCTEXT_LSBTWO_MAGIC = 0x3242534C;
+const uint32_t LOCTEXT_LBSTWO_MAGIC = 0x3253424C;
 const char LOCTEXT_LSBL[4] = { 'L', 'S', 'B', 'L' };
 const char LOCTEXT_LBSL[4] = { 'L', 'B', 'S', 'L' };
-const unsigned int LOCTEXT_LSBL_MAGIC = 0x4C53424C;
-const unsigned int LOCTEXT_LBSL_MAGIC = 0x4C42534C;
+const uint32_t LOCTEXT_LSBL_MAGIC = 0x4C53424C;
+const uint32_t LOCTEXT_LBSL_MAGIC = 0x4C42534C;
 
 #pragma region Script
 struct Script {
 	char* scriptPtr;
 
-	int entryCount = 0; // Not actually part of the file. Calculated on read.
+	int32_t entryCount = 0; // Not actually part of the file. Calculated on read.
 	dbScript_Base* entries;
 
 	void ReadScript(char* data);
@@ -38,21 +38,21 @@ enum AssetType : char {
 };
 
 struct AidEntry {
-	unsigned int hash;
-	int id;
+	uint32_t hash;
+	int32_t id;
 };
 
 #pragma region Loctext Rev One
 struct LabelTableHeader {
-	int totalSectLen = 0;
-	int totalCount = 0;
+	int32_t totalSectLen = 0;
+	int32_t totalCount = 0;
 };
 
 struct CommentEntry {
 	char unk1 = 0;
-	unsigned short id = 0;
+	uint16_t id = 0;
 	char unk2 = 0;
-	int offset = 0;
+	int32_t offset = 0;
 };
 
 struct CommentStr {
@@ -67,13 +67,13 @@ struct CommentTable {
 
 struct PosTable {
 	LabelTableHeader header;
-	unsigned short* entries;
+	uint16_t* entries;
 };
 
 struct LabelStrInfoEntry {
-	unsigned short unk = 0;
-	unsigned short hash = 0;
-	int offset = 0;
+	uint16_t unk = 0;
+	uint16_t hash = 0;
+	int32_t offset = 0;
 };
 
 struct LabelStrEntry {
@@ -91,9 +91,9 @@ struct TagStr {
 };
 
 struct TagInfo {
-	unsigned short id = 0;
-	short unk1 = 0;
-	int offset = 0;
+	uint16_t id = 0;
+	int16_t unk1 = 0;
+	int32_t offset = 0;
 };
 
 struct LabelTagTable {
@@ -105,12 +105,12 @@ struct LabelTagTable {
 struct LabelHeader {
 public:
 	char magic[4]; // 0x0
-	int headerLen = 0; // 0x4
-	int entryTotal = 0; // 0x8
-	int stringTableOffset = 0; // 0xC
-	int tagTableOffset = 0; // 0x10
-	int commentTableOffset = 0; // 0x14
-	int positionTableOffset = 0; // 0x18
+	int32_t headerLen = 0; // 0x4
+	int32_t entryTotal = 0; // 0x8
+	int32_t stringTableOffset = 0; // 0xC
+	int32_t tagTableOffset = 0; // 0x10
+	int32_t commentTableOffset = 0; // 0x14
+	int32_t positionTableOffset = 0; // 0x18
 };
 
 struct LabelTable {
@@ -123,9 +123,9 @@ public:
 };
 
 struct UnkEntry {
-	int tagoffset = 0;
-	unsigned short id = 0;
-	short idx = 0;
+	int32_t tagoffset = 0;
+	uint16_t id = 0;
+	int16_t idx = 0;
 };
 
 struct UnkTable {
@@ -137,17 +137,17 @@ struct Loctext {
 public:
 	char* loctextPtr;
 
-	int endianness;
-	int startEndianness = SRC_ENDIANBIG;
+	int32_t endianness;
+	int32_t startEndianness = SRC_ENDIANBIG;
 
 	bool usesTags = false;
 	bool usesComments = false;
 	bool usesPos = false;
 
-	int labelDataOffset = 0;
-	int unkTableOffset = 0;
-	short unkTableCount = 0;
-	short unk1 = 0;
+	int32_t labelDataOffset = 0;
+	int32_t unkTableOffset = 0;
+	int16_t unkTableCount = 0;
+	int16_t unk1 = 0;
 
 	LabelTable labelTable;
 	UnkTable unknownTable;
@@ -160,48 +160,48 @@ public:
 	void ReadPosData();
 
 	void ExportToFileRaw(char* fileName);
-	void ExportToFileBank(char* fileName, int endianness);
+	void ExportToFileBank(char* fileName, int32_t endianness);
 
 	void WriteLoctext(char* filename);
 
-	int GetIdxOfConnectedString(unsigned short id) {
-		for (int i = 0; i < labelTable.stringTable.header.totalCount; i++) {
+	int32_t GetIdxOfConnectedString(uint16_t id) {
+		for (int32_t i = 0; i < labelTable.stringTable.header.totalCount; i++) {
 			if (labelTable.stringTable.infoEntries[i].hash == id) return i;
 		}
 
 		return -1;
 	}
 
-	int GetIdxOfConnectedTag(unsigned short id) {
-		for (int i = 0; i < labelTable.tagTable.header.totalCount; i++) {
+	int32_t GetIdxOfConnectedTag(uint16_t id) {
+		for (int32_t i = 0; i < labelTable.tagTable.header.totalCount; i++) {
 			if (labelTable.tagTable.infoEntries[i].id == id) return i;
 		}
 
 		return -1;
 	}
 
-	int GetIdxOfConnectedComment(unsigned short id) {
+	int32_t GetIdxOfConnectedComment(uint16_t id) {
 		if (!usesComments) return -2;
 
-		for (int i = 0; i < labelTable.commentTable.header.totalCount; i++) {
+		for (int32_t i = 0; i < labelTable.commentTable.header.totalCount; i++) {
 			if (labelTable.commentTable.entries[i].id == id) return i;
 		}
 
 		return -2;
 	}
 
-	bool IsHashConnectedToTag(unsigned short id) {
-		for (int i = 0; i < labelTable.tagTable.header.totalCount; i++) {
+	bool IsHashConnectedToTag(uint16_t id) {
+		for (int32_t i = 0; i < labelTable.tagTable.header.totalCount; i++) {
 			if (labelTable.tagTable.infoEntries[i].id == id) return true;
 		}
 
 		return false;
 	}
 
-	bool IsIdxConnectedToComment(unsigned short id) {
+	bool IsIdxConnectedToComment(uint16_t id) {
 		if (!usesComments) return false;
 
-		for (int i = 0; i < labelTable.commentTable.header.totalCount; i++) {
+		for (int32_t i = 0; i < labelTable.commentTable.header.totalCount; i++) {
 			if (labelTable.commentTable.entries[i].id == id) return true;
 		}
 
@@ -213,15 +213,15 @@ public:
 #pragma region Loctext Rev Two
 struct LabTwoHeader {
 public:
-	unsigned int magic; // 0x0
-	int unk1; // 0x4
-	int unk2; // 0x8
-	int headerLen; // 0xC
-	int entryTotal; // 0x10
-	int stringTableOffset; // 0x14
-	int tagTableOffset; // 0x18
-	int commentTableOffset; // 0x1C
-	int positionTableOffset; // 0x20
+	uint32_t magic; // 0x0
+	int32_t unk1; // 0x4
+	int32_t unk2; // 0x8
+	int32_t headerLen; // 0xC
+	int32_t entryTotal; // 0x10
+	int32_t stringTableOffset; // 0x14
+	int32_t tagTableOffset; // 0x18
+	int32_t commentTableOffset; // 0x1C
+	int32_t positionTableOffset; // 0x20
 };
 
 struct LabTwoTable {
@@ -237,10 +237,10 @@ struct LocTwo {
 public:
 	char* loctextPtr;
 
-	int labelDataOffset = 0;
-	int unkTableOffset = 0;
-	short unkTableCount = 0;
-	short unk1 = 0;
+	int32_t labelDataOffset = 0;
+	int32_t unkTableOffset = 0;
+	int16_t unkTableCount = 0;
+	int16_t unk1 = 0;
 
 	LabTwoTable labelTable;
 	UnkTable unknownTable;
@@ -254,44 +254,44 @@ public:
 
 	void ExportToFile(char* fileName);
 
-	int GetIdxOfConnectedString(unsigned short id) {
-		for (int i = 0; i < labelTable.stringTable.header.totalCount; i++) {
+	int32_t GetIdxOfConnectedString(uint16_t id) {
+		for (int32_t i = 0; i < labelTable.stringTable.header.totalCount; i++) {
 			if (labelTable.stringTable.infoEntries[i].hash == id) return i;
 		}
 
 		return -1;
 	}
 
-	int GetIdxOfConnectedTag(unsigned short id) {
-		for (int i = 0; i < labelTable.tagTable.header.totalCount; i++) {
+	int32_t GetIdxOfConnectedTag(uint16_t id) {
+		for (int32_t i = 0; i < labelTable.tagTable.header.totalCount; i++) {
 			if (labelTable.tagTable.infoEntries[i].id == id) return i;
 		}
 
 		return -1;
 	}
 
-	int GetIdxOfConnectedComment(unsigned short id) {
+	int32_t GetIdxOfConnectedComment(uint16_t id) {
 		if (labelTable.header.commentTableOffset == 0) return -2;
 
-		for (int i = 0; i < labelTable.commentTable.header.totalCount; i++) {
+		for (int32_t i = 0; i < labelTable.commentTable.header.totalCount; i++) {
 			if (labelTable.commentTable.entries[i].id == id) return i;
 		}
 
 		return -2;
 	}
 
-	bool IsIdxConnectedToTag(unsigned short id) {
-		for (int i = 0; i < labelTable.tagTable.header.totalCount; i++) {
+	bool IsIdxConnectedToTag(uint16_t id) {
+		for (int32_t i = 0; i < labelTable.tagTable.header.totalCount; i++) {
 			if (labelTable.tagTable.infoEntries[i].id == id) return true;
 		}
 
 		return false;
 	}
 
-	bool IsIdxConnectedToComment(unsigned short id) {
+	bool IsIdxConnectedToComment(uint16_t id) {
 		if (labelTable.header.commentTableOffset == 0) return false;
 
-		for (int i = 0; i < labelTable.commentTable.header.totalCount; i++) {
+		for (int32_t i = 0; i < labelTable.commentTable.header.totalCount; i++) {
 			if (labelTable.commentTable.entries[i].id == id) return true;
 		}
 
@@ -310,21 +310,21 @@ public:
 	char unk1 = 0; // 0x5
 	char unk2 = 0; // 0x6
 	char unk3 = 0; // 0x7
-	unsigned int partIdx = 0; // 0x8
+	uint32_t partIdx = 0; // 0x8
 
 	float yaw = 0; // 0xC
 	float pitch = 0; // 0x10
 	float roll = 0; // 0x14
 
-	unsigned int color = 0xFFFFFFFF; // 0x18
+	uint32_t color = 0xFFFFFFFF; // 0x18
 
 	//unsigned char colR = 0xFF; // 0x18
 	//unsigned char colG = 0xFF; // 0x19
 	//unsigned char colB = 0xFF; // 0x1A
 	//unsigned char colA = 0xFF; // 0x1B
 
-	int unk4 = 0; // 0x1C
-	int unk5 = 0; // 0x20
+	int32_t unk4 = 0; // 0x1C
+	int32_t unk5 = 0; // 0x20
 };
 
 struct Vehicle {
@@ -333,15 +333,15 @@ public:
 
 	bool isSaveVehicle = false;
 
-	unsigned short numOfParts = 0; // 0x0
-	short unk1 = 0; // 0x2
+	uint16_t numOfParts = 0; // 0x0
+	int16_t unk1 = 0; // 0x2
 	float preloadPower = 0; // 0x4
 	float preloadFuel = 0; // 0x8
 	float preloadAmmo = 0; // 0xC
 	float preloadWeight = 0; // 0x10
 	float preloadBlocksUsed = 0; // 0x14
-	int unk2 = 0; // 0x18
-	int unk3 = 0; // 0x1C
+	int32_t unk2 = 0; // 0x18
+	int32_t unk3 = 0; // 0x1C
 
 	// A buffer of 0x40 bytes is reserved for this.
 	// A total of 64 characters will be in this.
@@ -351,13 +351,13 @@ public:
 	// A total of 32 characters will be in this.
 	wchar_t vehicleUnicodeName[0x20];
 
-	unsigned int aButtonAssignment = 0; // 0x60
-	unsigned int bButtonAssignment = 0; // 0x64
-	unsigned int xButtonAssignment = 0; // 0x68
+	uint32_t aButtonAssignment = 0; // 0x60
+	uint32_t bButtonAssignment = 0; // 0x64
+	uint32_t xButtonAssignment = 0; // 0x68
 
-	int unk4 = 0; // 0x6C
-	int unk5 = 0; // 0x70
-	int unk6 = 0; // 0x74
+	int32_t unk4 = 0; // 0x6C
+	int32_t unk5 = 0; // 0x70
+	int32_t unk6 = 0; // 0x74
 	char nameType = 0; // 0x78
 	char unk7 = 0; // 0x79
 	char unk8 = 0; // 0x7A
@@ -372,7 +372,7 @@ public:
 	void WriteHeaderFile(char* fileName);
 
 	bool IsPositionTaken(char x, char y, char z) {
-		for (int i = 0; i < numOfParts; i++) {
+		for (int32_t i = 0; i < numOfParts; i++) {
 			if (parts[i].xPos == x && parts[i].yPos == y && parts[i].zPos == z) return true;
 		}
 
@@ -386,10 +386,10 @@ public:
 		parts[numOfParts - 1] = part;
 	}
 
-	void RemoveEntry(int idx) {
+	void RemoveEntry(int32_t idx) {
 		VehiclePart* tmpParts = (VehiclePart*)malloc((sizeof(VehiclePart) * numOfParts) - sizeof(VehiclePart));
-		int index = 0;
-		for (int i = 0; i < numOfParts; i++) {
+		int32_t index = 0;
+		for (int32_t i = 0; i < numOfParts; i++) {
 			if (i == idx) continue;
 			tmpParts[index] = parts[i];
 			index++;
@@ -399,7 +399,7 @@ public:
 		numOfParts--;
 		parts = (VehiclePart*)malloc(sizeof(VehiclePart) * numOfParts);
 
-		for (int i = 0; i < numOfParts; i++) {
+		for (int32_t i = 0; i < numOfParts; i++) {
 			parts[i] = tmpParts[i];
 		}
 
@@ -410,29 +410,29 @@ public:
 struct Manifest {
 	char* manifestPtr = nullptr;
 
-	unsigned int magic = 0;
-	unsigned int timestamp = 0;
+	uint32_t magic = 0;
+	uint32_t timestamp = 0;
 
 	// Tables
-	int aidTableOffset = 0;
-	int aidTableCount = 0;
+	int32_t aidTableOffset = 0;
+	int32_t aidTableCount = 0;
 
-	int referenceTableOffset = 0;
-	int referenceTableCount = 0;
+	int32_t referenceTableOffset = 0;
+	int32_t referenceTableCount = 0;
 
-	int xcueRefTableOffset = 0;
-	int xcueRefTableCount = 0;
+	int32_t xcueRefTableOffset = 0;
+	int32_t xcueRefTableCount = 0;
 
 	AidEntry* aidTable = nullptr;
-	int* referenceTable = nullptr;
-	int* xcueRefTable = nullptr;
+	int32_t* referenceTable = nullptr;
+	int32_t* xcueRefTable = nullptr;
 
 	void ReadManifest(char* data);
 
-	unsigned int GetAidHash(int id) {
+	uint32_t GetAidHash(int32_t id) {
 		if (aidTable == NULL) return 0;
 
-		for (int i = 0; i < aidTableCount; i++) {
+		for (int32_t i = 0; i < aidTableCount; i++) {
 			if (aidTable[i].id == id) return aidTable[i].hash;
 		}
 		return 0;
@@ -452,13 +452,13 @@ public:
 	char isSwizzled = 0; // 0x1A
 	unsigned char textureType = 0; // 0x1B
 
-	int unk_0x1C = 0;
-	int unk_0x20 = 0;
-	short width = 0;
-	short height = 0;
-	int frameCount = 1; // 0x38 (For textures that only have one frame, this is set to 0.)
-	int gpuOffsTablePos = 0;
-	int* gpuOffsTable;
+	int32_t unk_0x1C = 0;
+	int32_t unk_0x20 = 0;
+	int16_t width = 0;
+	int16_t height = 0;
+	int32_t frameCount = 1; // 0x38 (For textures that only have one frame, this is set to 0.)
+	int32_t gpuOffsTablePos = 0;
+	int32_t* gpuOffsTable;
 };
 
 struct Texture {

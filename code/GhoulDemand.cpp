@@ -6,15 +6,15 @@ void GhoulDemand::ReadDemandFile(char* data) {
 	isReady = false;
 
 	try {
-		memcpy(&type, data, sizeof(int));
-		memcpy(&timestamp, data + 4, sizeof(int));
-		memcpy(&fUnk1, data + 8, sizeof(int));
-		memcpy(&iUnk1, data + 0xC, sizeof(int));
+		memcpy(&type, data, sizeof(int32_t));
+		memcpy(&timestamp, data + 4, sizeof(int32_t));
+		memcpy(&fUnk1, data + 8, sizeof(int32_t));
+		memcpy(&iUnk1, data + 0xC, sizeof(int32_t));
 
-		memcpy(&dataSectOffset, data + 0x10, sizeof(int));
-		memcpy(&dataSectSize, data + 0x14, sizeof(int));
-		memcpy(&gpuSectOffset, data + 0x18, sizeof(int));
-		memcpy(&gpuSectSize, data + 0x1C, sizeof(int));
+		memcpy(&dataSectOffset, data + 0x10, sizeof(int32_t));
+		memcpy(&dataSectSize, data + 0x14, sizeof(int32_t));
+		memcpy(&gpuSectOffset, data + 0x18, sizeof(int32_t));
+		memcpy(&gpuSectSize, data + 0x1C, sizeof(int32_t));
 
 		time_t time = timestamp;
 
@@ -32,7 +32,7 @@ void GhoulDemand::ReadDemandFile(char* data) {
 
 		isReady = true;
 	}
-	catch (int e) {
+	catch (int32_t e) {
 
 	}
 }
@@ -47,7 +47,7 @@ bool GhoulDemand::readStandaloneDemandFile(char* fileName) {
 	}
 
 	fseek(currentFile, 0L, SEEK_END);
-	int length = ftell(currentFile);
+	int32_t length = ftell(currentFile);
 	fseek(currentFile, 0L, SEEK_SET);
 
 	char* data = (char*)malloc(length);

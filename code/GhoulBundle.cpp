@@ -5,34 +5,34 @@ FileEntry::~FileEntry() {
 	memset(fileName, 0, FILEENTRY_NAMESIZE);
 }
 
-bool GhoulBundle::ReadBundleFile(char* data, int dataSize) {
+bool GhoulBundle::ReadBundleFile(char* data, size_t dataSize) {
 	isReady = false;
 
 	if (data == nullptr) return false;
 	dataPtr = data;
 
 	try {
-		memcpy_s(&entryCount, sizeof(short), data, sizeof(short));
-		memcpy_s(&isCompressed, sizeof(short), data + 2, sizeof(short));
-		memcpy_s(&iUnk1, sizeof(int), data + 4, sizeof(int));
+		memcpy_s(&entryCount, sizeof(int16_t), data, sizeof(int16_t));
+		memcpy_s(&isCompressed, sizeof(int16_t), data + 2, sizeof(int16_t));
+		memcpy_s(&iUnk1, sizeof(int32_t), data + 4, sizeof(int32_t));
 
-		memcpy_s(&fileListOffset, sizeof(int), data + 0x8, sizeof(int));
-		memcpy_s(&fileListDataSize, sizeof(int), data + 0xC, sizeof(int));
-		memcpy_s(&gpuListOffset, sizeof(int), data + 0x10, sizeof(int));
-		memcpy_s(&gpuListSize, sizeof(int), data + 0x14, sizeof(int));
+		memcpy_s(&fileListOffset, sizeof(int32_t), data + 0x8, sizeof(int32_t));
+		memcpy_s(&fileListDataSize, sizeof(int32_t), data + 0xC, sizeof(int32_t));
+		memcpy_s(&gpuListOffset, sizeof(int32_t), data + 0x10, sizeof(int32_t));
+		memcpy_s(&gpuListSize, sizeof(int32_t), data + 0x14, sizeof(int32_t));
 
-		memcpy_s(&gpuSectOffset, sizeof(int), data + 0x18, sizeof(int));
-		memcpy_s(&gpuSectSize, sizeof(int), data + 0x1C, sizeof(int));
-		memcpy_s(&dataSectOffset, sizeof(int), data + 0x20, sizeof(int));
-		memcpy_s(&dataSectSize, sizeof(int), data + 0x24, sizeof(int));
+		memcpy_s(&gpuSectOffset, sizeof(int32_t), data + 0x18, sizeof(int32_t));
+		memcpy_s(&gpuSectSize, sizeof(int32_t), data + 0x1C, sizeof(int32_t));
+		memcpy_s(&dataSectOffset, sizeof(int32_t), data + 0x20, sizeof(int32_t));
+		memcpy_s(&dataSectSize, sizeof(int32_t), data + 0x24, sizeof(int32_t));
 
-		int totalSize = 0x28 + fileListDataSize + gpuListSize + gpuSectSize + dataSectSize;
+		int32_t totalSize = 0x28 + fileListDataSize + gpuListSize + gpuSectSize + dataSectSize;
 
 		if (entryCount == 0 || iUnk1 != 0) return false;
 
 		char* uncompedBaseData = (char*)malloc(totalSize);
 
-		int size = dataSize - 0x28;
+		int32_t size = dataSize - 0x28;
 
 		if (isCompressed == 1) {
 			memcpy_s(uncompedBaseData, 0x28, data, 0x28);
@@ -59,18 +59,18 @@ bool GhoulBundle::ReadBundleFile(char* data, int dataSize) {
 		if (fileEntries == nullptr)
 			return false;
 
-		for (int i = 0; i < entryCount; i++) {
+		for (int32_t i = 0; i < entryCount; i++) {
 			strncpy(fileEntries[i].fileName, dataPtr + fileListOffset + (sizeof(FileEntry) * i), FILEENTRY_NAMESIZE);
 
-			memcpy(&fileEntries[i].type, dataPtr + fileListOffset + (sizeof(FileEntry) * i) + FILEENTRY_NAMESIZE, sizeof(int));
-			memcpy(&fileEntries[i].timestamp, dataPtr + fileListOffset + (sizeof(FileEntry) * i) + FILEENTRY_NAMESIZE + 4, sizeof(int));
-			memcpy(&fileEntries[i].fUnk1, dataPtr + fileListOffset + (sizeof(FileEntry) * i) + FILEENTRY_NAMESIZE + 8, sizeof(int));
-			memcpy(&fileEntries[i].iUnk1, dataPtr + fileListOffset + (sizeof(FileEntry) * i) + FILEENTRY_NAMESIZE + 0xC, sizeof(int));
+			memcpy(&fileEntries[i].type, dataPtr + fileListOffset + (sizeof(FileEntry) * i) + FILEENTRY_NAMESIZE, sizeof(int32_t));
+			memcpy(&fileEntries[i].timestamp, dataPtr + fileListOffset + (sizeof(FileEntry) * i) + FILEENTRY_NAMESIZE + 4, sizeof(int32_t));
+			memcpy(&fileEntries[i].fUnk1, dataPtr + fileListOffset + (sizeof(FileEntry) * i) + FILEENTRY_NAMESIZE + 8, sizeof(int32_t));
+			memcpy(&fileEntries[i].iUnk1, dataPtr + fileListOffset + (sizeof(FileEntry) * i) + FILEENTRY_NAMESIZE + 0xC, sizeof(int32_t));
 
-			memcpy(&fileEntries[i].dataSectOffset, dataPtr + fileListOffset + (sizeof(FileEntry) * i) + FILEENTRY_NAMESIZE + 0x10, sizeof(int));
-			memcpy(&fileEntries[i].dataSectSize, dataPtr + fileListOffset + (sizeof(FileEntry) * i) + FILEENTRY_NAMESIZE + 0x14, sizeof(int));
-			memcpy(&fileEntries[i].gpuSectOffset, dataPtr + fileListOffset + (sizeof(FileEntry) * i) + FILEENTRY_NAMESIZE + 0x18, sizeof(int));
-			memcpy(&fileEntries[i].gpuSectSize, dataPtr + fileListOffset + (sizeof(FileEntry) * i) + FILEENTRY_NAMESIZE + 0x1C, sizeof(int));
+			memcpy(&fileEntries[i].dataSectOffset, dataPtr + fileListOffset + (sizeof(FileEntry) * i) + FILEENTRY_NAMESIZE + 0x10, sizeof(int32_t));
+			memcpy(&fileEntries[i].dataSectSize, dataPtr + fileListOffset + (sizeof(FileEntry) * i) + FILEENTRY_NAMESIZE + 0x14, sizeof(int32_t));
+			memcpy(&fileEntries[i].gpuSectOffset, dataPtr + fileListOffset + (sizeof(FileEntry) * i) + FILEENTRY_NAMESIZE + 0x18, sizeof(int32_t));
+			memcpy(&fileEntries[i].gpuSectSize, dataPtr + fileListOffset + (sizeof(FileEntry) * i) + FILEENTRY_NAMESIZE + 0x1C, sizeof(int32_t));
 		}
 
 		isReady = true;
@@ -92,7 +92,7 @@ bool GhoulBundle::readStandaloneBundleFile(char* fileName) {
 	}
 
 	fseek(currentFile, 0L, SEEK_END);
-	int length = ftell(currentFile);
+	int32_t length = ftell(currentFile);
 	fseek(currentFile, 0L, SEEK_SET);
 
 	char* data = (char*)malloc(length);

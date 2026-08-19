@@ -36,7 +36,7 @@ static const char* ghoulies_AssetArray[] = {
 	"fxcamshake",
 };
 
-enum GhouliesDBType : int {
+enum GhouliesDBType : int32_t {
 	ghoulDB_Texture = 1,
 	ghoulDB_Anim = 2,
 	ghoulDB_Model = 4,
@@ -64,22 +64,22 @@ enum GhouliesDBType : int {
 };
 
 struct GhoulTextureHeader {
-	int format;
-	int headerSize;
-	short width, height;
-	int flags;
+	int32_t format;
+	int32_t headerSize;
+	int16_t width, height;
+	int32_t flags;
 	char framerate;
 	char frameCount;
-	short sUnk1;
-	int tileCount;
-	int chunkSize;
+	int16_t sUnk1;
+	int32_t tileCount;
+	int32_t chunkSize;
 };
 
 struct TextureGPUHeader {
-	int size;
-	int iunk2;
-	int offset;
-	int chunkSize;
+	int32_t size;
+	int32_t iunk2;
+	int32_t offset;
+	int32_t chunkSize;
 };
 
 struct TextureGPUEntry {
@@ -93,7 +93,7 @@ struct TextureFile {
 	GhoulTextureHeader header;
 	TextureGPUHeader gpuHeader;
 	TextureGPUEntry* entries;
-	int framePos = 0;
+	int32_t framePos = 0;
 
 	bool refresh = true;
 

@@ -1,20 +1,20 @@
 #pragma once
 
-static const int FILEENTRY_NAMESIZE = 0x80;
+static const size_t FILEENTRY_NAMESIZE = 0x80;
 
 struct FileEntry {
 	char fileName[0x80];
 
-	int type;
-	unsigned int timestamp;
+	int32_t type;
+	uint32_t timestamp;
 	float fUnk1;
-	int iUnk1;
+	int32_t iUnk1;
 
 	// Actual Section Info
-	int dataSectOffset;
-	int dataSectSize;
-	int gpuSectOffset;
-	int gpuSectSize;
+	int32_t dataSectOffset;
+	int32_t dataSectSize;
+	int32_t gpuSectOffset;
+	int32_t gpuSectSize;
 
 	~FileEntry();
 };
@@ -25,24 +25,24 @@ struct GhoulBundle {
 	bool isReady;
 	bool hasErrored = false;
 
-	short entryCount;
-	short isCompressed;
-	int iUnk1;
+	int16_t entryCount;
+	int16_t isCompressed;
+	int32_t iUnk1;
 
 	// Sections
 
-	int fileListOffset;
-	int fileListDataSize;
-	int gpuListOffset;
-	int gpuListSize;
-	int gpuSectOffset;
-	int gpuSectSize;
-	int dataSectOffset;
-	int dataSectSize;
+	int32_t fileListOffset;
+	int32_t fileListDataSize;
+	int32_t gpuListOffset;
+	int32_t gpuListSize;
+	int32_t gpuSectOffset;
+	int32_t gpuSectSize;
+	int32_t dataSectOffset;
+	int32_t dataSectSize;
 
 	FileEntry* fileEntries;
 
-	bool ReadBundleFile(char* data, int dataSize);
+	bool ReadBundleFile(char* data, size_t dataSize);
 	bool readStandaloneBundleFile(char* fileName);
 
 	void ClearBundleFileData();
@@ -76,7 +76,7 @@ struct GhoulBundle {
 		return data;
 	}
 
-	char* GetFileData(int idx) {
+	char* GetFileData(int32_t idx) {
 		if (idx < 0 || idx >= entryCount) return nullptr;
 
 		char* data = GetDataSection();
@@ -89,13 +89,13 @@ struct GhoulBundle {
 		return fileData;
 	}
 
-	char* GetFileGPUList(int idx) {
+	char* GetFileGPUList(int32_t idx) {
 		if (idx < 0 || idx >= entryCount) return nullptr;
 
 		char* listSect = GetGPUListSection();
 		if (listSect == nullptr) return nullptr;
 
-		int size = 0;
+		int32_t size = 0;
 
 		memcpy(&size, listSect + fileEntries[idx].gpuSectOffset, 4);
 
@@ -106,7 +106,7 @@ struct GhoulBundle {
 		return fileData;
 	}
 
-	char* GetFileGPU(int idx) {
+	char* GetFileGPU(int32_t idx) {
 		if (idx < 0 || idx >= entryCount) return nullptr;
 
 		char* data = GetGpuSection();
@@ -121,14 +121,14 @@ struct GhoulBundle {
 		return fileData;
 	}
 
-	char* GetFileGPUForTexture(int idx) {
+	char* GetFileGPUForTexture(int32_t idx) {
 		if (idx < 0 || idx >= entryCount) return nullptr;
 
 		char* listSect = GetGPUListSection();
 		if (listSect == nullptr) return nullptr;
 
-		int offset = 0;
-		int chunkSize = 0;
+		int32_t offset = 0;
+		int32_t chunkSize = 0;
 		memcpy(&offset, listSect + fileEntries[idx].gpuSectOffset + 8, 4);
 		memcpy(&chunkSize, listSect + fileEntries[idx].gpuSectOffset + 0xC, 4);
 

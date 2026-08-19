@@ -172,7 +172,7 @@ static const char* dbScriptNames[] = {
 	"dbScript_Play_MovieRandomSelection"
 };
 
-enum dbScript_BanjoXEnum : int {
+enum dbScript_BanjoXEnum : int32_t {
 	dbScript_Null, // Only used for the end of the script.
 	dbScript_Setup_SetBackground,
 	dbScript_Setup_CreateSceneController,
@@ -345,12 +345,12 @@ enum dbScript_BanjoXEnum : int {
 
 class dbScript_Base {
 public:
-	int entrySize;
-	int entryType;
+	int32_t entrySize;
+	int32_t entryType;
 
 	void readCommonScriptData(char* data) {
-		int size = 0;
-		int type = 0;
+		int32_t size = 0;
+		int32_t type = 0;
 
 		memcpy(&size, data, 4);
 		memcpy(&type, data + 4, 4);
@@ -384,7 +384,7 @@ public:
 
 	bool isReady = false;
 
-	int numOfScriptEntries = 0;
+	int32_t numOfScriptEntries = 0;
 	dbScript_Base** scriptEntries;
 
 	void ReadScriptFile(char* data) {
@@ -392,13 +392,13 @@ public:
 		fileData = data;
 
 		bool hasInitialEntryStarted = false;
-		int offs = 0;
+		int32_t offs = 0;
 
-		int index = 0;
+		int32_t index = 0;
 		// settle the marker count.
 		while (true) {
-			int size = 0;
-			int type = 0;
+			int32_t size = 0;
+			int32_t type = 0;
 
 			memcpy(&size, fileData + offs, 4);
 			memcpy(&type, fileData + offs + 4, 4);
@@ -423,9 +423,9 @@ public:
 		scriptEntries = new dbScript_Base*[numOfScriptEntries];
 
 		// set up the markers.
-		for (int i = 0; i < numOfScriptEntries; i++) {
-			int size = 0;
-			int type = 0;
+		for (int32_t i = 0; i < numOfScriptEntries; i++) {
+			int32_t size = 0;
+			int32_t type = 0;
 
 			memcpy(&size, fileData + offs, 4);
 			memcpy(&type, fileData + offs + 4, 4);

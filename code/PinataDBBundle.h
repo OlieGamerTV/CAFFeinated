@@ -3,26 +3,26 @@
 
 struct IndexEntry {
 	char filename[256];
-	unsigned int timestamp = 0;
+	uint32_t timestamp = 0;
 	float version = 0;
 
 	// Precached Hash
-	unsigned int hash = 0;
+	uint32_t hash = 0;
 
 	// Precached IDX to corresponding hash.
-	int idx = 0;
+	int32_t idx = 0;
 };
 
 struct PrecacheEntry {
-	int hashIdx = 0;
-	int indexIdx = 0;
+	int32_t hashIdx = 0;
+	int32_t indexIdx = 0;
 };
 
 struct DBHashFile {
-	int fileCount = 0;
-	unsigned int* hash32_Array = nullptr;
-	unsigned long long* hash64_Array = nullptr;
-	int* offsetArray = nullptr;
+	int32_t fileCount = 0;
+	uint32_t* hash32_Array = nullptr;
+	uint64_t* hash64_Array = nullptr;
+	int32_t* offsetArray = nullptr;
 };
 
 struct DBBundle {
@@ -36,7 +36,7 @@ public:
 
 	bool isTiPIndexFile = false;
 
-	int indexCount = 0;
+	int32_t indexCount = 0;
 	IndexEntry* indexFile = nullptr;
 
 	PrecacheEntry* precachedEntries = nullptr;
@@ -45,15 +45,15 @@ public:
 	bool hasErrored = false;
 
 	bool readStandaloneDbBundleFiles(char* filePath);
-	void readDbBundleFiles(char* hashData, char* indexData, int indexCount);
+	void readDbBundleFiles(char* hashData, char* indexData, int32_t indexCount);
 
 	// Allocates and returns the target file data.
-	char* getFileData(int fileIdx, int* dataSize);
-	char* getBundleFileData(int fileAid, int fileIdx);
+	char* getFileData(int32_t fileIdx, int32_t* dataSize);
+	char* getBundleFileData(int32_t fileAid, int32_t fileIdx);
 
 	void ClearActiveBundleData();
 
-	unsigned long long getHashFromArray(int idx) {
+	uint64_t getHashFromArray(int32_t idx) {
 		if (isTiPIndexFile)
 			return hashFile.hash64_Array[idx];
 
@@ -62,9 +62,9 @@ public:
 	}
 
 	// Gets the offset of the target file by adding the size of the files before it.
-	int getOffsetOfFile(unsigned int aid) {
-		int offset = 0;
-		for (int i = 0; i < hashFile.fileCount; i++) {
+	int32_t getOffsetOfFile(uint32_t aid) {
+		int32_t offset = 0;
+		for (int32_t i = 0; i < hashFile.fileCount; i++) {
 			if (getHashFromArray(i) == aid) {
 				return hashFile.offsetArray[i];
 			}
@@ -72,9 +72,9 @@ public:
 		return 0;
 	}
 
-	int getIdxOfFile(unsigned int aid) {
-		int offset = 0;
-		for (int i = 0; i < hashFile.fileCount; i++) {
+	int32_t getIdxOfFile(uint32_t aid) {
+		int32_t offset = 0;
+		for (int32_t i = 0; i < hashFile.fileCount; i++) {
 			if (getHashFromArray(i) == aid) {
 				return i;
 			}
@@ -82,9 +82,9 @@ public:
 		return -1;
 	}
 
-	char* getCorrespondingName(unsigned int aid) {
-		int offset = 0;
-		for (int i = 0; i < indexCount; i++) {
+	char* getCorrespondingName(uint32_t aid) {
+		int32_t offset = 0;
+		for (int32_t i = 0; i < indexCount; i++) {
 			if (indexFile[i].hash == aid) {
 				//printf("getCorrespondingName - %s tied to hash %08X.\n", indexFile[i].filename, aid);
 				return indexFile[i].filename;

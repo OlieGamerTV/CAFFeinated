@@ -19,6 +19,8 @@ enum TEXTURE_FORMAT : int {
 static char* GetXenonTextureFormatName(int format) {
 	char* formatName = new char[12];
 
+	strcpy(formatName, "UNKNOWN");
+
 	switch (format) {
 	case TEXTURE_FORMAT::TEX_L8:
 		strcpy(formatName, "L8");

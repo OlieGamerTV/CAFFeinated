@@ -4,7 +4,7 @@
 /// <summary>
 /// A large array of bytes (1024 entries) that are used for generating the aid hash for Nuts & Bolts and Kinect Sports.
 /// </summary>
-static const unsigned int typed_HashArray[] = {
+static const uint32_t typed_HashArray[] = {
 	0x00,0x00,0x00,0x00,
 0x77,0x07,0x30,0x96,
 0xee,0x0e,0x61,0x2c,
@@ -1039,12 +1039,91 @@ static const char* nutsNBolts_AssetArray[] = {
 	"multiplayerseries"
 };
 
+/// <summary>
+/// A list of the available asset types Viva Pinata: Trouble in Paradise supports.
+/// </summary>
+static const char* troubleInParadise_AssetArray[] = {
+	"vehicle", // 0x00
+	"texture", // 0x01
+	"anim",
+	"pfont",
+	"model", // 0x04
+	"animevents",
+	"expression",
+	"cutscene",
+	"cutsceneevents",
+	"movie",
+	"misc",
+	"actorgoals",
+	"marker",
+	"callout",
+	"aidlist",
+	"accessorymodel",
+	"loctext",
+	"xwavebank",
+	"xsoundbank",
+	"camera",
+	"xcuelist",
+	"font",
+	"vehicleblock",
+	"xwavebankloc",
+	"script",
+	"actorattribs",
+	"fxemitter",
+	"fxparticle",
+	"fxrumble",
+	"fxcamshake",
+	"objparams",
+	"animtable",
+	"attackdata",
+	"hitreaction",
+	"scripttable",
+	"statetable",
+	"savegamepinata"
+	"livesessionparams",
+	"livetemplate",
+	"gardenfeature",
+	"uimenuitems",
+	"statspinata",
+	"reqspinata",
+	"bifspecpinata",
+	"uipageselect",
+	"xuipackage",
+	"xuicachefile",
+	"xuiscene",
+	"xuiskin",
+	"xuifont",
+	"xuiloadlist",
+	"xuiextension",
+	"ttfont",
+	"entrypoint",
+	"taggroup",
+	"vincedata",
+	"xenontv",
+	"xlsdata",
+	"xglobalsettings",
+	"luascript",
+	"astar",
+	"testingtasks",
+	"scriptpinata",
+	"actionxls",
+	"action",
+	"skeleton",
+	"challenge",
+	"pip",
+	"turningcircle",
+	"modelextras",
+	"interruptmethods",
+	"fontcacheabc",
+	"fontcachesbm"
+};
+
 static const char* assetSystemType_Xbox = "XBOX_v1";
 static const char* assetSystemType_XenonBeta = "XENONBETA_v1";
 
 static void assetGetTypeFromString(char* param1, char* param2) {
 	char* val = param1;
-	int iVar2 = 0;
+	int32_t iVar2 = 0;
 	char cVar3 = *val;
 	char* pcVar4 = val;
 
@@ -1062,8 +1141,8 @@ static void assetGetTypeFromString(char* param1, char* param2) {
 	param2[iVar2] = '\0';
 }
 
-static int GetAssetIDFromType(char* type) {
-	int iVar4 = 0;
+static int32_t GetAssetIDFromType(char* type) {
+	int32_t iVar4 = 0;
 	char iVar5[64];
 	char* paVar3 = {};
 
@@ -1079,6 +1158,24 @@ static int GetAssetIDFromType(char* type) {
 	} while (true);
 }
 
+// Gets the type ID from the array of available types found in Trouble In Paradise.
+static int32_t GetAssetIDFromType_TroubleInParadise(char* type) {
+	int32_t iVar4 = 0;
+	char iVar5[64];
+	char* paVar3 = {};
+
+	do {
+		strcpy(iVar5, troubleInParadise_AssetArray[iVar4]);
+		if (strcmp(type, iVar5) == 0) {
+			return iVar4;
+		}
+		iVar4 = iVar4 + 1;
+		if (iVar4 > 0x47) {
+			return 0x48;
+		}
+	} while (true);
+}
+
 static char* assetGetAidStringFromPath(char* str) {
 	if (!strstr(str, "UberRoot")) return str;
 
@@ -1086,17 +1183,17 @@ static char* assetGetAidStringFromPath(char* str) {
 }
 
 /// <summary>
-/// Retrieves an unsigned int from a byte array at the position provided.
+/// Retrieves an uint32_t from a byte array at the position provided.
 /// </summary>
 /// <param name="initialPosition"></param>
 /// <returns></returns>
-static unsigned int getIntFromHashArray(int initialPosition) {
-	unsigned int initialVal1 = typed_HashArray[initialPosition];
-	unsigned int initialVal2 = typed_HashArray[initialPosition + 1];
-	unsigned int initialVal3 = typed_HashArray[initialPosition + 2];
-	unsigned int initialVal4 = typed_HashArray[initialPosition + 3];
+static uint32_t getIntFromHashArray(int32_t initialPosition) {
+	uint32_t initialVal1 = typed_HashArray[initialPosition];
+	uint32_t initialVal2 = typed_HashArray[initialPosition + 1];
+	uint32_t initialVal3 = typed_HashArray[initialPosition + 2];
+	uint32_t initialVal4 = typed_HashArray[initialPosition + 3];
 
-	unsigned int val = initialVal1;
+	uint32_t val = initialVal1;
 	val = val + (initialVal2 << 8);
 	val = val + (initialVal3 << 16);
 	val = val + (initialVal4 << 24);
@@ -1111,9 +1208,9 @@ static unsigned int getIntFromHashArray(int initialPosition) {
 /// </summary>
 /// <param name="str"></param>
 /// <returns>The hashed value, stored as an unsigned short.</returns>
-static unsigned short locHashElfHash16(char* str)
+static uint16_t locHashElfHash16(char* str)
 {
-	unsigned short hash = 0;
+	uint16_t hash = 0;
 	char* strPtr = str;
 	char chr;
 	while (chr = *strPtr, chr != 0) {
@@ -1129,7 +1226,7 @@ static unsigned short locHashElfHash16(char* str)
 /// </summary>
 /// <param name="str"></param>
 /// <returns>An unsigned integer containing the hash.</returns>
-static unsigned int assetIdGetHash_Typed(char* str) {
+static uint32_t assetIdGetHash_Typed(char* str) {
 	printf("Inserted file %s\n", str);
 
 	if (*str == '\0') {
@@ -1137,13 +1234,13 @@ static unsigned int assetIdGetHash_Typed(char* str) {
 		return 0;
 	}
 
-	unsigned int val = 0;
-	unsigned int shift = 0;
-	unsigned int valShift = 0;
+	uint32_t val = 0;
+	uint32_t shift = 0;
+	uint32_t valShift = 0;
 
 	char* curVal = str;
 	char type[64];
-	int adjustedIdx = 0;
+	int32_t adjustedIdx = 0;
 
 	// Check if the string we're reading starts with "aid_". This has special conditions.
 	if (str[0] == 'a' && str[1] == 'i' && str[2] == 'd' && str[3] == '_') {
@@ -1155,7 +1252,7 @@ static unsigned int assetIdGetHash_Typed(char* str) {
 		printf("Aid Type -> \"%s\"\n", type);
 
 		// Gets the type ID from the type string.
-		int idx = GetAssetIDFromType(type);
+		int32_t idx = GetAssetIDFromType(type);
 		printf("Aid ID -> %d\n", idx);
 
 		// Shift the retrieved value as we will be appending it to our hash.
@@ -1180,7 +1277,7 @@ static unsigned int assetIdGetHash_Typed(char* str) {
 		printf("Aid Type -> \"%s\"\n", type);
 
 		// Gets the type ID from the type string.
-		int idx = GetAssetIDFromType(type);
+		int32_t idx = GetAssetIDFromType(type);
 		printf("Aid ID -> %d\n", idx);
 
 		// Shift the retrieved value as we will be appending it to our hash.
@@ -1196,7 +1293,7 @@ static unsigned int assetIdGetHash_Typed(char* str) {
 	}
 
 	unsigned char currChar = *curVal;
-	unsigned int hash = 0xFFFFFFFF;
+	uint32_t hash = 0xFFFFFFFF;
 
 	// Loop until we hit a null-terminating char to get our hash.
 	while (currChar != '\0') {
@@ -1222,10 +1319,10 @@ static unsigned int assetIdGetHash_Typed(char* str) {
 
 		printf("Shifted Val -> %d | ", valShift);
 
-		printf("Hash Arr Val -> %u | ", flipEndian(getIntFromHashArray((int)valShift)));
+		printf("Hash Arr Val -> %u | ", flipEndian(getIntFromHashArray((int32_t)valShift)));
 
 		// Get an integer from an array of bytes, flip it and XOR by our shift mask.
-		hash = flipEndian(getIntFromHashArray((int)valShift)) ^ shift;
+		hash = flipEndian(getIntFromHashArray((int32_t)valShift)) ^ shift;
 
 		printf("Hash Value -> %u (%08X) ", hash, hash);
 
@@ -1235,9 +1332,93 @@ static unsigned int assetIdGetHash_Typed(char* str) {
 	}
 
 	// Finally, append our type ID to the hash.
-	unsigned int finalVal = hash & 0x00ffffff | adjustedIdx;
+	uint32_t finalVal = hash & 0x00ffffff | adjustedIdx;
 
 	printf("Final Hash -> %08x\n", finalVal);
+
+	// And now, we return our hash.
+	return finalVal;
+}
+
+/// <summary>
+/// Generates a 64-bit hash from the provided string.
+/// <para>The ones generated by this function are valid for Viva Pinata: Trouble in Paradise.</para>
+/// </summary>
+/// <param name="str"></param>
+/// <returns>An unsigned 64-bit value containing the hash.</returns>
+static uint64_t assetIdGetHash_BaseExt(char* str) {
+	printf("Inserted file %s\n", str);
+
+	if (*str == '\0') {
+		printf("A blank string has been used for assetIdGetHash_BaseExt(), this won't do anything.\n");
+		return 0;
+	}
+
+	uint64_t val = 0;
+	uint64_t shift = 0;
+	uint64_t valShift = 0;
+
+	uint64_t adjustedIdx = 0;
+
+	char* curVal = str;
+	char type[64];
+
+	// Check if the string we're reading starts with "aid_". This has special conditions.
+	if (str[0] == 'a' && str[1] == 'i' && str[2] == 'd' && str[3] == '_') {
+		// Sets the string position to the type section. (E.g. model, texture, loctext...)
+		curVal = str + 4;
+
+		// Gets the type from the provided string.
+		assetGetTypeFromString(curVal, type);
+
+		// Gets the type ID from the type string.
+		uint64_t idx = GetAssetIDFromType_TroubleInParadise(type);
+
+		int32_t offs = 4 + (strlen(type) + 1);
+
+		// Shift the retrieved value as we will be appending it to our hash.
+		adjustedIdx = idx << 57;
+
+		// Set the string position to after the asset domain.
+		if (strstr(str, "pinata") != 0 || strstr(str, "common") != 0) {
+			offs += 5;
+		}
+		curVal = str + offs;
+
+		// Now we can move on to generating the hash.
+	}
+
+	unsigned char currChar = *curVal;
+	uint64_t hash = 0xFFFFFFFFFFFFFFFF;
+
+	// Loop until we hit a null-terminating char to get our hash.
+	while (currChar != '\0') {
+		// Increment the string.
+		curVal++;
+
+		// Convert from lower case to upper case.
+		currChar = currChar & 0xDF;
+
+		// Mask out the first byte of the hash and XOR it with the current character in the string.
+		val = (hash & 0x00000000000000FF) ^ currChar;
+
+		// Shift the current hash right by 8 and mask out.
+		shift = (hash >> 8) & 0x00FFFFFFFFFFFFFF;
+
+		// Shift our current value by 2 bytes to the left.
+		valShift = val << 2;
+
+		// Get an integer from an array of bytes, flip it and XOR by our shift mask.
+		hash = flipEndian((uint64_t)getIntFromHashArray((int32_t)valShift)) ^ shift;
+
+		// Get the next character in the string and repeat until we are done.
+		currChar = *curVal;
+	}
+
+	// Finally, append our adjusted type ID to the hash.
+	uint64_t finalVal = adjustedIdx | hash & 0x1ffffffffffffff;
+
+	printf("Hash -> 0x%016I64x\n", finalVal);
 
 	// And now, we return our hash.
 	return finalVal;
@@ -1249,7 +1430,7 @@ static unsigned int assetIdGetHash_Typed(char* str) {
 /// </summary>
 /// <param name="str"></param>
 /// <returns>An unsigned integer containing the hash.</returns>
-static unsigned int assetIdGetHash_Base(char* str) {
+static uint32_t assetIdGetHash_Base(char* str) {
 	//printf("Inserted file %s\n", str);
 
 	if (*str == '\0') {
@@ -1257,7 +1438,7 @@ static unsigned int assetIdGetHash_Base(char* str) {
 		return 0;
 	}
 
-	unsigned int val = 0;
+	uint32_t val = 0;
 	char* curVal = str;
 
 	// Check if the string we're reading starts with "aid_".
@@ -1267,7 +1448,7 @@ static unsigned int assetIdGetHash_Base(char* str) {
 	}
 
 	unsigned char currChar = *curVal;
-	unsigned int hash = 0;
+	uint32_t hash = 0;
 
 	// Loop until we hit a null-terminating char to get our hash.
 	while (currChar != '\0') {

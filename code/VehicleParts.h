@@ -1,22 +1,22 @@
 #pragma once
 
 // Part Color Presets
-const unsigned int COL_BLUE = 0xFFC77B4E;
-const unsigned int COL_PURPLE = 0xFFCA68AF;
-const unsigned int COL_MAGENTA = 0xFFBF6BC9;
-const unsigned int COL_PEACH = 0xFFB1CBE4;
-const unsigned int COL_ORANGE = 0xFF079AE0;
-const unsigned int COL_GREENBLUE = 0xFF498000;
-const unsigned int COL_PINK = 0xFFA065CD;
-const unsigned int COL_BLACK = 0xFF303030;
-const unsigned int COL_SILVER = 0xFFEBEBEB;
-const unsigned int COL_LIME = 0xFF17E378;
-const unsigned int COL_AQUA = 0xFFB7AF59;
-const unsigned int COL_YELLOW = 0xFF1AFFFA;
-const unsigned int COL_RED = 0xFF0309D1;
-const unsigned int COL_BROWN = 0xFF004080;
+const uint32_t COL_BLUE = 0xFFC77B4E;
+const uint32_t COL_PURPLE = 0xFFCA68AF;
+const uint32_t COL_MAGENTA = 0xFFBF6BC9;
+const uint32_t COL_PEACH = 0xFFB1CBE4;
+const uint32_t COL_ORANGE = 0xFF079AE0;
+const uint32_t COL_GREENBLUE = 0xFF498000;
+const uint32_t COL_PINK = 0xFFA065CD;
+const uint32_t COL_BLACK = 0xFF303030;
+const uint32_t COL_SILVER = 0xFFEBEBEB;
+const uint32_t COL_LIME = 0xFF17E378;
+const uint32_t COL_AQUA = 0xFFB7AF59;
+const uint32_t COL_YELLOW = 0xFF1AFFFA;
+const uint32_t COL_RED = 0xFF0309D1;
+const uint32_t COL_BROWN = 0xFF004080;
 
-const unsigned int COL_ARR[] = {
+const uint32_t COL_ARR[] = {
 	COL_BLUE,
 	COL_PURPLE,
 	COL_PEACH,
@@ -50,11 +50,11 @@ const char* COLNAME_ARR[] = {
 	"Brown"
 };
 
-unsigned int GetColorMatch(unsigned int col) {
+uint32_t GetColorMatch(uint32_t col) {
+	uint32_t doesColMatch = 0;
+	size_t arrSize = sizeof(COL_ARR) / sizeof(COL_ARR[0]);
 
-	unsigned int doesColMatch = 0;
-
-	for (int i = 0; i < (sizeof(COL_ARR) / 4); i++) {
+	for (int32_t i = 0; i < arrSize; i++) {
 		if (COL_ARR[i] == col) {
 			col = COL_ARR[i];
 			doesColMatch = 1;
@@ -64,19 +64,21 @@ unsigned int GetColorMatch(unsigned int col) {
 	return doesColMatch;
 }
 
-unsigned int GetDefaultColor(unsigned int col) {
+uint32_t GetDefaultColor(uint32_t col) {
+	uint32_t doesColMatch = COL_BLUE;
+	size_t arrSize = sizeof(COL_ARR) / sizeof(COL_ARR[0]);
 
-	unsigned int doesColMatch = COL_BLUE;
-
-	for (int i = 0; i < (sizeof(COL_ARR) / 4); i++) {
+	for (int32_t i = 0; i < arrSize; i++) {
 		if (COL_ARR[i] == col) col = COL_ARR[i];
 	}
 
 	return doesColMatch;
 }
 
-int GetColIdx(unsigned int col) {
-	for (int i = 0; i < (sizeof(COL_ARR) / 4); i++) {
+int32_t GetColIdx(uint32_t col) {
+	size_t arrSize = sizeof(COL_ARR) / sizeof(COL_ARR[0]);
+
+	for (int32_t i = 0; i < arrSize; i++) {
 		if (COL_ARR[i] == col) return i;
 	}
 
@@ -84,11 +86,11 @@ int GetColIdx(unsigned int col) {
 }
 
 static size_t getCountOfColorTable() {
-	return sizeof(COL_ARR) / sizeof(int);
+	return sizeof(COL_ARR) / sizeof(COL_ARR[0]);
 }
 
 struct VehiclePartEntry {
-	unsigned int aid;
+	uint32_t aid;
 	const char* vehicleName;
 
 	bool isComment = false;
@@ -394,10 +396,10 @@ static size_t getCountOfPartsTable() {
 	return sizeof(vehicleParts) / sizeof(VehiclePartEntry);
 }
 
-static const char* getPartNameFromAid(unsigned int aid) {
-	int arrSize = sizeof(vehicleParts) / sizeof(VehiclePartEntry);
+static const char* getPartNameFromAid(uint32_t aid) {
+	size_t arrSize = sizeof(vehicleParts) / sizeof(VehiclePartEntry);
 
-	for (int i = 0; i < arrSize; i++) {
+	for (int32_t i = 0; i < arrSize; i++) {
 		if (vehicleParts[i].aid == aid) return vehicleParts[i].vehicleName;
 	}
 
