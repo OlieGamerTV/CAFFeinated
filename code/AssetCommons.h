@@ -950,6 +950,135 @@ static const uint32_t typed_HashArray[] = {
 /// <summary>
 /// A list of the available asset types the game supports.
 /// </summary>
+static const char* kinectSports_AssetArray[] = {
+	"grammar",
+	"texture",
+	"anim",
+	"cant_reuse_see_below01",
+	"model",
+	"havok",
+	"animevents",
+	"cant_reuse_see_below02",
+	"cutscene",
+	"cutsceneevents",
+	"cant_reuse_see_below03",
+	"misc",
+	"cant_reuse_see_below04",
+	"marker",
+	"callout",
+	"aidlist",
+	"cant_reuse_see_below05",
+	"loctext",
+	"cant_reuse_see_below06",
+	"cant_reuse_see_below07",
+	"cant_reuse_see_below08",
+	"cant_reuse_see_below09",
+	"font",
+	"tutorial",
+	"cant_reuse_see_below10",
+	"script",
+	"cant_reuse_see_below11",
+	"fxemitter",
+	"fxparticle",
+	"fxrumble",
+	"fxcamshake",
+	"objparams",
+	"animtable",
+	"cant_reuse_see_below12",
+	"cant_reuse_see_below13",
+	"scripttable",
+	"cant_reuse_see_below14",
+	"cant_reuse_see_below15",
+	"cant_reuse_see_below16",
+	"cant_reuse_see_below17",
+	"cant_reuse_see_below18",
+	"cant_reuse_see_below19",
+	"cant_reuse_see_below20",
+	"cant_reuse_see_below21",
+	"cant_reuse_see_below22",
+	"cant_reuse_see_below23",
+	"cant_reuse_see_below24",
+	"cant_reuse_see_below25",
+	"cant_reuse_see_below26",
+	"cant_reuse_see_below27",
+	"cant_reuse_see_below28",
+	"cant_reuse_see_below29",
+	"cant_reuse_see_below30",
+	"cant_reuse_see_below31",
+	"xmv",
+	"luascript",
+	"cant_reuse_see_below32",
+	"cant_reuse_see_below33",
+	"cant_reuse_see_below34",
+	"cant_reuse_see_below35",
+	"cant_reuse_see_below36",
+	"cant_reuse_see_below37",
+	"cant_reuse_see_below38",
+	"cant_reuse_see_below39",
+	"cant_reuse_see_below40",
+	"vertexshader",
+	"pixelshader",
+	"dll",
+	"cant_reuse_see_below41",
+	"gpuparticleeffect",
+	"cant_reuse_see_below42",
+	"cant_reuse_see_below43",
+	"cant_reuse_see_below44",
+	"cant_reuse_see_below45",
+	"3dgpuparticleeffect",
+	"compositeeffect",
+	"cant_reuse_see_below46",
+	"ddstexture",
+	"cant_reuse_see_below47",
+	"bundle",
+	"streambundle",
+	"cant_reuse_see_below48",
+	"cant_reuse_see_below49",
+	"cant_reuse_see_below50",
+	"cant_reuse_see_below51",
+	"cant_reuse_see_below52",
+	"cant_reuse_see_below53",
+	"sport",
+	"crowd",
+	"team",
+	"stadium",
+	"assetref",
+	"formation",
+	"gesture",
+	"cant_reuse_see_below54",
+	"cant_reuse_see_below55",
+	"scenecontroller",
+	"wwiseproject",
+	"shader",
+	"skeletonrecording",
+	"cant_reuse_see_below56",
+	"bundlelookup",
+	"soundscape",
+	"cant_reuse_see_below57",
+	"cant_reuse_see_below58",
+	"cant_reuse_see_below59",
+	"gfxmovie",
+	"xavatarasset",
+	"costume",
+	"cant_reuse_see_below60",
+	"preset",
+	"character",
+	"havokanimation",
+	"havokbehavior",
+	"xavatar",
+	"cutscenecomposite",
+	"entity",
+	"component",
+	"componentupdatepolicy",
+	"componentmanager",
+	"commentary",
+	"sportmanavatar",
+	"max"
+};
+
+/// <summary>
+/// A list of the available asset types the game supports.
+/// </summary>
 static const char* nutsNBolts_AssetArray[] = {
 	"vehicle", // 0x00
 	"texture", // 0x01
@@ -1158,6 +1287,23 @@ static int32_t GetAssetIDFromType(char* type) {
 	} while (true);
 }
 
+static int32_t GetAssetIDFromType_KinectSports(char* type) {
+	int32_t iVar4 = 0;
+	char iVar5[64];
+	char* paVar3 = {};
+
+	do {
+		strcpy(iVar5, kinectSports_AssetArray[iVar4]);
+		if (strcmp(type, iVar5) == 0) {
+			return iVar4;
+		}
+		iVar4 = iVar4 + 1;
+		if (iVar4 >= 0x7A) {
+			return 0x7A;
+		}
+	} while (true);
+}
+
 // Gets the type ID from the array of available types found in Trouble In Paradise.
 static int32_t GetAssetIDFromType_TroubleInParadise(char* type) {
 	int32_t iVar4 = 0;
@@ -1177,9 +1323,19 @@ static int32_t GetAssetIDFromType_TroubleInParadise(char* type) {
 }
 
 static char* assetGetAidStringFromPath(char* str) {
-	if (!strstr(str, "UberRoot")) return str;
+	char* uberPtr = strstr(str, "UberRoot");
+	if (!uberPtr) return str;
 
-	
+	char* sec1 = uberPtr + 9;
+}
+
+static int32_t assetGetTypeIDFromPath(char* str) {
+	char* uberPtr = strstr(str, "UberRoot");
+	if (!uberPtr) return 0;
+
+	char* sec1 = uberPtr + 9;
+	if (strncmp(sec1, "loc", 3) == 0) return 0x11;
+	if (strncmp(sec1 + 4, "text", 4) == 0) return 0x11;
 }
 
 /// <summary>

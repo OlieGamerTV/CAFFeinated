@@ -1,5 +1,6 @@
 #pragma once
-//#include "Bundle.h"
+#ifndef _PINATADBBUNDLE
+#define _PINATADBBUNDLE
 
 struct IndexEntry {
 	char filename[256];
@@ -7,7 +8,7 @@ struct IndexEntry {
 	float version = 0;
 
 	// Precached Hash
-	uint32_t hash = 0;
+	uint64_t hash = 0;
 
 	// Precached IDX to corresponding hash.
 	int32_t idx = 0;
@@ -20,8 +21,7 @@ struct PrecacheEntry {
 
 struct DBHashFile {
 	int32_t fileCount = 0;
-	uint32_t* hash32_Array = nullptr;
-	uint64_t* hash64_Array = nullptr;
+	uint64_t* hashArray = nullptr;
 	int32_t* offsetArray = nullptr;
 };
 
@@ -54,35 +54,31 @@ public:
 	void ClearActiveBundleData();
 
 	uint64_t getHashFromArray(int32_t idx) {
-		if (isTiPIndexFile)
-			return hashFile.hash64_Array[idx];
-
-		if (!isTiPIndexFile)
-			return hashFile.hash32_Array[idx];
+		return hashFile.hashArray[idx];
 	}
 
 	// Gets the offset of the target file by adding the size of the files before it.
-	int32_t getOffsetOfFile(uint32_t aid) {
+	int32_t getOffsetOfFile(uint64_t aid) {
 		int32_t offset = 0;
 		for (int32_t i = 0; i < hashFile.fileCount; i++) {
-			if (getHashFromArray(i) == aid) {
+			if (hashFile.hashArray[i] == aid) {
 				return hashFile.offsetArray[i];
 			}
 		}
 		return 0;
 	}
 
-	int32_t getIdxOfFile(uint32_t aid) {
+	int32_t getIdxOfFile(uint64_t aid) {
 		int32_t offset = 0;
 		for (int32_t i = 0; i < hashFile.fileCount; i++) {
-			if (getHashFromArray(i) == aid) {
+			if (hashFile.hashArray[i] == aid) {
 				return i;
 			}
 		}
 		return -1;
 	}
 
-	char* getCorrespondingName(uint32_t aid) {
+	char* getCorrespondingName(uint64_t aid) {
 		int32_t offset = 0;
 		for (int32_t i = 0; i < indexCount; i++) {
 			if (indexFile[i].hash == aid) {
@@ -97,3 +93,4 @@ public:
 	//IMGUI Popups
 	//bool addStreamedReference(bool* open);
 };
+#endif

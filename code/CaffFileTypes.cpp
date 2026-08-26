@@ -156,14 +156,6 @@ void Loctext::ReadLoctext(char* data) {
 			isMagic = 1;
 		}
 
-		if (MAGCHECK == LOCTEXT_LSBTWO_MAGIC) {
-			isMagic = 1;
-		}
-
-		if (MAGCHECK == LOCTEXT_LBSTWO_MAGIC) {
-			isMagic = 1;
-		}
-
 		// Small hack for if a file is provided right at the magic, skip needing to deal with the initial table offsets entirely if we are.
 		if (isMagic == 0) {
 			// Really stupid hack for Goldeneye 007 (XBLA), which has a dumbass header offsetting the entire file.
@@ -1046,7 +1038,7 @@ void LocTwo::ReadLoctext(char* data) {
 
 		memcpy(&labelTable.header.magic, loctextPtr + labelDataOffset, sizeof(int32_t));
 
-		// The only section that cares about endianness is the label data. Every other section treats it as little endian.
+
 		ReadLabelData();
 
 		// Kameo and Perfect Dark Zero don't use this table, so it needs to be checked beforehand.
@@ -1074,121 +1066,88 @@ void LocTwo::ReadLabelData() {
 		return;
 	}
 
-	int32_t endiannes = -1;
-	int32_t dataOffs = 0;
 	int32_t dataSize = 6;
 
-	if (labelTable.header.magic == LOCTEXT_LBSL_MAGIC) {
-		endiannes = SRC_ENDIANLITTLE;
+	if (labelTable.header.magic[0] == LOCTEXT_LSB2[0] && labelTable.header.magic[1] == LOCTEXT_LSB2[1] && labelTable.header.magic[2] == LOCTEXT_LSB2[2] && labelTable.header.magic[3] == LOCTEXT_LSB2[3]) {
+		endianness = SRC_ENDIANBIG;
 	}
 
-	if (labelTable.header.magic == LOCTEXT_LSBL_MAGIC) {
-		endiannes = SRC_ENDIANBIG;
+	if (labelTable.header.magic[0] == LOCTEXT_LBS2[0] && labelTable.header.magic[1] == LOCTEXT_LBS2[1] && labelTable.header.magic[2] == LOCTEXT_LBS2[2] && labelTable.header.magic[3] == LOCTEXT_LBS2[3]) {
+		endianness = SRC_ENDIANLITTLE;
 	}
 
-	if (labelTable.header.magic == LOCTEXT_LBSTWO_MAGIC) {
-		endiannes = SRC_ENDIANLITTLE;
-		dataOffs = 8;
-		if (labelTable.header.tagTableOffset == 0) {
-			dataSize = 8;
-		}
-	}
-
-	if (labelTable.header.magic == LOCTEXT_LSBTWO_MAGIC) {
-		endiannes = SRC_ENDIANBIG;
-		dataOffs = 8;
-		if (labelTable.header.tagTableOffset == 0) {
-			dataSize = 8;
-		}
-	}
-
-	if (endiannes != SRC_ENDIANLITTLE && endiannes != SRC_ENDIANBIG) {
-		printf("Loctext::ReadLabelData() somehow ended up with an invalid endian value of %d.\n", endiannes);
+	if (endianness != SRC_ENDIANLITTLE && endianness != SRC_ENDIANBIG) {
+		printf("Loctext::ReadLabelData() somehow ended up with an invalid endian value of %d.\n", endianness);
 		return;
 	}
 
 	printf("Loctext::ReadLabelData() ENDIAN - %08x.\n", labelTable.header.magic);
 
-	if (endiannes == SRC_ENDIANLITTLE) {
-		memcpy(&labelTable.header.headerLen, loctextPtr + labelDataOffset + 4 + dataOffs, sizeof(int32_t));
-		memcpy(&labelTable.header.entryTotal, loctextPtr + labelDataOffset + 8 + dataOffs, sizeof(int32_t));
-		memcpy(&labelTable.header.stringTableOffset, loctextPtr + labelDataOffset + 0xC + dataOffs, sizeof(int32_t));
-		memcpy(&labelTable.header.tagTableOffset, loctextPtr + labelDataOffset + 0x10 + dataOffs, sizeof(int32_t));
-		memcpy(&labelTable.header.commentTableOffset, loctextPtr + labelDataOffset + 0x14 + dataOffs, sizeof(int32_t));
-		memcpy(&labelTable.header.positionTableOffset, loctextPtr + labelDataOffset + 0x18 + dataOffs, sizeof(int32_t));
+	memcpy(&labelTable.header.unk1, loctextPtr + labelDataOffset + 4, sizeof(int32_t));
+	memcpy(&labelTable.header.unk2, loctextPtr + labelDataOffset + 8, sizeof(int32_t));
+	memcpy(&labelTable.header.headerLen, loctextPtr + labelDataOffset + 0xC, sizeof(int32_t));
+	memcpy(&labelTable.header.entryTotal, loctextPtr + labelDataOffset + 0x10, sizeof(int32_t));
+	memcpy(&labelTable.header.stringTableOffset, loctextPtr + labelDataOffset + 0x14, sizeof(int32_t));
+	memcpy(&labelTable.header.tagTableOffset, loctextPtr + labelDataOffset + 0x18, sizeof(int32_t));
+	memcpy(&labelTable.header.commentTableOffset, loctextPtr + labelDataOffset + 0x1C, sizeof(int32_t));
+	memcpy(&labelTable.header.positionTableOffset, loctextPtr + labelDataOffset + 0x20, sizeof(int32_t));
 
-		memcpy(&labelTable.stringTable.header.totalSectLen, loctextPtr + labelDataOffset + labelTable.header.stringTableOffset, sizeof(int32_t));
-		memcpy(&labelTable.stringTable.header.totalCount, loctextPtr + labelDataOffset + labelTable.header.stringTableOffset + 4, sizeof(int32_t));
+	if (endianness == SRC_ENDIANBIG) {
+		labelTable.header.headerLen = flipEndian(labelTable.header.headerLen);
+		labelTable.header.entryTotal = flipEndian(labelTable.header.entryTotal);
+		labelTable.header.stringTableOffset = flipEndian(labelTable.header.stringTableOffset);
+		labelTable.header.tagTableOffset = flipEndian(labelTable.header.tagTableOffset);
+		labelTable.header.commentTableOffset = flipEndian(labelTable.header.commentTableOffset);
+		labelTable.header.positionTableOffset = flipEndian(labelTable.header.positionTableOffset);
 	}
-	else if (endiannes == SRC_ENDIANBIG) {
-		int32_t unk1; // 0x4
-		int32_t unk2; // 0x8
-		int32_t stringTableOffset; // 0xC
-		int32_t tagTableOffset; // 0x10
-		int32_t commentTableOffset; // 0x14
-		int32_t unkTableOffset; // 0x18
 
-		memcpy(&unk1, loctextPtr + labelDataOffset + 4 + dataOffs, sizeof(int32_t));
-		memcpy(&unk2, loctextPtr + labelDataOffset + 8 + dataOffs, sizeof(int32_t));
-		memcpy(&stringTableOffset, loctextPtr + labelDataOffset + 0xC + dataOffs, sizeof(int32_t));
-		memcpy(&tagTableOffset, loctextPtr + labelDataOffset + 0x10 + dataOffs, sizeof(int32_t));
-		memcpy(&commentTableOffset, loctextPtr + labelDataOffset + 0x14 + dataOffs, sizeof(int32_t));
-		memcpy(&unkTableOffset, loctextPtr + labelDataOffset + 0x18 + dataOffs, sizeof(int32_t));
-
-		labelTable.header.headerLen = flipEndian(unk1);
-		labelTable.header.entryTotal = flipEndian(unk2);
-		labelTable.header.stringTableOffset = flipEndian(stringTableOffset);
-		labelTable.header.tagTableOffset = flipEndian(tagTableOffset);
-		labelTable.header.commentTableOffset = flipEndian(commentTableOffset);
-		labelTable.header.positionTableOffset = flipEndian(unkTableOffset);
-
-		int32_t totalSectLenVar = 0;
-		int32_t totalStrings = 0;
-
-		memcpy(&totalSectLenVar, loctextPtr + labelDataOffset + labelTable.header.stringTableOffset + dataOffs, sizeof(int32_t));
-		memcpy(&totalStrings, loctextPtr + labelDataOffset + labelTable.header.stringTableOffset + 4 + dataOffs, sizeof(int32_t));
-
-		labelTable.stringTable.header.totalSectLen = flipEndian(totalSectLenVar);
-		labelTable.stringTable.header.totalCount = flipEndian(totalStrings);
-	}
+	usesTags = labelTable.header.tagTableOffset != 0;
+	usesComments = labelTable.header.commentTableOffset != 0;
+	usesPos = labelTable.header.positionTableOffset != 0;
 
 	printf("Loctext File: %d %d %d %d\n", labelTable.header.stringTableOffset, labelTable.header.tagTableOffset, labelTable.header.commentTableOffset, labelTable.header.positionTableOffset);
 	printf("String Table: %d %d\n", labelTable.stringTable.header.totalSectLen, labelTable.stringTable.header.totalCount);
 
+	memcpy(&labelTable.stringTable.header.totalSectLen, loctextPtr + labelDataOffset + labelTable.header.stringTableOffset, sizeof(int32_t));
+	memcpy(&labelTable.stringTable.header.totalCount, loctextPtr + labelDataOffset + labelTable.header.stringTableOffset + 4, sizeof(int32_t));
+
+	if (endianness == SRC_ENDIANBIG) {
+		labelTable.stringTable.header.totalSectLen = flipEndian(labelTable.stringTable.header.totalSectLen);
+		labelTable.stringTable.header.totalCount = flipEndian(labelTable.stringTable.header.totalCount);
+	}
+
 	int32_t strInfoOffset = labelDataOffset + labelTable.header.stringTableOffset + 8;
-	labelTable.stringTable.infoEntries = new LabelStrInfoEntry[labelTable.stringTable.header.totalCount];
+	labelTable.stringTable.infoEntries = new LabelTwoStrInfoEntry[labelTable.stringTable.header.totalCount];
 	labelTable.stringTable.strings = new LabelStrEntry[labelTable.stringTable.header.totalCount];
+
+	// LSB2's on Kinect Sports: Season 2 have an additional tag which messes up things.
+	int32_t offsCheck = 0;
+	bool isKSS2 = false;
+	memcpy(&offsCheck, loctextPtr + strInfoOffset + 2, sizeof(int32_t));
+
+	if (offsCheck != 0) {
+		isKSS2 = true;
+		dataSize = 8;
+	}
+
 	for (int32_t i = 0; i < labelTable.stringTable.header.totalCount; i++) {
-		if (endiannes == SRC_ENDIANLITTLE) {
+		if (isKSS2) {
+			memcpy(&labelTable.stringTable.infoEntries[i].unk, loctextPtr + strInfoOffset + (8 * i), sizeof(int16_t));
+			memcpy(&labelTable.stringTable.infoEntries[i].hash, loctextPtr + strInfoOffset + (8 * i) + 2, sizeof(int16_t));
+			memcpy(&labelTable.stringTable.infoEntries[i].offset, loctextPtr + strInfoOffset + (8 * i) + 4, sizeof(int32_t));
+		}
+		else {
+			labelTable.stringTable.infoEntries[i].unk = 0;
 			memcpy(&labelTable.stringTable.infoEntries[i].hash, loctextPtr + strInfoOffset + (6 * i), sizeof(int16_t));
 			memcpy(&labelTable.stringTable.infoEntries[i].offset, loctextPtr + strInfoOffset + (6 * i) + 2, sizeof(int32_t));
 		}
-		else if (endiannes == SRC_ENDIANBIG) {
-			uint16_t strUnkVal; // 0x0 (Only on LSB2 W/ no Tag Table.)
-			uint16_t strIdVar; // 0x0 (0x2 on LSB2 W/ no Tag Table.)
-			int32_t strOffsetVar; // 0x2 (0x4 on LSB2 W/ no Tag Table.)
 
-			if (labelTable.header.magic == LOCTEXT_LSBTWO_MAGIC) {
-				if (labelTable.header.tagTableOffset == 0) {
-					memcpy(&strUnkVal, loctextPtr + strInfoOffset + (dataSize * i), sizeof(int16_t));
-					memcpy(&strIdVar, loctextPtr + strInfoOffset + (dataSize * i) + 2, sizeof(int16_t));
-					memcpy(&strOffsetVar, loctextPtr + strInfoOffset + (dataSize * i) + 4, sizeof(int32_t));
-
-					labelTable.stringTable.infoEntries[i].unk = flipEndian(strUnkVal);
-				}
-				else {
-					memcpy(&strIdVar, loctextPtr + strInfoOffset + (dataSize * i), sizeof(int16_t));
-					memcpy(&strOffsetVar, loctextPtr + strInfoOffset + (dataSize * i) + 2, sizeof(int32_t));
-				}
-			}
-			else {
-				memcpy(&strIdVar, loctextPtr + strInfoOffset + (dataSize * i), sizeof(int16_t));
-				memcpy(&strOffsetVar, loctextPtr + strInfoOffset + (dataSize * i) + 2, sizeof(int32_t));
-			}
-
-			labelTable.stringTable.infoEntries[i].hash = flipEndian(strIdVar);
-			labelTable.stringTable.infoEntries[i].offset = flipEndian(strOffsetVar);
+		if (endianness == SRC_ENDIANBIG) {
+			labelTable.stringTable.infoEntries[i].unk = flipEndian(labelTable.stringTable.infoEntries[i].unk);
+			labelTable.stringTable.infoEntries[i].hash = flipEndian(labelTable.stringTable.infoEntries[i].hash);
+			labelTable.stringTable.infoEntries[i].offset = flipEndian(labelTable.stringTable.infoEntries[i].offset);
 		}
+		
 		printf("String Table Entry %d: %04x %d\n", i, labelTable.stringTable.infoEntries[i].hash, labelTable.stringTable.infoEntries[i].offset);
 	}
 
@@ -1198,7 +1157,7 @@ void LocTwo::ReadLabelData() {
 
 		wchar_t chr = 0xFFFF;
 		int32_t idx = 0;
-		if (endiannes == SRC_ENDIANLITTLE) {
+		if (endianness == SRC_ENDIANLITTLE) {
 			while (chr != '\0') {
 				memcpy(&chr, loctextPtr + offs, sizeof(char16_t));
 				labelTable.stringTable.strings[i].string[idx] = chr;
@@ -1206,7 +1165,7 @@ void LocTwo::ReadLabelData() {
 				offs += 2;
 			}
 		}
-		else if (endiannes == SRC_ENDIANBIG) {
+		else if (endianness == SRC_ENDIANBIG) {
 			while (chr != '\0') {
 				memcpy(&chr, loctextPtr + offs, sizeof(char16_t));
 				labelTable.stringTable.strings[i].string[idx] = flipEndian(chr);
@@ -1226,76 +1185,39 @@ void LocTwo::ReadTagData() {
 		return;
 	}
 
-	bool doesEndMatter = false;
+	// Endianness doesn't matter here for some reason. All games that use this always treats these as little endian.
+	memcpy(&labelTable.tagTable.header.totalSectLen, loctextPtr + labelDataOffset + labelTable.header.tagTableOffset, sizeof(int32_t));
+	memcpy(&labelTable.tagTable.header.totalCount, loctextPtr + labelDataOffset + labelTable.header.tagTableOffset + 4, sizeof(int32_t));
 
-	if (labelTable.header.magic == LOCTEXT_LSBTWO_MAGIC) {
-		doesEndMatter = true;
+	if (endianness == SRC_ENDIANBIG) {
+		labelTable.tagTable.header.totalSectLen = flipEndian(labelTable.tagTable.header.totalSectLen);
+		labelTable.tagTable.header.totalCount = flipEndian(labelTable.tagTable.header.totalCount);
 	}
 
-	if (doesEndMatter) {
-		int32_t totalSectLen = 0;
-		int32_t totalCount = 0;
+	int32_t tagTableOffset = labelDataOffset + labelTable.header.tagTableOffset + 8;
+	labelTable.tagTable.infoEntries = new TagInfo[labelTable.tagTable.header.totalCount];
+	labelTable.tagTable.tags = new TagStr[labelTable.tagTable.header.totalCount];
+	for (int32_t i = 0; i < labelTable.tagTable.header.totalCount; i++) {
+		memcpy(&labelTable.tagTable.infoEntries[i].id, loctextPtr + tagTableOffset + (8 * i), sizeof(int16_t));
+		memcpy(&labelTable.tagTable.infoEntries[i].unk1, loctextPtr + tagTableOffset + (8 * i) + 2, sizeof(int16_t));
+		memcpy(&labelTable.tagTable.infoEntries[i].offset, loctextPtr + tagTableOffset + (8 * i) + 4, sizeof(int32_t));
 
-		// Endianness doesn't matter here for some reason. All games that use this always treats these as little endian.
-		memcpy(&totalSectLen, loctextPtr + labelDataOffset + labelTable.header.tagTableOffset, sizeof(int32_t));
-		memcpy(&totalCount, loctextPtr + labelDataOffset + labelTable.header.tagTableOffset + 4, sizeof(int32_t));
-
-		labelTable.tagTable.header.totalSectLen = flipEndian(totalSectLen);
-		labelTable.tagTable.header.totalCount = flipEndian(totalCount);
-
-		int32_t tagTableOffset = labelDataOffset + labelTable.header.tagTableOffset + 8;
-		labelTable.tagTable.infoEntries = new TagInfo[labelTable.tagTable.header.totalCount];
-		labelTable.tagTable.tags = new TagStr[labelTable.tagTable.header.totalCount];
-		for (int32_t i = 0; i < labelTable.tagTable.header.totalCount; i++) {
-			int16_t id = 0;
-			int16_t unk1 = 0;
-			int32_t offset = 0;
-
-			memcpy(&id, loctextPtr + tagTableOffset + (8 * i), sizeof(int16_t));
-			memcpy(&unk1, loctextPtr + tagTableOffset + (8 * i) + 2, sizeof(int16_t));
-			memcpy(&offset, loctextPtr + tagTableOffset + (8 * i) + 4, sizeof(int32_t));
-
-			labelTable.tagTable.infoEntries[i].id = flipEndian(id);
-			labelTable.tagTable.infoEntries[i].unk1 = flipEndian(unk1);
-			labelTable.tagTable.infoEntries[i].offset = flipEndian(offset);
-
-			printf("Tag Table Entry %d: %04x %04x %d\n", i, labelTable.tagTable.infoEntries[i].id, labelTable.tagTable.infoEntries[i].unk1, labelTable.tagTable.infoEntries[i].offset);
+		if (endianness == SRC_ENDIANBIG) {
+			labelTable.tagTable.infoEntries[i].id = flipEndian(labelTable.tagTable.infoEntries[i].id);
+			labelTable.tagTable.infoEntries[i].unk1 = flipEndian(labelTable.tagTable.infoEntries[i].unk1);
+			labelTable.tagTable.infoEntries[i].offset = flipEndian(labelTable.tagTable.infoEntries[i].offset);
 		}
 
-		int32_t strEntryBaseOffset = tagTableOffset + (labelTable.stringTable.header.totalCount * 8);
-		for (int32_t i = 0; i < labelTable.tagTable.header.totalCount; i++) {
-			int32_t offs = strEntryBaseOffset + labelTable.tagTable.infoEntries[i].offset;
-
-			strcpy(labelTable.tagTable.tags[i].val, loctextPtr + offs);
-
-			printf("Tag Table Val %d: %s\n", i, labelTable.tagTable.tags[i].val);
-		}
+		printf("Tag Table Entry %d: %04x %04x %d\n", i, labelTable.tagTable.infoEntries[i].id, labelTable.tagTable.infoEntries[i].unk1, labelTable.tagTable.infoEntries[i].offset);
 	}
-	else {
-		// Endianness doesn't matter here for some reason. All games that use this always treats these as little endian.
-		memcpy(&labelTable.tagTable.header.totalSectLen, loctextPtr + labelDataOffset + labelTable.header.tagTableOffset, sizeof(int32_t));
-		memcpy(&labelTable.tagTable.header.totalCount, loctextPtr + labelDataOffset + labelTable.header.tagTableOffset + 4, sizeof(int32_t));
 
-		int32_t tagTableOffset = labelDataOffset + labelTable.header.tagTableOffset + 8;
-		labelTable.tagTable.infoEntries = new TagInfo[labelTable.tagTable.header.totalCount];
-		labelTable.tagTable.tags = new TagStr[labelTable.tagTable.header.totalCount];
-		for (int32_t i = 0; i < labelTable.tagTable.header.totalCount; i++) {
+	int32_t strEntryBaseOffset = tagTableOffset + (labelTable.stringTable.header.totalCount * 8);
+	for (int32_t i = 0; i < labelTable.tagTable.header.totalCount; i++) {
+		int32_t offs = strEntryBaseOffset + labelTable.tagTable.infoEntries[i].offset;
 
-			memcpy(&labelTable.tagTable.infoEntries[i].id, loctextPtr + tagTableOffset + (8 * i), sizeof(int16_t));
-			memcpy(&labelTable.tagTable.infoEntries[i].unk1, loctextPtr + tagTableOffset + (8 * i) + 2, sizeof(int16_t));
-			memcpy(&labelTable.tagTable.infoEntries[i].offset, loctextPtr + tagTableOffset + (8 * i) + 4, sizeof(int32_t));
+		strcpy(labelTable.tagTable.tags[i].val, loctextPtr + offs);
 
-			printf("Tag Table Entry %d: %04x %04x %d\n", i, labelTable.tagTable.infoEntries[i].id, labelTable.tagTable.infoEntries[i].unk1, labelTable.tagTable.infoEntries[i].offset);
-		}
-
-		int32_t strEntryBaseOffset = tagTableOffset + (labelTable.stringTable.header.totalCount * 8);
-		for (int32_t i = 0; i < labelTable.tagTable.header.totalCount; i++) {
-			int32_t offs = strEntryBaseOffset + labelTable.tagTable.infoEntries[i].offset;
-
-			strcpy(labelTable.tagTable.tags[i].val, loctextPtr + offs);
-
-			printf("Tag Table Val %d: %s\n", i, labelTable.tagTable.tags[i].val);
-		}
+		printf("Tag Table Val %d: %s\n", i, labelTable.tagTable.tags[i].val);
 	}
 }
 
@@ -1305,75 +1227,39 @@ void LocTwo::ReadCommentData() {
 		return;
 	}
 
-	bool doesEndMatter = false;
+	memcpy(&labelTable.commentTable.header.totalSectLen, loctextPtr + labelDataOffset + labelTable.header.commentTableOffset, sizeof(int32_t));
+	memcpy(&labelTable.commentTable.header.totalCount, loctextPtr + labelDataOffset + labelTable.header.commentTableOffset + 4, sizeof(int32_t));
 
-	if (labelTable.header.magic == LOCTEXT_LSBTWO_MAGIC) {
-		doesEndMatter = true;
+	if (endianness == SRC_ENDIANBIG) {
+		labelTable.commentTable.header.totalSectLen = flipEndian(labelTable.commentTable.header.totalSectLen);
+		labelTable.commentTable.header.totalCount = flipEndian(labelTable.commentTable.header.totalCount);
 	}
 
-	if (doesEndMatter) {
-		int32_t sectLen = 0;
-		int32_t totalCount = 0;
+	int32_t commentTableOffset = labelDataOffset + labelTable.header.commentTableOffset + 8;
+	labelTable.commentTable.entries = new CommentEntry[labelTable.commentTable.header.totalCount];
+	labelTable.commentTable.comments = new CommentStr[labelTable.commentTable.header.totalCount];
 
-		memcpy(&sectLen, loctextPtr + labelDataOffset + labelTable.header.commentTableOffset, sizeof(int32_t));
-		memcpy(&totalCount, loctextPtr + labelDataOffset + labelTable.header.commentTableOffset + 4, sizeof(int32_t));
+	for (int32_t i = 0; i < labelTable.commentTable.header.totalCount; i++) {
+		memcpy(&labelTable.commentTable.entries[i].unk1, loctextPtr + commentTableOffset + (8 * i), sizeof(char));
+		memcpy(&labelTable.commentTable.entries[i].id, loctextPtr + commentTableOffset + (8 * i) + 1, sizeof(int16_t));
+		memcpy(&labelTable.commentTable.entries[i].unk2, loctextPtr + commentTableOffset + (8 * i) + 3, sizeof(char));
+		memcpy(&labelTable.commentTable.entries[i].offset, loctextPtr + commentTableOffset + (8 * i) + 4, sizeof(int32_t));
 
-		labelTable.commentTable.header.totalSectLen = flipEndian(sectLen);
-		labelTable.commentTable.header.totalCount = flipEndian(totalCount);
-
-		int32_t commentTableOffset = labelDataOffset + labelTable.header.commentTableOffset + 8;
-		labelTable.commentTable.entries = new CommentEntry[labelTable.commentTable.header.totalCount];
-		labelTable.commentTable.comments = new CommentStr[labelTable.commentTable.header.totalCount];
-
-		for (int32_t i = 0; i < labelTable.commentTable.header.totalCount; i++) {
-			int16_t id = 0;
-			int32_t offset = 0;
-			memcpy(&labelTable.commentTable.entries[i].unk1, loctextPtr + commentTableOffset + (8 * i), sizeof(char));
-			memcpy(&id, loctextPtr + commentTableOffset + (8 * i) + 1, sizeof(int16_t));
-			memcpy(&labelTable.commentTable.entries[i].unk2, loctextPtr + commentTableOffset + (8 * i) + 3, sizeof(char));
-			memcpy(&offset, loctextPtr + commentTableOffset + (8 * i) + 4, sizeof(int32_t));
-
-			labelTable.commentTable.entries[i].id = flipEndian(id);
-			labelTable.commentTable.entries[i].offset = flipEndian(offset);
-
-			printf("Comment Table Entry %d: %04x %d\n", i, labelTable.commentTable.entries[i].id, labelTable.commentTable.entries[i].offset);
+		if (endianness == SRC_ENDIANBIG) {
+			labelTable.commentTable.entries[i].id = flipEndian(labelTable.commentTable.entries[i].id);
+			labelTable.commentTable.entries[i].offset = flipEndian(labelTable.commentTable.entries[i].offset);
 		}
 
-		int32_t strEntryBaseOffset = commentTableOffset + (labelTable.commentTable.header.totalCount * 8);
-		for (int32_t i = 0; i < labelTable.commentTable.header.totalCount; i++) {
-			int32_t offs = strEntryBaseOffset + labelTable.commentTable.entries[i].offset;
-
-			strcpy(labelTable.commentTable.comments[i].val, loctextPtr + offs);
-
-			printf("Comment Table Val %d: %s", i, labelTable.commentTable.comments[i].val);
-		}
+		printf("Comment Table Entry %d: %04x %d\n", i, labelTable.commentTable.entries[i].id, labelTable.commentTable.entries[i].offset);
 	}
-	else {
-		// Endianness doesn't matter here for some reason. All games that use this always treats these as little endian.
-		memcpy(&labelTable.commentTable.header.totalSectLen, loctextPtr + labelDataOffset + labelTable.header.commentTableOffset, sizeof(int32_t));
-		memcpy(&labelTable.commentTable.header.totalCount, loctextPtr + labelDataOffset + labelTable.header.commentTableOffset + 4, sizeof(int32_t));
 
-		int32_t commentTableOffset = labelDataOffset + labelTable.header.commentTableOffset + 8;
-		labelTable.commentTable.entries = new CommentEntry[labelTable.commentTable.header.totalCount];
-		labelTable.commentTable.comments = new CommentStr[labelTable.commentTable.header.totalCount];
+	int32_t strEntryBaseOffset = commentTableOffset + (labelTable.commentTable.header.totalCount * 8);
+	for (int32_t i = 0; i < labelTable.commentTable.header.totalCount; i++) {
+		int32_t offs = strEntryBaseOffset + labelTable.commentTable.entries[i].offset;
 
-		for (int32_t i = 0; i < labelTable.commentTable.header.totalCount; i++) {
-			memcpy(&labelTable.commentTable.entries[i].unk1, loctextPtr + commentTableOffset + (8 * i), sizeof(char));
-			memcpy(&labelTable.commentTable.entries[i].id, loctextPtr + commentTableOffset + (8 * i) + 1, sizeof(int16_t));
-			memcpy(&labelTable.commentTable.entries[i].unk2, loctextPtr + commentTableOffset + (8 * i) + 3, sizeof(char));
-			memcpy(&labelTable.commentTable.entries[i].offset, loctextPtr + commentTableOffset + (8 * i) + 4, sizeof(int32_t));
+		strcpy(labelTable.commentTable.comments[i].val, loctextPtr + offs);
 
-			printf("Comment Table Entry %d: %04x %d\n", i, labelTable.commentTable.entries[i].id, labelTable.commentTable.entries[i].offset);
-		}
-
-		int32_t strEntryBaseOffset = commentTableOffset + (labelTable.commentTable.header.totalCount * 8);
-		for (int32_t i = 0; i < labelTable.commentTable.header.totalCount; i++) {
-			int32_t offs = strEntryBaseOffset + labelTable.commentTable.entries[i].offset;
-
-			strcpy(labelTable.commentTable.comments[i].val, loctextPtr + offs);
-
-			printf("Comment Table Val %d: %s", i, labelTable.commentTable.comments[i].val);
-		}
+		printf("Comment Table Val %d: %s", i, labelTable.commentTable.comments[i].val);
 	}
 }
 
@@ -1383,50 +1269,25 @@ void LocTwo::ReadPosData() {
 		return;
 	}
 
-	bool doesEndMatter = false;
+	memcpy(&labelTable.posTable.header.totalSectLen, loctextPtr + labelDataOffset + labelTable.header.positionTableOffset, sizeof(int32_t));
+	memcpy(&labelTable.posTable.header.totalCount, loctextPtr + labelDataOffset + labelTable.header.positionTableOffset + 4, sizeof(int32_t));
 
-	if (labelTable.header.magic == LOCTEXT_LSBTWO_MAGIC) {
-		doesEndMatter = true;
+	if (endianness == SRC_ENDIANBIG) {
+		labelTable.posTable.header.totalSectLen = flipEndian(labelTable.posTable.header.totalSectLen);
+		labelTable.posTable.header.totalCount = flipEndian(labelTable.posTable.header.totalCount);
 	}
 
-	if (doesEndMatter) {
-		int32_t sectLen = 0;
-		int32_t totalCount = 0;
+	int32_t posTableOffset = labelDataOffset + labelTable.header.positionTableOffset + 8;
+	labelTable.posTable.entries = new uint16_t[labelTable.posTable.header.totalCount];
+	for (int32_t i = 0; i < labelTable.tagTable.header.totalCount; i++) {
 
-		memcpy(&sectLen, loctextPtr + labelDataOffset + labelTable.header.positionTableOffset, sizeof(int32_t));
-		memcpy(&totalCount, loctextPtr + labelDataOffset + labelTable.header.positionTableOffset + 4, sizeof(int32_t));
+		memcpy(&labelTable.posTable.entries[i], loctextPtr + posTableOffset + (2 * i), sizeof(int16_t));
 
-		labelTable.posTable.header.totalSectLen = flipEndian(sectLen);
-		labelTable.posTable.header.totalCount = flipEndian(totalCount);
-
-		int32_t posTableOffset = labelDataOffset + labelTable.header.positionTableOffset + 8;
-		labelTable.posTable.entries = new uint16_t[labelTable.posTable.header.totalCount];
-		for (int32_t i = 0; i < labelTable.tagTable.header.totalCount; i++) {
-			uint16_t posIdVar = 0; // 0x0
-
-			memcpy(&posIdVar, loctextPtr + posTableOffset + (2 * i), sizeof(int16_t));
-
-			labelTable.posTable.entries[i] = flipEndian(posIdVar);
-
-			printf("Pos Table Entry %d: %04x\n", i, labelTable.posTable.entries[i]);
+		if (endianness == SRC_ENDIANBIG) {
+			labelTable.posTable.entries[i] = flipEndian(labelTable.posTable.entries[i]);
 		}
-	}
-	else {
-		// Endianness doesn't matter here for some reason. All games that use this always treats these as little endian.
-		memcpy(&labelTable.posTable.header.totalSectLen, loctextPtr + labelDataOffset + labelTable.header.positionTableOffset, sizeof(int32_t));
-		memcpy(&labelTable.posTable.header.totalCount, loctextPtr + labelDataOffset + labelTable.header.positionTableOffset + 4, sizeof(int32_t));
 
-		int32_t posTableOffset = labelDataOffset + labelTable.header.positionTableOffset + 8;
-		labelTable.posTable.entries = new uint16_t[labelTable.posTable.header.totalCount];
-		for (int32_t i = 0; i < labelTable.tagTable.header.totalCount; i++) {
-			uint16_t posIdVar = 0; // 0x0
-
-			memcpy(&posIdVar, loctextPtr + posTableOffset + (2 * i), sizeof(int16_t));
-
-			labelTable.posTable.entries[i] = posIdVar;
-
-			printf("Pos Table Entry %d: %04x\n", i, labelTable.posTable.entries[i]);
-		}
+		printf("Pos Table Entry %d: %04x\n", i, labelTable.posTable.entries[i]);
 	}
 }
 
@@ -1465,6 +1326,152 @@ void LocTwo::ExportToFile(char* fileName) {
 
 	if (IsIdxConnectedToComment(-1)) {
 		is.write(labelTable.commentTable.comments[GetIdxOfConnectedComment(-1)].val, strlen(labelTable.commentTable.comments[GetIdxOfConnectedComment(-1)].val));
+	}
+
+	is.flush();
+	is.close();
+}
+
+void LoctextFile::ParseLoctextData(char* data) {
+	if (data == nullptr) return;
+
+	// early check
+	if (data[0] == LOCTEXT_LSBL[0] && data[1] == LOCTEXT_LSBL[1] && data[2] == LOCTEXT_LSBL[2] && data[3] == LOCTEXT_LSBL[3]) {
+		printf("Reading LSBL");
+		loc1File.ReadLoctext(data);
+		currentlyLoadedLoctext = Loc1;
+		return;
+	}
+
+	if (data[0] == LOCTEXT_LBSL[0] && data[1] == LOCTEXT_LBSL[1] && data[2] == LOCTEXT_LBSL[2] && data[3] == LOCTEXT_LBSL[3]) {
+		printf("Reading LBSL");
+		loc1File.ReadLoctext(data);
+		currentlyLoadedLoctext = Loc1;
+		return;
+	}
+
+	if (data[0] == LOCTEXT_LSB2[0] && data[1] == LOCTEXT_LSB2[1] && data[2] == LOCTEXT_LSB2[2] && data[3] == LOCTEXT_LSB2[3]) {
+		printf("Reading LSB2");
+		loc2File.ReadLoctext(data);
+		currentlyLoadedLoctext = Loc2;
+		return;
+	}
+
+	if (data[0] == LOCTEXT_LBS2[0] && data[1] == LOCTEXT_LBS2[1] && data[2] == LOCTEXT_LBS2[2] && data[3] == LOCTEXT_LBS2[3]) {
+		printf("Reading LBS2");
+		loc2File.ReadLoctext(data);
+		currentlyLoadedLoctext = Loc2;
+		return;
+	}
+
+	int32_t headOffset = 0;
+
+	memcpy(&headOffset, data, sizeof(int32_t));
+
+	if (data[0] == 't' && data[1] == 'e' && data[2] == 'x' && data[3] == 't'){
+		memcpy(&headOffset, data + 0x14, sizeof(int32_t));
+	}
+
+	if ((headOffset & 0x00000000FF) == 0) {
+		headOffset = flipEndian(headOffset);
+	}
+
+	if (data[headOffset] == LOCTEXT_LSBL[0] && data[headOffset + 1] == LOCTEXT_LSBL[1] && data[headOffset + 2] == LOCTEXT_LSBL[2] && data[headOffset + 3] == LOCTEXT_LSBL[3]) {
+		printf("Reading LSBL");
+		loc1File.ReadLoctext(data);
+		currentlyLoadedLoctext = Loc1;
+		return;
+	}
+
+	if (data[headOffset] == LOCTEXT_LBSL[0] && data[headOffset + 1] == LOCTEXT_LBSL[1] && data[headOffset + 2] == LOCTEXT_LBSL[2] && data[headOffset + 3] == LOCTEXT_LBSL[3]) {
+		printf("Reading LSBL");
+		loc1File.ReadLoctext(data);
+		currentlyLoadedLoctext = Loc1;
+		return;
+	}
+
+	if (data[headOffset] == LOCTEXT_LSB2[0] && data[headOffset + 1] == LOCTEXT_LSB2[1] && data[headOffset + 2] == LOCTEXT_LSB2[2] && data[headOffset + 3] == LOCTEXT_LSB2[3]) {
+		printf("Reading LSB2");
+		loc2File.ReadLoctext(data);
+		currentlyLoadedLoctext = Loc2;
+		return;
+	}
+
+	if (data[headOffset] == LOCTEXT_LBS2[0] && data[headOffset + 1] == LOCTEXT_LBS2[1] && data[headOffset + 2] == LOCTEXT_LBS2[2] && data[headOffset + 3] == LOCTEXT_LBS2[3]) {
+		printf("Reading LSB2");
+		loc2File.ReadLoctext(data);
+		currentlyLoadedLoctext = Loc2;
+		return;
+	}
+
+	printf("No text file was found.\n");
+}
+
+void LoctextFile::ExportToFileRaw(char* fileName) {
+	int32_t position = 0;
+
+	std::ofstream is(fileName, std::ios_base::trunc);
+
+	if (GetStringCount() == 0) {
+		printf("LOCTEXT IS EMPTY.\n");
+		is.flush();
+		is.close();
+		return;
+	}
+
+	if (!GetIsUsingTags()) {
+		printf("LOCTEXT HAS NO TAGS.\n");
+		for (int32_t i = 0; i < GetStringCount(); i++) {
+
+			char fullStr[4096];
+
+			char conv[2048];
+
+			int32_t total = wcstombs(conv, GetStringPtr(i), 2048);
+
+			sprintf(fullStr, "%s\n", conv);
+
+			is.write(fullStr, strlen(fullStr));
+		}
+	}
+
+	if (GetIsUsingTags()) {
+		printf("LOCTEXT HAS TAGS.\n");
+		for (int32_t i = 0; i < GetStringCount(); i++) {
+			uint16_t idx = GetPosPtr(i);
+
+			// Some comments have new line characters while others don't.
+			bool hasCommentGotNewLine = true;
+
+			if (IsIdxConnectedToComment(idx)) {
+				is.write(GetCommentPtr(IsIdxConnectedToComment(idx)), strlen(GetCommentPtr(IsIdxConnectedToComment(idx))));
+
+				// Check if the comment has an new line character.
+				hasCommentGotNewLine = strchr(GetCommentPtr(IsIdxConnectedToComment(idx)), '\n') != nullptr;
+			}
+
+			if (IsHashConnectedToTag(idx)) {
+				char fullStr[4096];
+
+				char conv[2048];
+
+				int32_t total = wcstombs(conv, GetStringPtr(GetIdxOfConnectedString(idx)), 2048);
+
+				// If a comment doesn't have a new line, apply one before we write our next value. Otherwise just write as normal.
+				if (hasCommentGotNewLine) {
+					sprintf(fullStr, "%s\t\t\t= \"%s\"\n", GetTagPtr(GetIdxOfConnectedTag(idx)), conv);
+				}
+				else {
+					sprintf(fullStr, "\n%s\t\t\t= \"%s\"\n", GetTagPtr(GetIdxOfConnectedTag(idx)), conv);
+				}
+
+				is.write(fullStr, strlen(fullStr));
+			}
+		}
+	}
+
+	if (IsIdxConnectedToComment(-1)) {
+		is.write(GetCommentPtr(GetIdxOfConnectedComment(-1)), strlen(GetCommentPtr(GetIdxOfConnectedComment(-1))));
 	}
 
 	is.flush();
@@ -1912,12 +1919,24 @@ void Manifest::ReadManifest(char* data) {
 
 	memcpy(&magicVar, manifestPtr, sizeof(uint32_t));
 	memcpy(&hashVar, manifestPtr + 4, sizeof(uint32_t));
-	memcpy(&aidTableOffsetVar, manifestPtr + 8, sizeof(int32_t));
-	memcpy(&aidTableCountVar, manifestPtr + 0xC, sizeof(int32_t));
-	memcpy(&referenceTableOffsetVar, manifestPtr + 0x10, sizeof(int32_t));
-	memcpy(&referenceTableCountVar, manifestPtr + 0x14, sizeof(int32_t));
-	memcpy(&xcueRefTableOffsetVar, manifestPtr + 0x18, sizeof(int32_t));
-	memcpy(&xcueRefTableCountVar, manifestPtr + 0x1C, sizeof(int32_t));
+
+	if (magicVar == 0xB65E2D43) { // V0040
+		memcpy(&aidTableOffsetVar, manifestPtr + 0x10, sizeof(int32_t));
+		memcpy(&aidTableCountVar, manifestPtr + 0x14, sizeof(int32_t));
+		memcpy(&referenceTableOffsetVar, manifestPtr + 0x18, sizeof(int32_t));
+		memcpy(&referenceTableCountVar, manifestPtr + 0x1C, sizeof(int32_t));
+		memcpy(&xcueRefTableOffsetVar, manifestPtr + 0x20, sizeof(int32_t));
+		memcpy(&xcueRefTableCountVar, manifestPtr + 0x24, sizeof(int32_t));
+	}
+
+	if (magicVar == 0x7CB48C43) { // V0036
+		memcpy(&aidTableOffsetVar, manifestPtr + 8, sizeof(int32_t));
+		memcpy(&aidTableCountVar, manifestPtr + 0xC, sizeof(int32_t));
+		memcpy(&referenceTableOffsetVar, manifestPtr + 0x10, sizeof(int32_t));
+		memcpy(&referenceTableCountVar, manifestPtr + 0x14, sizeof(int32_t));
+		memcpy(&xcueRefTableOffsetVar, manifestPtr + 0x18, sizeof(int32_t));
+		memcpy(&xcueRefTableCountVar, manifestPtr + 0x1C, sizeof(int32_t));
+	}
 
 	magic = flipEndian(magicVar);
 	timestamp = flipEndian(hashVar);
@@ -1976,60 +1995,120 @@ void Texture::ReadTextureInfo(char* data) {
 
 	printf("%s %s\n", headerSect.magic, headerSect.version);
 
-	headerSect.unk_0x18 = *(textureHeaderPtr + 0x18);
-	headerSect.unk_0x19 = *(textureHeaderPtr + 0x19);
-	headerSect.isSwizzled = *(textureHeaderPtr + 0x1A);
-	headerSect.textureType = (unsigned char)*(textureHeaderPtr + 0x1B);
+	if (strcmp(headerSect.magic, "texture") != 0) {
+		headerSect.unk_0x18 = *(textureHeaderPtr + 0x18);
+		headerSect.unk_0x19 = *(textureHeaderPtr + 0x19);
+		headerSect.isSwizzled = *(textureHeaderPtr + 0x1A);
+		headerSect.textureType = (unsigned char)*(textureHeaderPtr + 0x3);
 
-	int16_t width = 0;
-	int16_t height = 0;
+		int16_t width = 0;
+		int16_t height = 0;
 
-	memcpy(&width, textureHeaderPtr + 0x24, sizeof(int16_t));
-	memcpy(&height, textureHeaderPtr + 0x26, sizeof(int16_t));
+		memcpy(&width, textureHeaderPtr + 0x8, sizeof(int16_t));
+		memcpy(&height, textureHeaderPtr + 0xA, sizeof(int16_t));
 
-	width = flipEndian(width);
-	height = flipEndian(height);
+		width = flipEndian(width);
+		height = flipEndian(height);
 
-	printf("Is Swizzled %d - Texture Type 0x%02x\n", headerSect.isSwizzled, headerSect.textureType);
-	printf("Width %d - Height %d\n", width, height);
+		printf("Is Swizzled %d - Texture Type 0x%02x\n", headerSect.isSwizzled, headerSect.textureType);
+		printf("Width %d - Height %d\n", width, height);
 
-	headerSect.width = width;
-	headerSect.height = height;
+		headerSect.width = width;
+		headerSect.height = height;
 
-	int32_t frameCount = 0;
+		int32_t frameCount = 0;
 
-	memcpy(&frameCount, textureHeaderPtr + 0x38, sizeof(int32_t));
+		memcpy(&frameCount, textureHeaderPtr + 0x38, sizeof(int32_t));
 
-	frameCount = flipEndian(frameCount);
+		frameCount = flipEndian(frameCount);
 
-	if (frameCount == 0) {
-		headerSect.frameCount = 1;
-	}
-	else {
-		headerSect.frameCount = frameCount;
-	}
+		if (frameCount == 0) {
+			headerSect.frameCount = 1;
+		}
+		else {
+			headerSect.frameCount = frameCount;
+		}
 
-	int32_t gpuOffsTableOffset = 0;
+		int32_t gpuOffsTableOffset = 0;
 
-	memcpy(&gpuOffsTableOffset, textureHeaderPtr + 0x3C, sizeof(int32_t));
+		memcpy(&gpuOffsTableOffset, textureHeaderPtr + 0x3C, sizeof(int32_t));
 
-	gpuOffsTableOffset = flipEndian(gpuOffsTableOffset);
-	headerSect.gpuOffsTablePos = gpuOffsTableOffset;
+		gpuOffsTableOffset = flipEndian(gpuOffsTableOffset);
+		headerSect.gpuOffsTablePos = gpuOffsTableOffset;
 
-	if (frameCount != 0) {
-		headerSect.gpuOffsTable = new int32_t[frameCount];
-		
-		for (int32_t i = 0; i < frameCount; i++) {
-			int32_t off = 0;
+		if (frameCount != 0) {
+			headerSect.gpuOffsTable = new int32_t[frameCount];
 
-			memcpy(&off, textureHeaderPtr + gpuOffsTableOffset + (i * 4), sizeof(int32_t));
+			for (int32_t i = 0; i < frameCount; i++) {
+				int32_t off = 0;
 
-			off = flipEndian(off);
-			headerSect.gpuOffsTable[i] = off;
+				memcpy(&off, textureHeaderPtr + gpuOffsTableOffset + (i * 4), sizeof(int32_t));
+
+				off = flipEndian(off);
+				headerSect.gpuOffsTable[i] = off;
+			}
+		}
+		else {
+			headerSect.gpuOffsTable = new int32_t[1];
+			headerSect.gpuOffsTable[0] = 0;
 		}
 	}
 	else {
-		headerSect.gpuOffsTable = new int32_t[1];
-		headerSect.gpuOffsTable[0] = 0;
+		headerSect.unk_0x18 = *(textureHeaderPtr + 0x18);
+		headerSect.unk_0x19 = *(textureHeaderPtr + 0x19);
+		headerSect.isSwizzled = *(textureHeaderPtr + 0x1A);
+		headerSect.textureType = (unsigned char)*(textureHeaderPtr + 0x1B);
+
+		int16_t width = 0;
+		int16_t height = 0;
+
+		memcpy(&width, textureHeaderPtr + 0x24, sizeof(int16_t));
+		memcpy(&height, textureHeaderPtr + 0x26, sizeof(int16_t));
+
+		width = flipEndian(width);
+		height = flipEndian(height);
+
+		printf("Is Swizzled %d - Texture Type 0x%02x\n", headerSect.isSwizzled, headerSect.textureType);
+		printf("Width %d - Height %d\n", width, height);
+
+		headerSect.width = width;
+		headerSect.height = height;
+
+		int32_t frameCount = 0;
+
+		memcpy(&frameCount, textureHeaderPtr + 0x38, sizeof(int32_t));
+
+		frameCount = flipEndian(frameCount);
+
+		if (frameCount == 0) {
+			headerSect.frameCount = 1;
+		}
+		else {
+			headerSect.frameCount = frameCount;
+		}
+
+		int32_t gpuOffsTableOffset = 0;
+
+		memcpy(&gpuOffsTableOffset, textureHeaderPtr + 0x3C, sizeof(int32_t));
+
+		gpuOffsTableOffset = flipEndian(gpuOffsTableOffset);
+		headerSect.gpuOffsTablePos = gpuOffsTableOffset;
+
+		if (frameCount != 0) {
+			headerSect.gpuOffsTable = new int32_t[frameCount];
+
+			for (int32_t i = 0; i < frameCount; i++) {
+				int32_t off = 0;
+
+				memcpy(&off, textureHeaderPtr + gpuOffsTableOffset + (i * 4), sizeof(int32_t));
+
+				off = flipEndian(off);
+				headerSect.gpuOffsTable[i] = off;
+			}
+		}
+		else {
+			headerSect.gpuOffsTable = new int32_t[1];
+			headerSect.gpuOffsTable[0] = 0;
+		}
 	}
 }

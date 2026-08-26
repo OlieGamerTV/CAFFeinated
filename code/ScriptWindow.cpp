@@ -55,25 +55,74 @@ void DisplayScriptEditorBaseWindow() {
 			float treeIndentation = 0;
 			// Vehicle Parts List
 			if (ImGui::BeginChild("Script Tree")) {
-				for (int i = 0; i < scriptWindowParameters.activeScript.numOfScriptEntries; i++) {
-					ImGui::PushID(i);
-					char string[256];
-					memset(string, 0, 256);
+				if (ImGui::TreeNode("Raw")) {
+					for (int i = 0; i < scriptWindowParameters.activeScript.numOfScriptEntries; i++) {
+						char string[256];
+						memset(string, 0, 256);
+						sprintf(string, "%s (%02X)", GetScriptName_BanjoX(scriptWindowParameters.activeScript.scriptEntries[i]->entryType), scriptWindowParameters.activeScript.scriptEntries[i]->entryType);
 
-					sprintf(string, "%s", dbScriptNames[scriptWindowParameters.activeScript.scriptEntries[i]->entryType]);
+						int indentID = HandleIndention(scriptWindowParameters.activeScript.scriptEntries[i]->entryType);
 
-					ImGui::SetCursorPosX(ImGui::GetCursorPosX() + treeIndentation);
-					ImGui::BulletText(string);
-					ImGui::PopID();
+						if (indentID == -1) {
+							ImGui::TreePop();
+							ImGui::Text(string);
+						}
 
-					int indentID = HandleIndention(scriptWindowParameters.activeScript.scriptEntries[i]->entryType);
-					if (indentID == 1) {
-						ImGui::Indent();
+						if (indentID == 1) {
+							ImGui::Text(string);
+							ImGui::TreePush(string);
+						}
+
+						if (indentID == 0) {
+							ImGui::Text(string);
+						}
 					}
-					if (indentID == -1) {
-						ImGui::Unindent();
-					}
+					ImGui::TreePop();
 				}
+
+				if (ImGui::TreeNode("Script Interpretation")) {
+					for (int i = 0; i < scriptWindowParameters.activeScript.numOfScriptEntries; i++) {
+						int indentID = HandleIndention(scriptWindowParameters.activeScript.scriptEntries[i]->entryType);
+
+						if (indentID == -1) {
+							ImGui::TreePop();
+							ImGui::Text("}");
+						}
+
+						if (indentID == 1) {
+							ImGui::Text("if(%s) {", GetScriptName_BanjoX(scriptWindowParameters.activeScript.scriptEntries[i]->entryType));
+							ImGui::TreePush(GetScriptName_BanjoX(scriptWindowParameters.activeScript.scriptEntries[i]->entryType));
+						}
+
+						if (indentID == 0) {
+							if (scriptWindowParameters.activeScript.scriptEntries[i]->entryType == dbScript_Logic_Else) {
+								ImGui::TreePop();
+								ImGui::Text("}");
+								ImGui::Text("else {");
+								ImGui::TreePush(GetScriptName_BanjoX(scriptWindowParameters.activeScript.scriptEntries[i]->entryType));
+							}
+							else {
+								switch (scriptWindowParameters.activeScript.scriptEntries[i]->entryType) {
+									case dbScript_Setup_PreLoadAsset: {
+										dbScript_SetupPreLoadAsset* preload = ((dbScript_SetupPreLoadAsset*)scriptWindowParameters.activeScript.scriptEntries[i]);
+										ImGui::Text("%s(%d, %08X, %08X);", GetScriptName_BanjoX(scriptWindowParameters.activeScript.scriptEntries[i]->entryType), preload->unk1, flipEndian(preload->bundle), flipEndian(preload->streamBundle));
+									}
+									break;
+									case dbScript_Debug_Printf: {
+										ImGui::Text("%s(\"%s\");", GetScriptName_BanjoX(scriptWindowParameters.activeScript.scriptEntries[i]->entryType), ((dbScript_DebugPrintf*)scriptWindowParameters.activeScript.scriptEntries[i])->msg);
+									}
+									break;
+									default: {
+										ImGui::Text("%s();", GetScriptName_BanjoX(scriptWindowParameters.activeScript.scriptEntries[i]->entryType));
+									}
+									break;
+								}
+							}
+						}
+					}
+					ImGui::TreePop();
+				}
+				
 				ImGui::EndChild();
 			}
 		}

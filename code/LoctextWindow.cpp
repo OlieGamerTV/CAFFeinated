@@ -31,12 +31,16 @@ void DisplayLoctextEditorBaseWindow() {
 
 				if (ImGui::MenuItem("Save", NULL, false, clearActive)) {
 					if (loctextWindowParameters.loctextFilePath != nullptr) {
-						loctextWindowParameters.activeLoctext->WriteLoctext(loctextWindowParameters.loctextFilePath);
+						if (loctextWindowParameters.activeLoctext->currentlyLoadedLoctext == Loc1) {
+							loctextWindowParameters.activeLoctext->loc1File.WriteLoctext(loctextWindowParameters.loctextFilePath);
+						}
 					}
 				}
 				if (ImGui::MenuItem("Save as New", NULL, false, clearActive)) {
 					if (NFD_SaveDialogU8(&loctextWindowParameters.loctextFilePath, NULL, 0, "", "default.str") == NFD_OKAY) {
-						loctextWindowParameters.activeLoctext->WriteLoctext(loctextWindowParameters.loctextFilePath);
+						if (loctextWindowParameters.activeLoctext->currentlyLoadedLoctext == Loc1) {
+							loctextWindowParameters.activeLoctext->loc1File.WriteLoctext(loctextWindowParameters.loctextFilePath);
+						}
 					}
 				}
 
@@ -57,11 +61,11 @@ void DisplayLoctextEditorBaseWindow() {
 
 						if (loctextWindowParameters.activeLoctext != nullptr) {
 							delete loctextWindowParameters.activeLoctext;
-							loctextWindowParameters.activeLoctext = new Loctext();
+							loctextWindowParameters.activeLoctext = new LoctextFile();
 						}
 
 						if (loctextWindowParameters.activeLoctext == nullptr) {
-							loctextWindowParameters.activeLoctext = new Loctext();
+							loctextWindowParameters.activeLoctext = new LoctextFile();
 						}
 
 						if (data != nullptr) {
@@ -85,22 +89,22 @@ void DisplayLoctextEditorBaseWindow() {
 
 							fseek(data, 0, SEEK_SET);
 
-							loctextWindowParameters.activeLoctext->usesTags = true;
-							loctextWindowParameters.activeLoctext->usesComments = commentCount != 0;
-							loctextWindowParameters.activeLoctext->usesPos = true;
+							loctextWindowParameters.activeLoctext->loc1File.usesTags = true;
+							loctextWindowParameters.activeLoctext->loc1File.usesComments = commentCount != 0;
+							loctextWindowParameters.activeLoctext->loc1File.usesPos = true;
 
-							loctextWindowParameters.activeLoctext->labelTable.stringTable.header.totalCount = strCount;
-							loctextWindowParameters.activeLoctext->labelTable.tagTable.header.totalCount = strCount;
-							loctextWindowParameters.activeLoctext->labelTable.commentTable.header.totalCount = commentCount;
-							loctextWindowParameters.activeLoctext->labelTable.posTable.header.totalCount = strCount;
+							loctextWindowParameters.activeLoctext->loc1File.labelTable.stringTable.header.totalCount = strCount;
+							loctextWindowParameters.activeLoctext->loc1File.labelTable.tagTable.header.totalCount = strCount;
+							loctextWindowParameters.activeLoctext->loc1File.labelTable.commentTable.header.totalCount = commentCount;
+							loctextWindowParameters.activeLoctext->loc1File.labelTable.posTable.header.totalCount = strCount;
 
-							loctextWindowParameters.activeLoctext->labelTable.stringTable.infoEntries = new LabelStrInfoEntry[strCount];
-							loctextWindowParameters.activeLoctext->labelTable.stringTable.strings = new LabelStrEntry[strCount];
-							loctextWindowParameters.activeLoctext->labelTable.tagTable.infoEntries = new TagInfo[strCount];
-							loctextWindowParameters.activeLoctext->labelTable.tagTable.tags = new TagStr[strCount];
-							loctextWindowParameters.activeLoctext->labelTable.commentTable.comments = new CommentStr[commentCount];
-							loctextWindowParameters.activeLoctext->labelTable.commentTable.entries = new CommentEntry[commentCount];
-							loctextWindowParameters.activeLoctext->labelTable.posTable.entries = new uint16_t[strCount];
+							loctextWindowParameters.activeLoctext->loc1File.labelTable.stringTable.infoEntries = new LabelStrInfoEntry[strCount];
+							loctextWindowParameters.activeLoctext->loc1File.labelTable.stringTable.strings = new LabelStrEntry[strCount];
+							loctextWindowParameters.activeLoctext->loc1File.labelTable.tagTable.infoEntries = new TagInfo[strCount];
+							loctextWindowParameters.activeLoctext->loc1File.labelTable.tagTable.tags = new TagStr[strCount];
+							loctextWindowParameters.activeLoctext->loc1File.labelTable.commentTable.comments = new CommentStr[commentCount];
+							loctextWindowParameters.activeLoctext->loc1File.labelTable.commentTable.entries = new CommentEntry[commentCount];
+							loctextWindowParameters.activeLoctext->loc1File.labelTable.posTable.entries = new uint16_t[strCount];
 
 							int32_t tiedComment = -1;
 							int32_t currentStr = -1;
@@ -119,14 +123,14 @@ void DisplayLoctextEditorBaseWindow() {
 								if (str[0] == ';') {
 									printf("%s\n", str);
 									if (isCurrentlyReadingComment) {
-										strncat(loctextWindowParameters.activeLoctext->labelTable.commentTable.comments[tiedComment].val, str, strlen(str));
+										strncat(loctextWindowParameters.activeLoctext->loc1File.labelTable.commentTable.comments[tiedComment].val, str, strlen(str));
 									}
 									if (!isCurrentlyReadingComment) {
 										isCurrentlyReadingComment = true;
 										tiedComment++;
-										loctextWindowParameters.activeLoctext->labelTable.commentTable.entries[tiedComment].id = 0;
-										memset(loctextWindowParameters.activeLoctext->labelTable.commentTable.comments[tiedComment].val, 0, 8192);
-										strncpy(loctextWindowParameters.activeLoctext->labelTable.commentTable.comments[tiedComment].val, str, strlen(str));
+										loctextWindowParameters.activeLoctext->loc1File.labelTable.commentTable.entries[tiedComment].id = 0;
+										memset(loctextWindowParameters.activeLoctext->loc1File.labelTable.commentTable.comments[tiedComment].val, 0, 8192);
+										strncpy(loctextWindowParameters.activeLoctext->loc1File.labelTable.commentTable.comments[tiedComment].val, str, strlen(str));
 									}
 								}
 
@@ -146,21 +150,21 @@ void DisplayLoctextEditorBaseWindow() {
 									uint16_t hash = flipEndian(locHashElfHash16(tag));
 									printf("%04X %s = %s\n", hash, tag, text);
 
-									memset(loctextWindowParameters.activeLoctext->labelTable.stringTable.strings[currentStr].string, 0, sizeof(wchar_t) * 2048);
-									memset(loctextWindowParameters.activeLoctext->labelTable.tagTable.tags[currentStr].val, 0, 256);
+									memset(loctextWindowParameters.activeLoctext->loc1File.labelTable.stringTable.strings[currentStr].string, 0, sizeof(wchar_t) * 2048);
+									memset(loctextWindowParameters.activeLoctext->loc1File.labelTable.tagTable.tags[currentStr].val, 0, 256);
 
-									mbstowcs(loctextWindowParameters.activeLoctext->labelTable.stringTable.strings[currentStr].string, text, 2048);
-									strncpy(loctextWindowParameters.activeLoctext->labelTable.tagTable.tags[currentStr].val, tag, strlen(tag));
+									mbstowcs(loctextWindowParameters.activeLoctext->loc1File.labelTable.stringTable.strings[currentStr].string, text, 2048);
+									strncpy(loctextWindowParameters.activeLoctext->loc1File.labelTable.tagTable.tags[currentStr].val, tag, strlen(tag));
 
-									loctextWindowParameters.activeLoctext->labelTable.stringTable.infoEntries[currentStr].hash = hash;
+									loctextWindowParameters.activeLoctext->loc1File.labelTable.stringTable.infoEntries[currentStr].hash = hash;
 
-									loctextWindowParameters.activeLoctext->labelTable.tagTable.infoEntries[currentStr].id = hash;
+									loctextWindowParameters.activeLoctext->loc1File.labelTable.tagTable.infoEntries[currentStr].id = hash;
 
-									loctextWindowParameters.activeLoctext->labelTable.posTable.entries[currentStr] = hash;
+									loctextWindowParameters.activeLoctext->loc1File.labelTable.posTable.entries[currentStr] = hash;
 
 									if (isCurrentlyReadingComment) {
 										isCurrentlyReadingComment = false;
-										loctextWindowParameters.activeLoctext->labelTable.commentTable.entries[tiedComment].id = hash;
+										loctextWindowParameters.activeLoctext->loc1File.labelTable.commentTable.entries[tiedComment].id = hash;
 									}
 								}
 							}
@@ -206,51 +210,50 @@ void DisplayLoctextEditorBaseWindow() {
 		if (loctextWindowParameters.activeLoctext != nullptr && loctextWindowParameters.ready == true) {
 
 			ImGui::SeparatorText("Loctext File");
-			bool isBigEndian = loctextWindowParameters.activeLoctext->endianness;
+
+			bool isBigEndian = loctextWindowParameters.activeLoctext->GetEndianness();
 			ImGui::Checkbox("Is Big Endian", &isBigEndian);
-			loctextWindowParameters.activeLoctext->endianness = isBigEndian;
+			loctextWindowParameters.activeLoctext->SetEndianness(isBigEndian);
+			bool usingTags = loctextWindowParameters.activeLoctext->GetIsUsingTags();
+			bool usingPos = loctextWindowParameters.activeLoctext->GetIsUsingPositions();
+			ImGui::Checkbox("Has Tags", &usingTags);
+			ImGui::Checkbox("Keep Positions", &usingPos);
+			loctextWindowParameters.activeLoctext->SetIsUsingTags(usingTags);
+			loctextWindowParameters.activeLoctext->SetIsUsingPositions(usingPos);
 			ImGui::SeparatorText("Entries");
 
 			// Vehicle Parts List
 			if (ImGui::BeginChild("Entries")) {
-				for (int32_t i = 0; i < loctextWindowParameters.activeLoctext->labelTable.stringTable.header.totalCount; i++) {
+				for (int32_t i = 0; i < loctextWindowParameters.activeLoctext->GetStringCount(); i++) {
 					ImGui::PushID(i);
 
-					uint16_t idx = 0;
-
-					// Check if the position table is present. If it is, get the value from that. If not then fallback on the tag table entries.
-					if (loctextWindowParameters.activeLoctext->usesPos) {
-						idx = loctextWindowParameters.activeLoctext->labelTable.posTable.entries[i];
-					}
-					else {
-						idx = loctextWindowParameters.activeLoctext->labelTable.stringTable.infoEntries[i].hash;
-					}
+					uint16_t idx = loctextWindowParameters.activeLoctext->GetPosPtr(i);
 
 					// Check if there is any comment tied to this IDX.
 					if (loctextWindowParameters.activeLoctext->IsIdxConnectedToComment(idx)) {
 						// Slight cheat to get around in-text formatting.
-						ImGui::TextDisabled("%s", loctextWindowParameters.activeLoctext->labelTable.commentTable.comments[loctextWindowParameters.activeLoctext->GetIdxOfConnectedComment(idx)].val);
+						ImGui::TextDisabled("%s", loctextWindowParameters.activeLoctext->GetCommentPtr(loctextWindowParameters.activeLoctext->GetIdxOfConnectedComment(idx)));
 					}
 
 					//Buffer for the text.
 					char conv[2048];
 
-					if (loctextWindowParameters.activeLoctext->usesTags && loctextWindowParameters.activeLoctext->IsHashConnectedToTag(idx)) {
-						if (ImGui::TreeNode(loctextWindowParameters.activeLoctext->labelTable.tagTable.tags[loctextWindowParameters.activeLoctext->GetIdxOfConnectedTag(idx)].val)) {
+					if (usingTags && loctextWindowParameters.activeLoctext->IsHashConnectedToTag(idx)) {
+						if (ImGui::TreeNode(loctextWindowParameters.activeLoctext->GetTagPtr(loctextWindowParameters.activeLoctext->GetIdxOfConnectedTag(idx)))) {
 							//int32_t total = WideCharToMultiByte(CP_UTF8, WC_COMPOSITECHECK, loctextWindowParameters.activeLoctext->labelTable.stringTable.strings[loctextWindowParameters.activeLoctext->GetIdxOfConnectedString(idx)].string, -1, conv, 2048, NULL, NULL);
-							size_t total = wcstombs(conv, loctextWindowParameters.activeLoctext->labelTable.stringTable.strings[loctextWindowParameters.activeLoctext->GetIdxOfConnectedString(idx)].string, 2048);
+							size_t total = wcstombs(conv, loctextWindowParameters.activeLoctext->GetStringPtr(loctextWindowParameters.activeLoctext->GetIdxOfConnectedString(idx)), 2048);
 
-							ImGui::InputText("Tag ", loctextWindowParameters.activeLoctext->labelTable.tagTable.tags[loctextWindowParameters.activeLoctext->GetIdxOfConnectedTag(idx)].val, 256);
+							ImGui::InputText("Tag ", loctextWindowParameters.activeLoctext->GetTagPtr(loctextWindowParameters.activeLoctext->GetIdxOfConnectedTag(idx)), 256);
 							ImGui::InputTextMultiline("Text", conv, 2047); // Cut it down from 2048 to 2047 so we always have a null character.
 							//int32_t retTotal = MultiByteToWideChar(CP_UTF8, MB_COMPOSITE, conv, -1, loctextWindowParameters.activeLoctext->labelTable.stringTable.strings[loctextWindowParameters.activeLoctext->GetIdxOfConnectedString(idx)].string, 2048);
-							int32_t retTotal = mbstowcs(loctextWindowParameters.activeLoctext->labelTable.stringTable.strings[loctextWindowParameters.activeLoctext->GetIdxOfConnectedString(idx)].string, conv, 2048);
+							int32_t retTotal = mbstowcs(loctextWindowParameters.activeLoctext->GetStringPtr(loctextWindowParameters.activeLoctext->GetIdxOfConnectedString(idx)), conv, 2048);
 
 							ImGui::TreePop();
 						}
 					}
 					else {
 						//int32_t total = WideCharToMultiByte(CP_UTF8, WC_COMPOSITECHECK, loctextWindowParameters.activeLoctext->labelTable.stringTable.strings[loctextWindowParameters.activeLoctext->GetIdxOfConnectedString(idx)].string, -1, conv, 2048, NULL, NULL);
-						size_t total = wcstombs(conv, loctextWindowParameters.activeLoctext->labelTable.stringTable.strings[loctextWindowParameters.activeLoctext->GetIdxOfConnectedString(idx)].string, 2048);
+						size_t total = wcstombs(conv, loctextWindowParameters.activeLoctext->GetStringPtr(loctextWindowParameters.activeLoctext->GetIdxOfConnectedString(idx)), 2048);
 
 						// Another cheat to get around in-text formatting.
 						ImGui::Text("%s", conv);
@@ -261,7 +264,7 @@ void DisplayLoctextEditorBaseWindow() {
 
 				// And run a final check to see if there is any comment tied to the max value.
 				if (loctextWindowParameters.activeLoctext->IsIdxConnectedToComment(-1)) {
-					ImGui::Text(loctextWindowParameters.activeLoctext->labelTable.commentTable.comments[loctextWindowParameters.activeLoctext->GetIdxOfConnectedComment(-1)].val);
+					ImGui::TextDisabled("%s", loctextWindowParameters.activeLoctext->GetCommentPtr(loctextWindowParameters.activeLoctext->GetIdxOfConnectedComment(-1)));
 				}
 
 				ImGui::EndChild();
@@ -313,8 +316,8 @@ void readExternalLoctextFile(char* data) {
 		loctextWindowParameters.activeLoctext = nullptr;
 	}
 
-	loctextWindowParameters.activeLoctext = new Loctext();
-	loctextWindowParameters.activeLoctext->ReadLoctext(data);
+	loctextWindowParameters.activeLoctext = new LoctextFile();
+	loctextWindowParameters.activeLoctext->ParseLoctextData(data);
 
 	loctextWindowParameters.ready = true;
 

@@ -343,6 +343,11 @@ enum dbScript_BanjoXEnum : int32_t {
 	dbScript_Play_MovieRandomSelection
 };
 
+const char* GetScriptName_BanjoX(int idx) {
+	if (idx >= 168) return dbScriptNames[0];
+	return dbScriptNames[idx];
+}
+
 class dbScript_Base {
 public:
 	int32_t entrySize;
@@ -371,8 +376,22 @@ public:
 	}
 };
 
+class dbScript_SetupPreLoadAsset : public dbScript_Base {
+public:
+	int32_t unk1;
+	uint32_t bundle;
+	uint32_t streamBundle;
+
+	void readScriptData(char* data) {
+		memcpy(&unk1, data + 8, sizeof(int32_t));
+		memcpy(&bundle, data + 0xC, sizeof(int32_t));
+		memcpy(&streamBundle, data + 0x10, sizeof(int32_t));
+	}
+};
+
 dbScript_Base* CreateScriptData(dbScript_BanjoXEnum markerType) {
 	switch (markerType) {
+	case dbScript_Setup_PreLoadAsset: { printf("PRELOAD ASSET\n"); return new dbScript_SetupPreLoadAsset(); } break;
 	case dbScript_Debug_Printf: { printf("DEBUG PRINTF\n"); return new dbScript_DebugPrintf(); } break;
 	default: { printf("BASE\n"); return new dbScript_Base(); } break;
 	}
@@ -442,10 +461,8 @@ public:
 			printf("Entry %05d\t->\t[%s]\n", i, dbScriptNames[scriptEntries[i]->entryType]);
 
 			switch (scriptEntries[i]->entryType) {
-			case dbScript_Debug_Printf: {
-				((dbScript_DebugPrintf*)scriptEntries[i])->readScriptData(markerData);
-			}
-			break;
+			case dbScript_Debug_Printf: { ((dbScript_DebugPrintf*)scriptEntries[i])->readScriptData(markerData); } break;
+			case dbScript_Setup_PreLoadAsset: { ((dbScript_SetupPreLoadAsset*)scriptEntries[i])->readScriptData(markerData); } break;
 			}
 
 			offs += size;

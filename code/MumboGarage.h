@@ -21,12 +21,16 @@ void writeStreamBundleFile(const char* fileName);
 void disposeAndCloseActiveFile();
 void writeDataToFile(const char* fileName, const char* filter, char* data, size_t dataSize);
 
-void exportFilesFromBundleRaw();
-void exportFilesFromBundleSpecial();
+void exportFilesFromBundleRaw(int fileCount);
+void exportFilesFromBundleSpecial(int fileCount);
 
 static void openPinataDbBundle();
+static void openPinataPKGBundle();
 void fillPinataDbBundleFileList();
+void fillPinataPKGFileList();
 void displayActivePinataDbBundleFileProperty();
+void displayActivePinataPKGFileProperty();
+static unsigned char* GetRawImageData_Pinata(char* data, int32_t width, int32_t height, int32_t type);
 
 // RR RPK Stuff
 static void openRareRPKFile();
@@ -50,6 +54,7 @@ static ImFont* LoadResourceFont(int32_t  resourceName, const wchar_t* resourceTy
 int32_t  mainWindowCode();
 void drawWindow();
 void readOtherSupportedFile(int32_t  type);
+void handleSavingAsync(const char* fileName);
 
 //Base Window
 void buildBaseImGuiWindow();
@@ -58,9 +63,11 @@ void buildTitleBar();
 void displayFileInfo(float barHeight);
 void displayProperties(float barHeight);
 void displayBundleInfo();
+void displayBundleV40Info();
 void displayBundleV31Info();
 void displayStreamBundleInfo();
 void displayActiveFileProperty();
+void displayActiveV40BundleProperty();
 void displayActiveBundleV26Property();
 void displayActiveBundleV31Property();
 void displayActiveStreamBundleFileProperty();
@@ -68,9 +75,9 @@ void displayAvailableFilesList(float barHeight);
 void fillBundleFileList();
 void fillKameoDBFileList();
 void fillStreamBundleFileList();
-void fillStreamBundleFileListOfBundle();
 void fillBundleV26FileList();
 void fillBundleV31FileList();
+void fillBundleV40FileList();
 static void ShowMenuFile();
 static void openMenu();
 static void ShowSearchMenu();

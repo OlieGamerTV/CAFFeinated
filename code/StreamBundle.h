@@ -1,4 +1,6 @@
 #pragma once
+#ifndef _STREAMBUNDLE
+#define _STREAMBUNDLE
 #include "Bundle.h"
 #include "XWaveBank.h"
 
@@ -24,8 +26,8 @@ struct StreamHeader {
 };
 
 struct StreamEntry {
-	BundleV36* bundleFile = nullptr;
-	DNBW* waveBankFile = nullptr;
+	BundleV36 bundleFile;
+	DNBW waveBankFile;
 	EntryType entryType = ENTRY_NONE;
 };
 
@@ -39,10 +41,10 @@ public:
 
 	bool isReady = false;
 
-	~StreamBundle();
+	void ClearActiveData();
 
-	void readStandaloneStreamBundleFile(char* fileName);
-	void readStreamBundleFile(char* data);
+	bool readStandaloneStreamBundleFile(char* fileName);
+	bool readStreamBundleFile(char* data);
 
 	// Allocates and returns the target file data.
 	char* getFileData(int32_t fileIdx);
@@ -62,3 +64,4 @@ public:
 	//IMGUI Popups
 	bool addStreamedReference(bool* open);
 };
+#endif

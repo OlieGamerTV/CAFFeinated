@@ -8,7 +8,7 @@ static void openLoadLoctextFile();
 struct LoctextWindowParams {
 	bool showLoctextEditor;
 	bool ready = false;
-	Loctext* activeLoctext = nullptr;
+	LoctextFile* activeLoctext = nullptr;
 	nfdchar_t* loctextFilePath;
 
 	char originalFilename[128] = { 0 };

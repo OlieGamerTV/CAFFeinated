@@ -3,6 +3,11 @@
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #endif
+
+#ifdef __APPLE__
+#include <AudioToolbox/AudioServices.h>
+#endif
+
 #include <string.h>
 
 #ifndef MSG_WINDOW
@@ -16,7 +21,10 @@ void FireMessage(const char* message, ErrorType severity) {
 
 	ImGui::DebugLog("FIREMESSAGE - %s\n", message);
 
-	strcpy_s(errorPromptParams.errorMessage, 1024, message);
+	if (strlen(message) <= 1024) {
+		strcpy(errorPromptParams.errorMessage, message);
+	}
+	
 	errorPromptParams.errorSeverity = severity;
 
 	memset(title, 0, 256);
@@ -26,24 +34,38 @@ void FireMessage(const char* message, ErrorType severity) {
 		return;
 	}
 
+#ifdef __APPLE__
+	AudioServicesPlayAlertSound(kSystemSoundID_UserPreferredAlert);
+#endif
+
+#if _WIN32
 	if (severity == ErrorType_Info) {
-		strcpy_s(title, 256, "Informational Message");
 		MessageBeep(MB_ICONINFORMATION);
 	}
 
 	if (severity == ErrorType_Warn) {
-		strcpy_s(title, 256, "Warning Message");
 		MessageBeep(MB_ICONEXCLAMATION);
 	}
 
-	if (severity == ErrorType_Error) {
-		strcpy_s(title, 256, "Error Message");
+	if (severity == ErrorType_Error || severity == ErrorType_Critical) {
 		MessageBeep(MB_ICONERROR);
+	}
+#endif
+
+	if (severity == ErrorType_Info) {
+		strcpy(title, "Informational Message");
+	}
+
+	if (severity == ErrorType_Warn) {
+		strcpy(title, "Warning Message");
+	}
+
+	if (severity == ErrorType_Error) {
+		strcpy(title, "Error Message");
 	}
 
 	if (severity == ErrorType_Critical) {
-		strcpy_s(title, 256, "Critical Message");
-		MessageBeep(MB_ICONERROR);
+		strcpy(title, "Critical Message");
 	}
 
 	errorPromptParams.showErrorPrompt = true;

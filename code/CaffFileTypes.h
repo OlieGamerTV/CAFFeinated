@@ -13,8 +13,10 @@ const uint32_t VEHICLE_SAVE_PREFIX2 = 0xE17A5440;
 
 const uint32_t LOCTEXT_LSBTWO_MAGIC = 0x3242534C;
 const uint32_t LOCTEXT_LBSTWO_MAGIC = 0x3253424C;
-const char LOCTEXT_LSBL[4] = { 'L', 'S', 'B', 'L' };
-const char LOCTEXT_LBSL[4] = { 'L', 'B', 'S', 'L' };
+const char LOCTEXT_LSBL[5] = { 'L', 'S', 'B', 'L', '\0'};
+const char LOCTEXT_LBSL[5] = { 'L', 'B', 'S', 'L', '\0' };
+const char LOCTEXT_LSB2[5] = { 'L', 'S', 'B', '2', '\0' };
+const char LOCTEXT_LBS2[5] = { 'L', 'B', 'S', '2', '\0' };
 const uint32_t LOCTEXT_LSBL_MAGIC = 0x4C53424C;
 const uint32_t LOCTEXT_LBSL_MAGIC = 0x4C42534C;
 
@@ -71,7 +73,6 @@ struct PosTable {
 };
 
 struct LabelStrInfoEntry {
-	uint16_t unk = 0;
 	uint16_t hash = 0;
 	int32_t offset = 0;
 };
@@ -213,7 +214,7 @@ public:
 #pragma region Loctext Rev Two
 struct LabTwoHeader {
 public:
-	uint32_t magic; // 0x0
+	char magic[4]; // 0x0
 	int32_t unk1; // 0x4
 	int32_t unk2; // 0x8
 	int32_t headerLen; // 0xC
@@ -224,10 +225,22 @@ public:
 	int32_t positionTableOffset; // 0x20
 };
 
+struct LabelTwoStrInfoEntry {
+	uint16_t unk = 0;
+	uint16_t hash = 0;
+	int32_t offset = 0;
+};
+
+struct LabelTwoStrTable {
+	LabelTableHeader header;
+	LabelTwoStrInfoEntry* infoEntries;
+	LabelStrEntry* strings;
+};
+
 struct LabTwoTable {
 public:
 	LabTwoHeader header;
-	LabelStrTable stringTable;
+	LabelTwoStrTable stringTable;
 	LabelTagTable tagTable;
 	CommentTable commentTable;
 	PosTable posTable;
@@ -244,6 +257,13 @@ public:
 
 	LabTwoTable labelTable;
 	UnkTable unknownTable;
+
+	int32_t endianness;
+	int32_t startEndianness = SRC_ENDIANBIG;
+
+	bool usesTags = false;
+	bool usesComments = false;
+	bool usesPos = false;
 
 	void ReadLoctext(char* data);
 
@@ -288,6 +308,14 @@ public:
 		return false;
 	}
 
+	bool IsHashConnectedToTag(uint16_t id) {
+		for (int32_t i = 0; i < labelTable.tagTable.header.totalCount; i++) {
+			if (labelTable.tagTable.infoEntries[i].id == id) return true;
+		}
+
+		return false;
+	}
+
 	bool IsIdxConnectedToComment(uint16_t id) {
 		if (labelTable.header.commentTableOffset == 0) return false;
 
@@ -296,6 +324,248 @@ public:
 		}
 
 		return false;
+	}
+};
+
+enum CurrentLoctext : int32_t {
+	None,
+	Loc1,
+	Loc2
+};
+
+struct LoctextFile {
+public:
+	Loctext loc1File;
+	LocTwo loc2File;
+
+	CurrentLoctext currentlyLoadedLoctext = None;
+
+	void ParseLoctextData(char* data);
+
+	void ExportToFileRaw(char* fileName);
+
+	int32_t GetEndianness() {
+		if (currentlyLoadedLoctext == None) return 0;
+
+		switch (currentlyLoadedLoctext) {
+		case Loc1:
+			return loc1File.endianness;
+		case Loc2:
+			return loc2File.endianness;
+		}
+	}
+
+	void SetEndianness(int32_t end) {
+		if (currentlyLoadedLoctext == None) return;
+
+		switch (currentlyLoadedLoctext) {
+		case Loc1:
+			loc1File.endianness = end;
+			break;
+		case Loc2:
+			loc2File.endianness = end;
+			break;
+		}
+	}
+
+	bool GetIsUsingTags() {
+		if (currentlyLoadedLoctext == None) return false;
+
+		switch (currentlyLoadedLoctext) {
+		case Loc1:
+			return loc1File.usesTags;
+		case Loc2:
+			return loc2File.usesTags;
+		}
+	}
+
+	void SetIsUsingTags(bool val) {
+		if (currentlyLoadedLoctext == None) return;
+
+		switch (currentlyLoadedLoctext) {
+		case Loc1:
+			loc1File.usesTags = val;
+			break;
+		case Loc2:
+			loc2File.usesTags = val;
+			break;
+		}
+	}
+
+	bool GetIsUsingComments() {
+		if (currentlyLoadedLoctext == None) return false;
+
+		switch (currentlyLoadedLoctext) {
+		case Loc1:
+			return loc1File.usesComments;
+		case Loc2:
+			return loc2File.usesComments;
+		}
+	}
+
+	void SetIsUsingComments(bool val) {
+		if (currentlyLoadedLoctext == None) return;
+
+		switch (currentlyLoadedLoctext) {
+		case Loc1:
+			loc1File.usesComments = val;
+			break;
+		case Loc2:
+			loc2File.usesComments = val;
+			break;
+		}
+	}
+
+	bool GetIsUsingPositions() {
+		if (currentlyLoadedLoctext == None) return false;
+
+		switch (currentlyLoadedLoctext) {
+		case Loc1:
+			return loc1File.usesPos;
+		case Loc2:
+			return loc2File.usesPos;
+		}
+	}
+
+	void SetIsUsingPositions(bool val) {
+		if (currentlyLoadedLoctext == None) return;
+
+		switch (currentlyLoadedLoctext) {
+		case Loc1:
+			loc1File.usesPos = val;
+			break;
+		case Loc2:
+			loc2File.usesPos = val;
+			break;
+		}
+	}
+
+	int32_t GetStringCount() {
+		if (currentlyLoadedLoctext == None) return -1;
+
+		switch (currentlyLoadedLoctext) {
+		case Loc1:
+			return loc1File.labelTable.stringTable.header.totalCount;
+		case Loc2:
+			return loc2File.labelTable.stringTable.header.totalCount;
+		}
+	}
+
+	int32_t GetIdxOfConnectedString(uint16_t id) {
+		if (currentlyLoadedLoctext == None) return -1;
+
+		switch (currentlyLoadedLoctext) {
+		case Loc1:
+			return loc1File.GetIdxOfConnectedString(id);
+		case Loc2:
+			return loc2File.GetIdxOfConnectedString(id);
+		}
+	}
+
+	int32_t GetIdxOfConnectedTag(uint16_t id) {
+		if (currentlyLoadedLoctext == None) return -1;
+
+		switch (currentlyLoadedLoctext) {
+		case Loc1:
+			return loc1File.GetIdxOfConnectedTag(id);
+		case Loc2:
+			return loc2File.GetIdxOfConnectedTag(id);
+		}
+	}
+
+	int32_t GetIdxOfConnectedComment(uint16_t id) {
+		if (currentlyLoadedLoctext == None) return -2;
+
+		switch (currentlyLoadedLoctext) {
+		case Loc1:
+			return loc1File.GetIdxOfConnectedComment(id);
+		case Loc2:
+			return loc2File.GetIdxOfConnectedComment(id);
+		}
+	}
+
+	bool IsIdxConnectedToTag(uint16_t id) {
+		if (currentlyLoadedLoctext == None) return false;
+
+		switch (currentlyLoadedLoctext) {
+		case Loc1:
+			return loc1File.GetIdxOfConnectedTag(id) != -1;
+		case Loc2:
+			return loc2File.IsIdxConnectedToTag(id);
+		}
+	}
+
+	bool IsHashConnectedToTag(uint16_t id) {
+		if (currentlyLoadedLoctext == None) return false;
+
+		switch (currentlyLoadedLoctext) {
+		case Loc1:
+			return loc1File.IsHashConnectedToTag(id);
+		case Loc2:
+			return loc2File.IsHashConnectedToTag(id);
+		}
+	}
+
+	bool IsIdxConnectedToComment(uint16_t id) {
+		if (currentlyLoadedLoctext == None) return false;
+
+		switch (currentlyLoadedLoctext) {
+		case Loc1:
+			return loc1File.IsIdxConnectedToComment(id);
+		case Loc2:
+			return loc2File.IsIdxConnectedToComment(id);
+		}
+	}
+
+	wchar_t* GetStringPtr(uint16_t id) {
+		if (currentlyLoadedLoctext == None) return nullptr;
+
+		switch (currentlyLoadedLoctext) {
+		case Loc1:
+			return loc1File.labelTable.stringTable.strings[id].string;
+		case Loc2:
+			return loc2File.labelTable.stringTable.strings[id].string;
+		}
+	}
+
+	char* GetTagPtr(uint16_t id) {
+		if (currentlyLoadedLoctext == None) return nullptr;
+
+		switch (currentlyLoadedLoctext) {
+		case Loc1:
+			return loc1File.labelTable.tagTable.tags[id].val;
+		case Loc2:
+			return loc2File.labelTable.tagTable.tags[id].val;
+		}
+	}
+
+	char* GetCommentPtr(uint16_t id) {
+		if (currentlyLoadedLoctext == None) return nullptr;
+
+		switch (currentlyLoadedLoctext) {
+		case Loc1:
+			return loc1File.labelTable.commentTable.comments[id].val;
+		case Loc2:
+			return loc2File.labelTable.commentTable.comments[id].val;
+		}
+	}
+
+	uint16_t GetPosPtr(uint16_t id) {
+		if (currentlyLoadedLoctext == None) return -1;
+
+
+		switch (currentlyLoadedLoctext) {
+		case Loc1:
+			if (loc1File.usesPos) {
+				return loc1File.labelTable.posTable.entries[id];
+			}
+			return loc1File.labelTable.stringTable.infoEntries[id].hash;
+		case Loc2:
+			if (loc2File.usesPos) {
+				return loc2File.labelTable.posTable.entries[id];
+			}
+			return loc2File.labelTable.stringTable.infoEntries[id].hash;
+		}
 	}
 };
 #pragma endregion
