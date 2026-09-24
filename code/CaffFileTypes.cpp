@@ -139,6 +139,57 @@ void Script::ReadScript(char* data) {
 #pragma endregion
 
 #pragma region Loctext
+void Loctext::ClearActiveData()
+{
+	if (loctextPtr != nullptr)
+	{
+		free(loctextPtr);
+		loctextPtr = nullptr;
+	}
+	
+	if (labelTable.stringTable.infoEntries != nullptr)
+	{
+		delete[] labelTable.stringTable.infoEntries;
+		labelTable.stringTable.infoEntries = nullptr;
+	}
+	
+	if (labelTable.stringTable.strings != nullptr)
+	{
+		delete[] labelTable.stringTable.strings;
+		labelTable.stringTable.strings = nullptr;
+	}
+	
+	if (labelTable.tagTable.infoEntries != nullptr)
+	{
+		delete[] labelTable.tagTable.infoEntries;
+		labelTable.tagTable.infoEntries = nullptr;
+	}
+	
+	if (labelTable.tagTable.tags != nullptr)
+	{
+		delete[] labelTable.tagTable.tags;
+		labelTable.tagTable.tags = nullptr;
+	}
+	
+	if (labelTable.commentTable.comments != nullptr)
+	{
+		delete[] labelTable.commentTable.comments;
+		labelTable.commentTable.comments = nullptr;
+	}
+	
+	if (labelTable.commentTable.entries != nullptr)
+	{
+		delete[] labelTable.commentTable.entries;
+		labelTable.commentTable.entries = nullptr;
+	}
+	
+	if (labelTable.posTable.entries != nullptr)
+	{
+		delete[] labelTable.posTable.entries;
+		labelTable.posTable.entries = nullptr;
+	}
+}
+
 void Loctext::ReadLoctext(char* data) {
 	loctextPtr = data;
 
@@ -1330,6 +1381,17 @@ void LocTwo::ExportToFile(char* fileName) {
 
 	is.flush();
 	is.close();
+}
+
+LoctextFile::~LoctextFile()
+{
+	switch (currentlyLoadedLoctext)
+	{
+	case Loc1:
+		{
+			loc1File.ClearActiveData();
+		}
+	}
 }
 
 void LoctextFile::ParseLoctextData(char* data) {

@@ -321,8 +321,17 @@ void DisplayVehicleEditorBaseWindow() {
 						}
 
 						ImGui::Checkbox("Is Challenge Bonus", (bool*)&markerWindowParameters.activeVehicle->parts[i].isChallengePart);
+						if (ImGui::IsItemHovered() && ImGui::BeginTooltip()) {
+							ImGui::Text("Controls whether the part is a challenge part or not.");
+							ImGui::EndTooltip();
+						}
 
 						ImGui::Checkbox("Is Part Painted", (bool*)&markerWindowParameters.activeVehicle->parts[i].isPainted);
+						if (ImGui::IsItemHovered() && ImGui::BeginTooltip()) {
+							ImGui::Text("Controls whether the part uses the stored RGBA value or the objparam default.");
+							ImGui::EndTooltip();
+						}
+
 						if (markerWindowParameters.activeVehicle->parts[i].isPainted) {
 							DisplayColorBlock(&markerWindowParameters.activeVehicle->parts[i].color);
 						}

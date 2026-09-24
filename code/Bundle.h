@@ -20,6 +20,19 @@ enum CaffType : int32_t {
 	PINATA_PKG,
 	NB_STREAMBUNDLE,
 	RR_RPK,
+	FOLDER_GROUP
+};
+
+struct RelocaionGroupEntry
+{
+	int32_t sourceSection = 0;
+	int32_t destinationSection = 0;
+	int32_t count = 0;
+};
+
+struct RelocationEntry
+{
+	uint32_t offsetFromSectionStart = 0;
 };
 
 struct ByteSwapGroupEntry {
@@ -28,6 +41,11 @@ struct ByteSwapGroupEntry {
 	int32_t numItemsToByteswap = 0;
 	int32_t size = 0;
 	int32_t stride = 0;
+};
+
+struct ByteswapEntry
+{
+	uint32_t address = 0;
 };
 
 struct FileInfoEntry {
@@ -67,14 +85,14 @@ public:
 
 struct FileLabelTable {
 	int32_t totalLabelTableSize = 0;
-	char** fileLabels;
+	std::vector<char*> fileLabels;
 };
 
 struct SectionTable {
 public:
 	SectionEntry entries[6];
 	SectionLabel sectionLabels[6];
-	int32_t* fileLabelOffsets = nullptr;
+	std::vector<int32_t> fileLabelOffsets;
 	FileLabelTable fileLabelTable;
 
 	int32_t adbStringLen = 0;
@@ -206,7 +224,7 @@ public:
 	int32_t sectionTypeNamesBufferLen = 0; // 0x4C, the length of the symbol string table in bytes.
 
 	TableInfo sectTable;
-	TableInfo fileTable;
+	TableInfo relocTable;
 };
 
 // Pretty much the only thing different between V0036 and V0040 is 
@@ -233,7 +251,7 @@ public:
 	int32_t sectionTypeNamesBufferLen = 0; // 0x54, the length of the symbol string table in bytes.
 
 	TableInfo sectTable;
-	TableInfo fileTable;
+	TableInfo relocTable;
 };
 
 struct BundleV40 {
@@ -312,11 +330,11 @@ public:
 	}
 
 	size_t getBaseSizeOfCompedBundle() const {
-		return header.headerSize + header.fileTable.compressedSize + header.sectTable.compressedSize;
+		return header.headerSize + header.relocTable.compressedSize + header.sectTable.compressedSize;
 	}
 
 	size_t getTotalSizeOfCompedBundle() const {
-		size_t totalSize = header.headerSize + header.fileTable.compressedSize + header.sectTable.compressedSize;
+		size_t totalSize = header.headerSize + header.relocTable.compressedSize + header.sectTable.compressedSize;
 
 		for (int32_t i = 0; i < header.numSectionTypes; i++) {
 			totalSize += sectionTable.entries[i].compressedSize;
@@ -359,7 +377,7 @@ public:
 
 
 	int32_t getFileIdxFromSymbol(const char* symbol) {
-		if (sectionTable.fileLabelTable.fileLabels == nullptr) {
+		if (sectionTable.fileLabelTable.fileLabels.size() == 0) {
 			printf("fileLabels is null.\n");
 			return -1;
 		}
@@ -431,7 +449,7 @@ public:
 	}
 
 	int32_t doesFileExist(const char* fileName) {
-		if (sectionTable.fileLabelTable.fileLabels == nullptr) {
+		if (sectionTable.fileLabelTable.fileLabels.size() == 0) {
 			return 0;
 		}
 
@@ -472,6 +490,7 @@ public:
 
 	char* bundleData = nullptr;
 
+	bool internallyCompressed = false;
 	bool isDirty = false;
 
 	~BundleV36();
@@ -484,7 +503,8 @@ public:
 
 	void writeStandaloneBundleFile(char* fileName);
 
-	void getArrayOfData();
+	void writeBundleFileHeader(FILE* writeStream);
+	void writeBundleFileSection(FILE* writeStream);
 
 	// Allocates and returns the target file data.
 	char* getFileData(char* fileName, int32_t fileInfoIdx);
@@ -528,22 +548,17 @@ public:
 			if (i == section) {
 				break;
 			}
-			if (header.compression) {
-				offset = offset + sectionTable.entries[i].compressedSize;
-			}
-			else {
-				offset = offset + sectionTable.entries[i].size;
-			}
+			offset = offset + sectionTable.entries[i].compressedSize;
 		}
 		return offset;
 	}
 
 	size_t getBaseSizeOfCompedBundle() const {
-		return header.headerSize + header.fileTable.compressedSize + header.sectTable.compressedSize;
+		return header.headerSize + header.relocTable.compressedSize + header.sectTable.compressedSize;
 	}
 
 	size_t getTotalSizeOfCompedBundle() const {
-		size_t totalSize = header.headerSize + header.fileTable.compressedSize + header.sectTable.compressedSize;
+		size_t totalSize = header.headerSize + header.relocTable.compressedSize + header.sectTable.compressedSize;
 
 		for (int32_t i = 0; i < header.numSectionTypes; i++) {
 			totalSize += sectionTable.entries[i].compressedSize;
@@ -553,40 +568,28 @@ public:
 	}
 
 	size_t getDefaultSizeofSection(int32_t section) {
-		for (int32_t i = 0; i < header.numSectionTypes; i++) {
-			if (i == section) {
-				if (header.compression) {
-					return sectionTable.entries[i].compressedSize;
-				}
-				else {
-					return sectionTable.entries[i].size;
-				}
-			}
+		if (section < 0 || section >= header.numSectionTypes) return 0;
+		if (header.compression) {
+			return sectionTable.entries[section].compressedSize;
 		}
-		return 0;
+		else {
+			return sectionTable.entries[section].size;
+		}
 	}
 
 	size_t getUncompressedSizeofSection(int32_t section) {
-		for (int32_t i = 0; i < header.numSectionTypes; i++) {
-			if (i == section) {
-				return sectionTable.entries[i].size;
-			}
-		}
-		return 0;
+		if (section < 0 || section >= header.numSectionTypes) return 0;
+		return sectionTable.entries[section].size;
 	}
 
 	size_t getCompressedSizeofSection(int32_t section) {
-		for (int32_t i = 0; i < header.numSectionTypes; i++) {
-			if (i == section) {
-				return sectionTable.entries[i].compressedSize;
-			}
-		}
-		return 0;
+		if (section < 0 || section >= header.numSectionTypes) return 0;
+		return sectionTable.entries[section].compressedSize;
 	}
 
 
 	int32_t getFileIdxFromSymbol(const char* symbol) {
-		if (sectionTable.fileLabelTable.fileLabels == nullptr) {
+		if (sectionTable.fileLabelTable.fileLabels.size() == 0) {
 			printf("fileLabels is null.\n");
 			return -1;
 		}
@@ -658,7 +661,7 @@ public:
 	}
 
 	int32_t doesFileExist(const char* fileName) {
-		if (sectionTable.fileLabelTable.fileLabels == nullptr) {
+		if (sectionTable.fileLabelTable.fileLabels.size() == 0) {
 			return 0;
 		}
 
@@ -834,7 +837,30 @@ public:
 	BundleV36* V36Bundle = nullptr;
 	BundleV31* V31Bundle = nullptr;
 	BundleV26* V26Bundle = nullptr;
-
+	
+	void CreateNewBundleV36() {
+		ClearActiveBundleFile();
+		V36Bundle = new BundleV36();
+		
+		V36Bundle->header.headerSize = 0x78;
+		memset(V36Bundle->header.versionString, 0, 0x10);
+		strcpy(V36Bundle->header.versionString, "07.08.06.0036");
+	}
+	
+	void CreateNewBundleV31() {
+		ClearActiveBundleFile();
+		V31Bundle = new BundleV31();
+		
+		V31Bundle->header.headerSize = 0x180;
+	}
+	
+	void CreateNewBundleV26() {
+		ClearActiveBundleFile();
+		V26Bundle = new BundleV26();
+		
+		V26Bundle->header.headerSize = 0x158;
+	}
+	
 	bool ReadBundleFile(char* data);
 	void ClearActiveBundleFile();
 

@@ -228,10 +228,10 @@ void DBBundle::readDbBundleFiles(char* hashData, char* indexData, int32_t totalI
 		hashFile.offsetArray[i] = flipEndian(offset);
 
 		if (isTiPIndexFile) {
-			printf("HASH ENTRY %d - [%016llX %d]\n", i, hashFile.hashArray[i], hashFile.offsetArray[i]);
+			//printf("HASH ENTRY %d - [%016llX %d]\n", i, hashFile.hashArray[i], hashFile.offsetArray[i]);
 		}
 		else {
-			printf("HASH ENTRY %d - [%08X %d]\n", i, hashFile.hashArray[i], hashFile.offsetArray[i]);
+			//printf("HASH ENTRY %d - [%08X %d]\n", i, hashFile.hashArray[i], hashFile.offsetArray[i]);
 		}
 
 		IncreaseCurrentSavedOnLoadingWidget();
@@ -261,7 +261,7 @@ void DBBundle::readDbBundleFiles(char* hashData, char* indexData, int32_t totalI
 		
 		charRead += count;
 
-		printf("%s %d %f\n", indexFile[i].filename, indexFile[i].timestamp, indexFile[i].version);
+		//printf("%s %d %f\n", indexFile[i].filename, indexFile[i].timestamp, indexFile[i].version);
 
 		int32_t idx = getIdxOfFile(indexFile[i].hash);
 		if (idx != -1) {
@@ -269,19 +269,19 @@ void DBBundle::readDbBundleFiles(char* hashData, char* indexData, int32_t totalI
 			precachedEntries[idx].hashIdx = idx;
 			precachedEntries[idx].indexIdx = i;
 			if (isTiPIndexFile) {
-				printf("ENTRY %d - String %s correlates to known hash 0x%016I64x.\n", i, indexFile[i].filename, indexFile[i].hash);
+				//printf("ENTRY %d - String %s correlates to known hash 0x%016I64x.\n", i, indexFile[i].filename, indexFile[i].hash);
 			}
 			else {
-				printf("ENTRY %d - String %s correlates to known hash %08X.\n", i, indexFile[i].filename, indexFile[i].hash);
+				//printf("ENTRY %d - String %s correlates to known hash %08X.\n", i, indexFile[i].filename, indexFile[i].hash);
 			}
 		}
 
 		if (idx == -1) {
 			if (isTiPIndexFile) {
-				printf("ENTRY %d - Hash of string %s (0x%016I64x) isn't present in index_hash.\n", i, indexFile[i].filename, indexFile[i].hash);
+				//printf("ENTRY %d - Hash of string %s (0x%016I64x) isn't present in index_hash.\n", i, indexFile[i].filename, indexFile[i].hash);
 			}
 			else {
-				printf("ENTRY %d - Hash of string %s (%08X) isn't present in index_hash.\n", i, indexFile[i].filename, indexFile[i].hash);
+				//printf("ENTRY %d - Hash of string %s (%08X) isn't present in index_hash.\n", i, indexFile[i].filename, indexFile[i].hash);
 			}
 		}
 		IncreaseCurrentSavedOnLoadingWidget();

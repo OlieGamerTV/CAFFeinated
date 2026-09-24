@@ -12,6 +12,7 @@ void ReadGhoulBundleTexture();
 void ReadGhoulDemandTexture();
 
 //h
+void countTimeToLoad();
 void ReadConkerLiveReloadedTexture(char* gpuData);
 
 //CAFF Stuff
@@ -30,6 +31,8 @@ void fillPinataDbBundleFileList();
 void fillPinataPKGFileList();
 void displayActivePinataDbBundleFileProperty();
 void displayActivePinataPKGFileProperty();
+void displayPinataDbFileInfo();
+void displayPinataPkgInfo();
 static unsigned char* GetRawImageData_Pinata(char* data, int32_t width, int32_t height, int32_t type);
 
 // RR RPK Stuff
@@ -37,6 +40,9 @@ static void openRareRPKFile();
 void displayRPKInfo();
 void fillRPKFileList();
 void displayActiveRPKFileProperty();
+
+void readFolderGroup();
+void fillFolderGroupList();
 
 //Image Functions
 
@@ -115,15 +121,15 @@ struct StreamedBundleSetup {
 
 struct BundleSetup {
 public:
-	BufferedSave* bufferedSaves;
+	std::vector<BufferedSave> bufferedSaves;
 	int32_t  totalBufferedSavesCount;
-	int32_t * modifiedFileBufferIDs;
+	std::vector<int32_t> modifiedFileBufferIDs;
 	int32_t  modifiedFilesCount;
 	bool isDirty;
 
 	bool haveNewFilesBeenAdded;
 	int32_t  newFilesCount;
-	int32_t * newFileBufferIDs;
+	std::vector<int32_t> newFileBufferIDs;
 
 	bool bundleCompression;
 
@@ -147,56 +153,22 @@ public:
 
 	void AddToSaveBuffer(BufferedSave itemToSave) {
 		isDirty = true;
-		BufferedSave* tmpBuf = new BufferedSave[totalBufferedSavesCount];
-		for (int32_t  i = 0; i < totalBufferedSavesCount; i++) {
-			tmpBuf[i] = bufferedSaves[i];
-		}
 
 		totalBufferedSavesCount++;
-		bufferedSaves = new BufferedSave[totalBufferedSavesCount];
-
-		for (int32_t  i = 0; i < totalBufferedSavesCount - 1; i++) {
-			bufferedSaves[i] = tmpBuf[i];
-		}
-
-		delete tmpBuf;
-
-		bufferedSaves[totalBufferedSavesCount - 1] = itemToSave;
+		bufferedSaves.push_back(itemToSave);
 		printf("Item of ID %d in Section %d added to the save buffer.\n", itemToSave.fileId, itemToSave.sect);
 		printf("Save Buffer now contains %d values.\n", totalBufferedSavesCount);
 	}
 
 	void AddNewFileToSaveBuffer(BufferedSave itemToSave) {
 		isDirty = true;
-		BufferedSave* tmpBuf = new BufferedSave[totalBufferedSavesCount];
-		for (int32_t  i = 0; i < totalBufferedSavesCount; i++) {
-			tmpBuf[i] = bufferedSaves[i];
-		}
-
-		int32_t * tmpNFBuf = new int32_t [newFilesCount];
-		for (int32_t  i = 0; i < totalBufferedSavesCount; i++) {
-			tmpNFBuf[i] = newFileBufferIDs[i];
-		}
 
 		totalBufferedSavesCount++;
 		newFilesCount++;
 
-		bufferedSaves = new BufferedSave[totalBufferedSavesCount];
-		newFileBufferIDs = new int32_t [newFilesCount];
-
-		for (int32_t  i = 0; i < totalBufferedSavesCount; i++) {
-			bufferedSaves[i] = tmpBuf[i];
-		}
-
-		for (int32_t  i = 0; i < totalBufferedSavesCount; i++) {
-			newFileBufferIDs[i] = tmpNFBuf[i];
-		}
-
-		delete tmpBuf;
-		delete tmpNFBuf;
-
-		bufferedSaves[totalBufferedSavesCount - 1] = itemToSave;
-		newFileBufferIDs[newFilesCount - 1] = totalBufferedSavesCount - 1;
+		bufferedSaves.push_back(itemToSave);
+		newFileBufferIDs.push_back(totalBufferedSavesCount - 1);
+		
 		printf("New file with ID %d in Section %d added to the save buffer.\n", itemToSave.fileId, itemToSave.sect);
 		printf("Save Buffer now contains %d values.\n", totalBufferedSavesCount);
 	}
@@ -251,6 +223,7 @@ struct ImGuiGarageWindow {
 	int32_t  bundleSelectedItem = -1;
 	int32_t  streamBundleSelectedBundle = -1;
 	int32_t  streamBundleSelectedItem = -1;
+	float storedScrollY = 0;
 
 	ImFont* defFont;
 	ImFont* jpnFont;

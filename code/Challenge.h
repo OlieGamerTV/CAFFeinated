@@ -1,4 +1,7 @@
 #pragma once
+#ifndef _CHALLENGE
+#define _CHALLENGE
+#include <cstdint>
 
 static const char* dbChallengeNames[] = {
     "NULL",
@@ -48,7 +51,7 @@ static const char* dbChallengeNames[] = {
     "SetScoreData"
 };
 
-enum dbChallengeRequirement_e : int {
+enum dbChallengeRequirement_e : int32_t {
     dbChallengeRequirement_NULL = 0,
     dbChallengeRequirement_Common = 1,
     dbChallengeRequirement_GroupActivator = 2,
@@ -99,9 +102,9 @@ enum dbChallengeRequirement_e : int {
 class ChallengeHeader {
 public:
     dbChallengeRequirement_e reqId = dbChallengeRequirement_NULL;
-    int unk1 = 0;
-    int taskID = 0;
-    int size = 0;
+    int32_t unk1 = 0;
+    int32_t taskID = 0;
+    int32_t size = 0;
 };
 
 class ChallengeNullDef {
@@ -134,41 +137,52 @@ public:
     char* npcReferences = nullptr; // 0x40C
 
     // General Settings
-    int gameRefID = 0; // 0x70
-    int removeGameRefID = 0; // 0x74
-    int defaultVehicleUUID = 0; // 0x78
-    int mustPickVehicle = 0; // 0x88
-    int maxPlayerCount = 0; // 0x7C
-    int teleportToStart = 0; // 0x80
-    int teleportOverrideMarker = 0; // 0x84
-    int shouldPauseDuringCountdown = 0; // 0x8C
-    int challengeSfxOverride = 0; // 0xB4
+    uint32_t gameRefID = 0; // 0x70
+    uint32_t removeGameRefID = 0; // 0x74
+    uint32_t defaultVehicleUUID = 0; // 0x78
+    int32_t maxPlayerCount = 0; // 0x7C
+    int32_t teleportToStart = 0; // 0x80
+    int32_t teleportOverrideMarker = 0; // 0x84
+    int32_t mustPickVehicle = 0; // 0x88
+    int32_t shouldPauseDuringCountdown = 0; // 0x8C
+    int32_t challengeSfxOverride = 0; // 0xB4
     float tuneVolume = 0; // 0xB8
-    int numJiggiesAwarded = 0; // 0x258
+    int32_t numJiggiesAwarded = 0; // 0x258
 
     // Dialog Settings
-    int challengeObjectivesDialogUUID = 0; // 0xC4
-    int challengeWinDialogUUID = 0; // 0xC8
-    int challengeLoseDialogUUID = 0; // 0xCC
+    uint32_t challengeGreetingIntroDialogUUID = 0; // 0xBC
+    uint32_t challengeBeatenIntroDialogUUID = 0; // 0xC0
+    uint32_t challengeObjectivesDialogUUID = 0; // 0xC4
+    uint32_t challengeWinDialogUUID = 0; // 0xC8
+    uint32_t challengeLoseDialogUUID = 0; // 0xCC
+    uint32_t challengeStyleDialogAid = 0; // 0xD0
+    uint32_t challengeWimpOutDialogAid = 0; // 0xD4
 
     // Challenge-Specific Settings
-    int challengeRestrictionsAidUUID = 0; // 0xA0
-    int resultsOrdering = 0; // 0x2AC
-    int isRace = 0; // 0x2BC
-    int isHealthChallenge = 0; // 0x2C0
-    int targetScore = 0; // 0x2E4
-    int teamTargetScoreType = 0; // 0x2F0
-    int teamTargetScore = 0; // 0x2F4
+    int32_t challengeRestrictionsAidUUID = 0; // 0xA0
+    int32_t resultsOrdering = 0; // 0x2AC
+    int32_t isRace = 0; // 0x2BC
+    int32_t isHealthChallenge = 0; // 0x2C0
+    uint32_t scoreIcon = 0; // 0x2C4
+    int32_t shouldDisableRankings = 0; // 0x2E0
+    int32_t targetScore = 0; // 0x2E4
+    int32_t teamTargetScoreType = 0; // 0x2F0
+    int32_t teamTargetScore = 0; // 0x2F4
     float targetTime = 0; // 0x2EC
-    int shouldPassWhenTargetTimeReached = 0; // 0x2F8
-    int hasRoundInfo = 0; // 0x300
-    int totalRounds = 0; // 0x304
+    int32_t shouldPassWhenTargetTimeReached = 0; // 0x2F8
+    int32_t hasRoundInfo = 0; // 0x300
+    int32_t totalRounds = 0; // 0x304
 
     // UI Settings
-    int isJinjoChallenge = 0; // 0x2A0
-    int isTTChallenge = 0; // 0x2A4
-    int mustShowTimer = 0; // 0x2D8
-    int mustShowScore = 0; // 0x2DC
+    int32_t isJinjoChallenge = 0; // 0x2A0
+    int32_t isTTChallenge = 0; // 0x2A4
+    int32_t mustShowTimer = 0; // 0x2D8
+    int32_t mustShowScore = 0; // 0x2DC
+    
+    float ttMinTime = 0; // 0x2C8
+    float ttMaxJiggyMinTime = 0; // 0x2CC
+    float jiggyMaxNotesMinTime = 0; // 0x2D0
+    float notesMaxTime = 0; // 0x2D4
 
     void ParseCommon(char* data);
 };
@@ -176,35 +190,35 @@ public:
 class challengeGroupActivator : public ChallengeNullDef
 {
 public:
-    int getCondition = 0; // 0x10
-    int onCompletionOf = 0; // 0x14
+    int32_t getCondition = 0; // 0x10
+    int32_t onCompletionOf = 0; // 0x14
     float timeLimit = 0; // 0x18
-    int incompleteIsPass = 0; // 0x1C
-    int onPassActivate = 0; // 0x20
-    int onFailActivate = 0; // 0x24
-    int shouldSendReaction = 0; // 0x28
-    int shouldShowReadyGoUI = 0; // 0x2C
+    int32_t incompleteIsPass = 0; // 0x1C
+    int32_t onPassActivate = 0; // 0x20
+    int32_t onFailActivate = 0; // 0x24
+    int32_t shouldSendReaction = 0; // 0x28
+    int32_t shouldShowReadyGoUI = 0; // 0x2C
 };
 
 class challengeDistance : public ChallengeNullDef // 0x11
 {
 public:
     float targetDistance = 0; // 0x10
-    int regionId = 0;
-    int shouldRemoveControlWhenLeavingRegion = 0;
-    int shouldDisablePropulsionAndGadgetsWhenLeavingRegion = 0;
-    int sectionId = 0;
+    int32_t regionId = 0;
+    int32_t shouldRemoveControlWhenLeavingRegion = 0;
+    int32_t shouldDisablePropulsionAndGadgetsWhenLeavingRegion = 0;
+    int32_t sectionId = 0;
     char startGateIndicator[0x40] = { "\0" };
-    int shouldShowBalls = 0;
-    int unk_68 = 0;
-    int shouldShowRegion = 0;
-    int shouldShowTargetRegion = 0;
+    int32_t shouldShowBalls = 0;
+    int32_t unk_68 = 0;
+    int32_t shouldShowRegion = 0;
+    int32_t shouldShowTargetRegion = 0;
     float maxTimeStationary = 0;
     float speedForStationary = 0;
     float speedForStationaryInWater = 0;
-    int mustRemainInVehicleAfterGate = 0;
+    int32_t mustRemainInVehicleAfterGate = 0;
     float unk_84 = 0;
-    int shouldCreateScoreHolograms = 0;
+    int32_t shouldCreateScoreHolograms = 0;
 
     void ParseDistance(char* data);
 };
@@ -212,8 +226,8 @@ public:
 class challengeStayInVehicle : public ChallengeNullDef // 0x11
 {
 public:
-    int canPlayersGetOut = 0; // 0x10
-    int canBaddiesGetOut = 0; // 0x14
+    int32_t canPlayersGetOut = 0; // 0x10
+    int32_t canBaddiesGetOut = 0; // 0x14
 
     void ParseStayInVehicle(char* data);
 };
@@ -222,8 +236,8 @@ class challengePlayDialog : public ChallengeNullDef // 0x13
 {
 public:
     float timeDelay = 0;
-    int dialogAid = 0;
-    int shouldPassWhenDone = 0;
+    int32_t dialogAid = 0;
+    int32_t shouldPassWhenDone = 0;
     
     void ParsePlayDialog(char* data);
 };
@@ -239,8 +253,8 @@ class challengeSkidmarks : public ChallengeNullDef // 0x1A
 {
 public:
     float distToSkid; // 0x10
-    int regionId; // 0x14
-    int shouldShowRegion; // 0x18
+    int32_t regionId; // 0x14
+    int32_t shouldShowRegion; // 0x18
     char indicatorType[0x40]; // 0x1C
 
     void ParseSkidmarks(char* data);
@@ -249,20 +263,22 @@ public:
 class challengeQueenOfTheHill : public ChallengeNullDef // 0x1C
 {
 public:
-    int avatarUUID = 0;
-    int startCount = 0;
+    int32_t avatarUUID = 0;
+    int32_t startCount = 0;
 
     char sceneIndicator[0x40] = { "\0" };
 
-    int hasNumbers = 0;
-    int numberModelUUIDs[10];
+    int32_t hasNumbers = 0;
+    int32_t numberModelUUIDs[10];
     float width = 0, length = 0, height = 0;
 };
 
 class challengeAffectVehicles : public ChallengeNullDef // 0x23
 {
 public:
-    int toggle = 0;
+    int32_t toggle = 0;
 
     void ParseAffectVehicles(char* data);
 };
+
+#endif

@@ -39,8 +39,16 @@ void ChallengeCommonDef::ParseCommon(char* data) {
 	strcpy_s(worldNameTag, 0x20, data + 0x10);
 	strcpy_s(challengeTag, 0x20, data + 0x30);
 	strcpy_s(gameStyleTag, 0x20, data + 0x50);
-
-
+	
+	memcpy(&ttMinTime, data + 0x2C8, sizeof(int32_t));
+	memcpy(&ttMaxJiggyMinTime, data + 0x2CC, sizeof(int32_t));
+	memcpy(&jiggyMaxNotesMinTime, data + 0x2D0, sizeof(int32_t));
+	memcpy(&notesMaxTime, data + 0x2D4, sizeof(int32_t));
+	
+	ttMinTime = flipEndian_f32((char*)&ttMinTime, 1);
+	ttMaxJiggyMinTime = flipEndian_f32((char*)&ttMaxJiggyMinTime, 1);
+	jiggyMaxNotesMinTime = flipEndian_f32((char*)&jiggyMaxNotesMinTime, 1);
+	notesMaxTime = flipEndian_f32((char*)&notesMaxTime, 1);
 }
 
 void challengeStayInVehicle::ParseStayInVehicle(char* data) {

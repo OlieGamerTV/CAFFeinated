@@ -164,6 +164,8 @@ public:
 	void ExportToFileBank(char* fileName, int32_t endianness);
 
 	void WriteLoctext(char* filename);
+	
+	void ClearActiveData();
 
 	int32_t GetIdxOfConnectedString(uint16_t id) {
 		for (int32_t i = 0; i < labelTable.stringTable.header.totalCount; i++) {
@@ -343,6 +345,8 @@ public:
 	void ParseLoctextData(char* data);
 
 	void ExportToFileRaw(char* fileName);
+	
+	~LoctextFile();
 
 	int32_t GetEndianness() {
 		if (currentlyLoadedLoctext == None) return 0;

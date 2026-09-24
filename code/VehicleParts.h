@@ -194,6 +194,10 @@ const VehiclePartEntry vehicleParts[] = {
 	{ 0xFFFFFFFF, "Jets", true },
 	{ 0x1F207106, "Small Jet" },
 	{ 0x1F0EB2AB, "Large Jet" },
+	
+	// Engine
+	{0xFFFFFFFF, "Fuel-Free Propulsion", true},
+	{ 0x1F2B227B, "Sail" },
 
 		// Fuel
 	{ 0xFFFFFFFF, "Fuel", true },
