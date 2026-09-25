@@ -36,7 +36,8 @@ A few tool windows are present in this, for different purposes.
 ## Known Issues
 * Some crashes may appear when using the tool, as the tool is still a big Work in Progress.
   * Please feel free to report any issues (whether it's just any jank or outright crashes) with the tool on the issues page.
-* The tool does not currently support decompressing files compressed via <b>xbcompress</b>, nor does it currently support the DB files from TiP.
+* The tool can decompress files compressed via <b>xbcompress</b>, but only if the Xbox 360 SDK is present. This is not distributed with the tool.
+  * This is a temporary solution until a more native solution is done.
 
 ## Contact
 If you need to contact me regarding anything, you can contact me via Discord (@oliegamertv, I'm most active there) or the Issues tab.
