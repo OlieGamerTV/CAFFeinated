@@ -29,7 +29,7 @@ void DisplayLoctextEditorBaseWindow() {
 					openLoadLoctextFile();
 				}
 
-				if (ImGui::MenuItem("Save", NULL, false, clearActive)) {
+				if (ImGui::MenuItem("Save", NULL, false, clearActive && loctextWindowParameters.loctextFilePath != nullptr)) {
 					if (loctextWindowParameters.loctextFilePath != nullptr) {
 						if (loctextWindowParameters.activeLoctext->currentlyLoadedLoctext == Loc1) {
 							loctextWindowParameters.activeLoctext->loc1File.WriteLoctext(loctextWindowParameters.loctextFilePath);
@@ -216,8 +216,10 @@ void DisplayLoctextEditorBaseWindow() {
 			loctextWindowParameters.activeLoctext->SetEndianness(isBigEndian);
 			bool usingTags = loctextWindowParameters.activeLoctext->GetIsUsingTags();
 			bool usingPos = loctextWindowParameters.activeLoctext->GetIsUsingPositions();
+			ImGui::BeginDisabled();
 			ImGui::Checkbox("Has Tags", &usingTags);
 			ImGui::Checkbox("Keep Positions", &usingPos);
+			ImGui::EndDisabled();
 			loctextWindowParameters.activeLoctext->SetIsUsingTags(usingTags);
 			loctextWindowParameters.activeLoctext->SetIsUsingPositions(usingPos);
 			ImGui::SeparatorText("Entries");

@@ -1,5 +1,5 @@
 #pragma once
-
+#include <memory>
 const int32_t SRC_ENDIANLITTLE = 0;
 const int32_t SRC_ENDIANBIG = 1;
 

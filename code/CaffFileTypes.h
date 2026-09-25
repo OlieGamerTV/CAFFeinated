@@ -1,4 +1,7 @@
 #pragma once
+#ifndef _CAFFCOMMONFILETYPES
+#define _CAFFCOMMONFILETYPES
+
 #include "BaseScript.h"
 
 #ifdef _WIN32 
@@ -6,6 +9,7 @@
 #include <windows.h>
 #endif
 #include <stdlib.h>
+#include "PinataTex.h"
 
 const uint32_t VEHICLE_HEAD_GAMEID = 0xED07534D;
 const uint32_t VEHICLE_SAVE_PREFIX1 = 0x48E19A3F;
@@ -717,29 +721,31 @@ struct Manifest {
 
 struct TextureDataSect {
 public:
-	char magic[8]; // The identifier of the file.
+	char identifier[8]; // The identifier of the file.
 	char version[0x10]; // The version of the file.
 
 	// Texture Info
-	char unk_0x18 = 0;
-	char unk_0x19 = 0;
-	char isSwizzled = 0; // 0x1A
-	unsigned char textureType = 0; // 0x1B
-
-	int32_t unk_0x1C = 0;
-	int32_t unk_0x20 = 0;
+	uint32_t format = 0;
+	int32_t type = 0;
+	int32_t flags = 0;
 	int16_t width = 0;
 	int16_t height = 0;
-	int32_t frameCount = 1; // 0x38 (For textures that only have one frame, this is set to 0.)
+	int32_t image = 1;
+	int32_t mipOffset = -1;
+	int8_t maxLOD = 0;
 	int32_t gpuOffsTablePos = 0;
 	int32_t* gpuOffsTable;
+	
+	int32_t numFrames = 0;
 };
 
 struct Texture {
 public:
 	TextureDataSect headerSect;
+	Pinata::dbTexture_s pinataTexture;
 	char* textureHeaderPtr;
 	bool refresh = true;
+	bool isPinataTex = false;
 
 	unsigned char* textureDataPtr;
 
@@ -753,3 +759,4 @@ public:
 		textureDataPtr = ptr;
 	}
 };
+#endif

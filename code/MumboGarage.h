@@ -45,7 +45,7 @@ void readFolderGroup();
 void fillFolderGroupList();
 
 //Image Functions
-
+void ExportXenonTextures(char* exportPath, char* baseLabel);
 static GLuint LoadResourceImage(int32_t  resourceName, const wchar_t* resourceType);
 static GLuint LoadImageFromData_Base(char* data, int32_t  width, int32_t  height, int32_t  type);
 static GLuint LoadImageFromData_Pinata(char* data, int32_t  width, int32_t  height, int32_t  type);
@@ -53,7 +53,7 @@ static GLuint LoadImageFromData_Banjo(char* data, int32_t  width, int32_t  heigh
 static GLuint LoadImageFromData(unsigned char* data, int32_t  width, int32_t  height, int32_t  format, int32_t  type);
 static GLFWimage LoadResourceImageToGLFWImage(int32_t  resourceName, const wchar_t* resourceType);
 static unsigned char* GetRawImageData_Base(char* data, int32_t  width, int32_t  height, int32_t  type);
-static unsigned char* GetRawImageData_Banjo(char* data, int32_t  width, int32_t  height, int32_t  type, int32_t  isSwizzled);
+static unsigned char* GetRawImageData_Xenon(char* data, int32_t  width, int32_t  height, int32_t  type);
 
 static ImFont* LoadResourceFont(int32_t  resourceName, const wchar_t* resourceType, float extraSize);
 

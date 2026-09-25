@@ -1,6 +1,9 @@
 #pragma once
+#ifndef _MARKER
+#define _MARKER
 #include "CommonReader.h"
 #include "MLTypes.h"
+#include <vector>
 #include "AssetId.h"
 
 const int32_t markerSizes[] = {
@@ -448,50 +451,19 @@ public:
 	bool isReady = false;
 
 	int32_t numOfMarkerEntries = 0;
-	MarkerBase** markerEntries;
+	std::vector<MarkerBase*> markerEntries;
 
 	void ReadMarkerFile(char* data) {
 		if (data == nullptr) return;
 		fileData = data;
-
-		bool hasInitialEntryStarted = false;
+		
 		int32_t offs = 0;
 
-		// settle the marker count.
-		while (true) {
-			int32_t size = 0;
-			int16_t id = 0;
-
-			memcpy(&size, fileData + offs, 4);
-			memcpy(&id, fileData + offs + 6, 2);
-
-			size = flipEndian(size);
-			id = flipEndian(id);
-
-			printf("Entry %d\t->\t%d\n", id, size);
-
-			char* markerData = (char*)malloc(size);
-
-			numOfMarkerEntries++;
-			if (id == 1 && hasInitialEntryStarted == true) {
-				break;
-			}
-
-			if (id == 1 && hasInitialEntryStarted == false) {
-				hasInitialEntryStarted = true;
-			}
-
-			offs += size;
-		}
-
-		offs = 0;
-		markerEntries = new MarkerBase*[numOfMarkerEntries];
-
 		// set up the markers.
-		for (int32_t i = 0; i < numOfMarkerEntries; i++) {
-			int32_t size = 0;
-			int16_t type = 0;
-
+		int32_t size = 0;
+		int16_t type = 1;
+		int32_t index = 0;
+		while (type != 0) {
 			memcpy(&size, fileData + offs, 4);
 			memcpy(&type, fileData + offs + 4, 2);
 
@@ -500,21 +472,21 @@ public:
 
 			char* markerData = (char*)malloc(size);
 			memcpy(markerData, fileData + offs, size);
-			markerEntries[i] = CreateMarkerData((dbMarkerEnum)type);
+			markerEntries.push_back(CreateMarkerData((dbMarkerEnum)type));
 
-			markerEntries[i]->readCommonMarkerData(markerData);
+			markerEntries[index]->readCommonMarkerData(markerData);
 
-			printf("Entry %05d\t->\t[%s ", markerEntries[i]->uniqueId, dbMarkerNames[markerEntries[i]->markerId]);
-			printf("Position (X %.04f, Y %.04f, Z %.04f) ", markerEntries[i]->pos.x, markerEntries[i]->pos.y, markerEntries[i]->pos.z);
-			printf("Rotation (P %.04f, Y %.04f, R %.04f) ", markerEntries[i]->pyr.p, markerEntries[i]->pyr.y, markerEntries[i]->pyr.r);
-			printf("Scale %.04f ", markerEntries[i]->scale);
+			printf("Entry %05d\t->\t[%s ", markerEntries[index]->uniqueId, dbMarkerNames[markerEntries[index]->markerId]);
+			printf("Position (X %.04f, Y %.04f, Z %.04f) ", markerEntries[index]->pos.x, markerEntries[index]->pos.y, markerEntries[index]->pos.z);
+			printf("Rotation (P %.04f, Y %.04f, R %.04f) ", markerEntries[index]->pyr.p, markerEntries[index]->pyr.y, markerEntries[index]->pyr.r);
+			printf("Scale %.04f ", markerEntries[index]->scale);
 
-			printf("Child %d / Parent %d ", markerEntries[i]->childId, markerEntries[i]->parentId);
-			printf("Challenge IDX %08x ", markerEntries[i]->challengeAid);
+			printf("Child %d / Parent %d ", markerEntries[index]->childId, markerEntries[index]->parentId);
+			printf("Challenge IDX %08x ", markerEntries[index]->challengeAid);
 
-			if (markerEntries[i]->flags != 0) {
+			if (markerEntries[index]->flags != 0) {
 				printf("Active Flags [ ");
-				if ((markerEntries[i]->flags & ResetForChallengeFlag) == 0) {
+				if ((markerEntries[index]->flags & ResetForChallengeFlag) == 0) {
 					printf("Reset for Challenge ");
 				}
 
@@ -523,19 +495,21 @@ public:
 
 			printf("]\n");
 
-			switch (markerEntries[i]->markerId) {
+			switch (markerEntries[index]->markerId) {
 			    case marker_ComponentCrate: {
-					((MarkerComponentCrate*)markerEntries[i])->readMarkerData(markerData);
+					((MarkerComponentCrate*)markerEntries[index])->readMarkerData(markerData);
 			    }
 				break;
 				case marker_Portal: {
-					((MarkerPortal*)markerEntries[i])->readMarkerData(markerData);
+					((MarkerPortal*)markerEntries[index])->readMarkerData(markerData);
 				}
 			    break;
 			}
 
 			offs += size;
+			index++;
 			free(markerData);
 		}
 	}
 };
+#endif

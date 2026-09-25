@@ -37,10 +37,8 @@ void DisplayScriptEditorBaseWindow() {
 				}
 				ImGui::Separator();
 				if (ImGui::MenuItem("Clear", NULL, false, scriptWindowParameters.isFileActive)) {
-					if (scriptWindowParameters.activeScript.scriptEntries != nullptr) {
-						delete[] scriptWindowParameters.activeScript.scriptEntries;
-						scriptWindowParameters.activeScript.scriptEntries = nullptr;
-					}
+					scriptWindowParameters.activeScript.scriptEntries.clear();
+					scriptWindowParameters.isFileActive = false;
 				}
 				ImGui::EndMenu();
 			}
@@ -48,7 +46,7 @@ void DisplayScriptEditorBaseWindow() {
 		}
 
 		if (scriptWindowParameters.isFileActive) {
-			ImGui::Text("Num. of Entries: %d", scriptWindowParameters.activeScript.numOfScriptEntries);
+			ImGui::Text("Num. of Entries: %d", scriptWindowParameters.activeScript.scriptEntries.size());
 
 			ImGui::Separator();
 
@@ -56,7 +54,7 @@ void DisplayScriptEditorBaseWindow() {
 			// Vehicle Parts List
 			if (ImGui::BeginChild("Script Tree")) {
 				if (ImGui::TreeNode("Raw")) {
-					for (int i = 0; i < scriptWindowParameters.activeScript.numOfScriptEntries; i++) {
+					for (int i = 0; i < scriptWindowParameters.activeScript.scriptEntries.size(); i++) {
 						char string[256];
 						memset(string, 0, 256);
 						sprintf(string, "%s (%02X)", GetScriptName_BanjoX(scriptWindowParameters.activeScript.scriptEntries[i]->entryType), scriptWindowParameters.activeScript.scriptEntries[i]->entryType);
@@ -81,7 +79,7 @@ void DisplayScriptEditorBaseWindow() {
 				}
 
 				if (ImGui::TreeNode("Script Interpretation")) {
-					for (int i = 0; i < scriptWindowParameters.activeScript.numOfScriptEntries; i++) {
+					for (int i = 0; i < scriptWindowParameters.activeScript.scriptEntries.size(); i++) {
 						int indentID = HandleIndention(scriptWindowParameters.activeScript.scriptEntries[i]->entryType);
 
 						if (indentID == -1) {

@@ -1223,9 +1223,9 @@ static stbi__uint16 *stbi__convert_8_to_16(stbi_uc *orig, int w, int h, int chan
 static void stbi__endian_swap(void* image, int w, int h, int bytes_per_pixel) {
     int row;
     size_t bytes_per_row = (size_t)w * bytes_per_pixel;
-    stbi_uc temp[4];
+    stbi_uc temp[8];
     stbi_uc* bytes = (stbi_uc*)image;
-
+   
     for (row = 0; row < h; row++) {
         stbi_uc* row0 = bytes + row * bytes_per_row;
         // swap row0 with row1
@@ -1233,31 +1233,41 @@ static void stbi__endian_swap(void* image, int w, int h, int bytes_per_pixel) {
         while (bytes_left) {
             size_t bytes_copy = bytes_per_pixel;
             memcpy(temp, row0, bytes_copy);
-
-            if (bytes_per_pixel == 8) {
-                memcpy(row0, temp + 7, 1);
-                memcpy(row0 + 1, temp + 6, 1);
-                memcpy(row0 + 2, temp + 5, 1);
-                memcpy(row0 + 3, temp + 4, 1);
-                memcpy(row0 + 4, temp + 3, 1);
-                memcpy(row0 + 5, temp + 2, 1);
-                memcpy(row0 + 6, temp + 1, 1);
-                memcpy(row0 + 7, temp, 1);
-            }
-            else if (bytes_per_pixel == 4) {
-                memcpy(row0, temp + 3, 1);
-                memcpy(row0 + 1, temp + 2, 1);
-                memcpy(row0 + 2, temp + 1, 1);
-                memcpy(row0 + 3, temp, 1);
-            }
-            else if (bytes_per_pixel == 3) {
-                memcpy(row0, temp + 2, 1);
-                memcpy(row0 + 1, temp + 1, 1);
-                memcpy(row0 + 2, temp, 1);
-            }
-            else if (bytes_per_pixel == 2) {
-                memcpy(row0, temp + 1, 1);
-                memcpy(row0 + 1, temp, 1);
+            switch (bytes_per_pixel)
+            {
+            case 8:
+               {
+                  memcpy(row0, temp + 7, 1);
+                  memcpy(row0 + 1, temp + 6, 1);
+                  memcpy(row0 + 2, temp + 5, 1);
+                  memcpy(row0 + 3, temp + 4, 1);
+                  memcpy(row0 + 4, temp + 3, 1);
+                  memcpy(row0 + 5, temp + 2, 1);
+                  memcpy(row0 + 6, temp + 1, 1);
+                  memcpy(row0 + 7, temp, 1);
+               }
+               break;
+            case 4:
+               {
+                  memcpy(row0, temp + 3, 1);
+                  memcpy(row0 + 1, temp + 2, 1);
+                  memcpy(row0 + 2, temp + 1, 1);
+                  memcpy(row0 + 3, temp, 1);
+               }
+               break;
+            case 3:
+               {
+                  memcpy(row0, temp + 2, 1);
+                  memcpy(row0 + 1, temp + 1, 1);
+                  memcpy(row0 + 2, temp, 1);
+               }
+               break;
+            case 2:
+               {
+                  memcpy(row0, temp + 1, 1);
+                  memcpy(row0 + 1, temp, 1);
+               }
+               break;
             }
             
             row0 += bytes_copy;

@@ -308,7 +308,7 @@ bool BundleV40::readBundleSectionFileV0040(char* data) {
 			char* tmpStr = (char*)malloc(strLen);
 			memset(tmpStr, 0, strLen);
 
-			strcpy(sectionTable.fileLabelTable.fileLabels[i], uncompedBaseData + (baseOffsetForFileLabels + sectionTable.fileLabelOffsets[i]));
+			strcpy(tmpStr, uncompedBaseData + (baseOffsetForFileLabels + sectionTable.fileLabelOffsets[i]));
 			sectionTable.fileLabelTable.fileLabels.push_back(tmpStr);
 			//printf("Symbol %d - %s\n", i, sectionTable.fileLabelTable.fileLabels[i].label);
 		}
@@ -430,6 +430,8 @@ BundleV40::~BundleV40() {
 		free(bundleData);
 		bundleData = nullptr;
 	}
+	
+	sectionTable.fileLabelTable.fileLabels.clear();
 }
 
 bool BundleV40::readStandaloneBundleFile(char* fileName) {

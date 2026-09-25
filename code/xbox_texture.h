@@ -4,7 +4,7 @@ enum XboxTexFormat : int {
 	DXT1 = 0xC,
 	DXT3 = 0xE,
 	DXT5 = 0xF,
-	BGRA8888 = 0x12,
+	B8G8R8A8 = 0x12,
 };
 
 static char* GetXboxTextureFormatName(int format) {
@@ -20,9 +20,8 @@ static char* GetXboxTextureFormatName(int format) {
 	case XboxTexFormat::DXT5:
 		strcpy(formatName, "DXT5");
 		break;
-		break;
-	case XboxTexFormat::BGRA8888:
-		strcpy(formatName, "BGRA8888");
+	case XboxTexFormat::B8G8R8A8:
+		strcpy(formatName, "B8G8R8A8");
 		break;
 	}
 

@@ -1307,7 +1307,6 @@ void LocTwo::ReadCommentData() {
 	int32_t strEntryBaseOffset = commentTableOffset + (labelTable.commentTable.header.totalCount * 8);
 	for (int32_t i = 0; i < labelTable.commentTable.header.totalCount; i++) {
 		int32_t offs = strEntryBaseOffset + labelTable.commentTable.entries[i].offset;
-
 		strcpy(labelTable.commentTable.comments[i].val, loctextPtr + offs);
 
 		printf("Comment Table Val %d: %s", i, labelTable.commentTable.comments[i].val);
@@ -2049,128 +2048,63 @@ void Manifest::ReadManifest(char* data) {
 void Texture::ReadTextureInfo(char* data) {
 	textureHeaderPtr = data;
 
-	memset(headerSect.magic, 0, sizeof(headerSect.magic));
+	memset(headerSect.identifier, 0, sizeof(headerSect.identifier));
 	memset(headerSect.version, 0, sizeof(headerSect.version));
 
-	strcpy(headerSect.magic, textureHeaderPtr);
+	strcpy(headerSect.identifier, textureHeaderPtr);
 	strcpy(headerSect.version, textureHeaderPtr + 8);
 
-	printf("%s %s\n", headerSect.magic, headerSect.version);
+	printf("%s %s\n", headerSect.identifier, headerSect.version);
 
-	if (strcmp(headerSect.magic, "texture") != 0) {
-		headerSect.unk_0x18 = *(textureHeaderPtr + 0x18);
-		headerSect.unk_0x19 = *(textureHeaderPtr + 0x19);
-		headerSect.isSwizzled = *(textureHeaderPtr + 0x1A);
-		headerSect.textureType = (unsigned char)*(textureHeaderPtr + 0x3);
+	memcpy(&headerSect.format, textureHeaderPtr + 0x18, sizeof(int32_t));
+	memcpy(&headerSect.type, textureHeaderPtr + 0x1C, sizeof(int32_t));
+	memcpy(&headerSect.flags, textureHeaderPtr + 0x20, sizeof(int32_t));
+	memcpy(&headerSect.image, textureHeaderPtr + 0x28, sizeof(int32_t));
+	memcpy(&headerSect.mipOffset, textureHeaderPtr + 0x2C, sizeof(int32_t));
+	
+	headerSect.type = flipEndian(headerSect.type);
+	headerSect.flags = flipEndian(headerSect.flags);
+	headerSect.image = flipEndian(headerSect.image);
+	headerSect.mipOffset = flipEndian(headerSect.mipOffset);
 
-		int16_t width = 0;
-		int16_t height = 0;
+	int16_t width = 0;
+	int16_t height = 0;
 
-		memcpy(&width, textureHeaderPtr + 0x8, sizeof(int16_t));
-		memcpy(&height, textureHeaderPtr + 0xA, sizeof(int16_t));
+	memcpy(&width, textureHeaderPtr + 0x24, sizeof(int16_t));
+	memcpy(&height, textureHeaderPtr + 0x26, sizeof(int16_t));
 
-		width = flipEndian(width);
-		height = flipEndian(height);
+	width = flipEndian(width);
+	height = flipEndian(height);
 
-		printf("Is Swizzled %d - Texture Type 0x%02x\n", headerSect.isSwizzled, headerSect.textureType);
-		printf("Width %d - Height %d\n", width, height);
+	printf("Texture Type 0x%08x\n", headerSect.format);
+	printf("Width %d - Height %d\n", width, height);
 
-		headerSect.width = width;
-		headerSect.height = height;
+	headerSect.width = width;
+	headerSect.height = height;
 
-		int32_t frameCount = 0;
+	int32_t gpuOffsTableOffset = 0;
 
-		memcpy(&frameCount, textureHeaderPtr + 0x38, sizeof(int32_t));
+	memcpy(&gpuOffsTableOffset, textureHeaderPtr + 0x3C, sizeof(int32_t));
 
-		frameCount = flipEndian(frameCount);
+	gpuOffsTableOffset = flipEndian(gpuOffsTableOffset);
+	headerSect.gpuOffsTablePos = gpuOffsTableOffset;
 
-		if (frameCount == 0) {
-			headerSect.frameCount = 1;
-		}
-		else {
-			headerSect.frameCount = frameCount;
-		}
+	if (headerSect.type == 4) {
+		memcpy(&headerSect.numFrames, textureHeaderPtr + 0x28, sizeof(int32_t));
+		headerSect.numFrames = flipEndian(headerSect.numFrames);
+		headerSect.gpuOffsTable = new int32_t[headerSect.numFrames];
 
-		int32_t gpuOffsTableOffset = 0;
+		for (int32_t i = 0; i < headerSect.numFrames; i++) {
+			int32_t off = 0;
 
-		memcpy(&gpuOffsTableOffset, textureHeaderPtr + 0x3C, sizeof(int32_t));
+			memcpy(&off, textureHeaderPtr + gpuOffsTableOffset + (i * 4), sizeof(int32_t));
 
-		gpuOffsTableOffset = flipEndian(gpuOffsTableOffset);
-		headerSect.gpuOffsTablePos = gpuOffsTableOffset;
-
-		if (frameCount != 0) {
-			headerSect.gpuOffsTable = new int32_t[frameCount];
-
-			for (int32_t i = 0; i < frameCount; i++) {
-				int32_t off = 0;
-
-				memcpy(&off, textureHeaderPtr + gpuOffsTableOffset + (i * 4), sizeof(int32_t));
-
-				off = flipEndian(off);
-				headerSect.gpuOffsTable[i] = off;
-			}
-		}
-		else {
-			headerSect.gpuOffsTable = new int32_t[1];
-			headerSect.gpuOffsTable[0] = 0;
+			off = flipEndian(off);
+			headerSect.gpuOffsTable[i] = off;
 		}
 	}
 	else {
-		headerSect.unk_0x18 = *(textureHeaderPtr + 0x18);
-		headerSect.unk_0x19 = *(textureHeaderPtr + 0x19);
-		headerSect.isSwizzled = *(textureHeaderPtr + 0x1A);
-		headerSect.textureType = (unsigned char)*(textureHeaderPtr + 0x1B);
-
-		int16_t width = 0;
-		int16_t height = 0;
-
-		memcpy(&width, textureHeaderPtr + 0x24, sizeof(int16_t));
-		memcpy(&height, textureHeaderPtr + 0x26, sizeof(int16_t));
-
-		width = flipEndian(width);
-		height = flipEndian(height);
-
-		printf("Is Swizzled %d - Texture Type 0x%02x\n", headerSect.isSwizzled, headerSect.textureType);
-		printf("Width %d - Height %d\n", width, height);
-
-		headerSect.width = width;
-		headerSect.height = height;
-
-		int32_t frameCount = 0;
-
-		memcpy(&frameCount, textureHeaderPtr + 0x38, sizeof(int32_t));
-
-		frameCount = flipEndian(frameCount);
-
-		if (frameCount == 0) {
-			headerSect.frameCount = 1;
-		}
-		else {
-			headerSect.frameCount = frameCount;
-		}
-
-		int32_t gpuOffsTableOffset = 0;
-
-		memcpy(&gpuOffsTableOffset, textureHeaderPtr + 0x3C, sizeof(int32_t));
-
-		gpuOffsTableOffset = flipEndian(gpuOffsTableOffset);
-		headerSect.gpuOffsTablePos = gpuOffsTableOffset;
-
-		if (frameCount != 0) {
-			headerSect.gpuOffsTable = new int32_t[frameCount];
-
-			for (int32_t i = 0; i < frameCount; i++) {
-				int32_t off = 0;
-
-				memcpy(&off, textureHeaderPtr + gpuOffsTableOffset + (i * 4), sizeof(int32_t));
-
-				off = flipEndian(off);
-				headerSect.gpuOffsTable[i] = off;
-			}
-		}
-		else {
-			headerSect.gpuOffsTable = new int32_t[1];
-			headerSect.gpuOffsTable[0] = 0;
-		}
+		headerSect.gpuOffsTable = new int32_t[1];
+		headerSect.gpuOffsTable[0] = 0;
 	}
 }

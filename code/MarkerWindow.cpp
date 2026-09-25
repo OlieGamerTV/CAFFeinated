@@ -37,10 +37,8 @@ void DisplayMarkerEditorBaseWindow() {
 				}
 				ImGui::Separator();
 				if (ImGui::MenuItem("Clear", NULL, false, markerWindowParameters.isFileActive)) {
-					if (markerWindowParameters.activeMarker.markerEntries != nullptr) {
-						delete[] markerWindowParameters.activeMarker.markerEntries;
-						markerWindowParameters.activeMarker.markerEntries = nullptr;
-					}
+					markerWindowParameters.activeMarker.markerEntries.clear();
+					markerWindowParameters.isFileActive = false;
 				}
 				ImGui::EndMenu();
 			}
@@ -48,13 +46,13 @@ void DisplayMarkerEditorBaseWindow() {
 		}
 
 		if (markerWindowParameters.isFileActive) {
-			ImGui::Text("Num. of Entries: %d", markerWindowParameters.activeMarker.numOfMarkerEntries);
+			ImGui::Text("Num. of Entries: %d", markerWindowParameters.activeMarker.markerEntries.size());
 
 			ImGui::Separator();
 
 			// Vehicle Parts List
 			if (ImGui::BeginChild("Marker Entries")) {
-				for (int i = 0; i < markerWindowParameters.activeMarker.numOfMarkerEntries; i++) {
+				for (int i = 0; i < markerWindowParameters.activeMarker.markerEntries.size(); i++) {
 					ImGui::PushID(i);
 					char string[256];
 					memset(string, 0, 256);
