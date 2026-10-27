@@ -187,6 +187,14 @@ void DisplayLoctextEditorBaseWindow() {
 					if (loctextWindowParameters.hasAssignedFileName) {
 						sprintf(filename, "%s.inf", loctextWindowParameters.originalFilename);
 					}
+					else if (loctextWindowParameters.activeLoctext->currentlyLoadedLoctext == LocT10V4)
+					{
+						sprintf(filename, "%s.inf", loctextWindowParameters.activeLoctext->locTurn10V4File.labelTable.header.fileName);
+					}
+					else if (loctextWindowParameters.activeLoctext->currentlyLoadedLoctext == LocT10V8)
+					{
+						sprintf(filename, "%s.inf", loctextWindowParameters.activeLoctext->locTurn10V8File.labelTable.header.fileName);
+					}
 					else {
 						strcpy(filename, "default.inf");
 					}
@@ -239,24 +247,59 @@ void DisplayLoctextEditorBaseWindow() {
 
 					//Buffer for the text.
 					char conv[2048];
+					char tagConv[256];
 
 					if (usingTags && loctextWindowParameters.activeLoctext->IsHashConnectedToTag(idx)) {
-						if (ImGui::TreeNode(loctextWindowParameters.activeLoctext->GetTagPtr(loctextWindowParameters.activeLoctext->GetIdxOfConnectedTag(idx)))) {
-							//int32_t total = WideCharToMultiByte(CP_UTF8, WC_COMPOSITECHECK, loctextWindowParameters.activeLoctext->labelTable.stringTable.strings[loctextWindowParameters.activeLoctext->GetIdxOfConnectedString(idx)].string, -1, conv, 2048, NULL, NULL);
-							size_t total = wcstombs(conv, loctextWindowParameters.activeLoctext->GetStringPtr(loctextWindowParameters.activeLoctext->GetIdxOfConnectedString(idx)), 2048);
-
-							ImGui::InputText("Tag ", loctextWindowParameters.activeLoctext->GetTagPtr(loctextWindowParameters.activeLoctext->GetIdxOfConnectedTag(idx)), 256);
-							ImGui::InputTextMultiline("Text", conv, 2047); // Cut it down from 2048 to 2047 so we always have a null character.
-							//int32_t retTotal = MultiByteToWideChar(CP_UTF8, MB_COMPOSITE, conv, -1, loctextWindowParameters.activeLoctext->labelTable.stringTable.strings[loctextWindowParameters.activeLoctext->GetIdxOfConnectedString(idx)].string, 2048);
-							int32_t retTotal = mbstowcs(loctextWindowParameters.activeLoctext->GetStringPtr(loctextWindowParameters.activeLoctext->GetIdxOfConnectedString(idx)), conv, 2048);
+						char* tag = loctextWindowParameters.activeLoctext->GetTagPtr(loctextWindowParameters.activeLoctext->GetIdxOfConnectedTag(idx));
+						if (loctextWindowParameters.activeLoctext->currentlyLoadedLoctext == LocT10V3 || loctextWindowParameters.activeLoctext->currentlyLoadedLoctext == LocT10V4)
+						{
+							size_t total = wcstombs(tagConv, loctextWindowParameters.activeLoctext->GetWideTagPtr(loctextWindowParameters.activeLoctext->GetIdxOfConnectedTag(idx)), 256);
+							tag = tagConv;
+						}
+						
+						if (ImGui::TreeNode(tag)) {
+							if (loctextWindowParameters.activeLoctext->currentlyLoadedLoctext != LocT10V8)
+							{
+								size_t total = wcstombs(conv, loctextWindowParameters.activeLoctext->GetStringPtr(loctextWindowParameters.activeLoctext->GetIdxOfConnectedString(idx)), 2048);
+							}
+							
+							if (loctextWindowParameters.activeLoctext->currentlyLoadedLoctext == LocT10V3 || loctextWindowParameters.activeLoctext->currentlyLoadedLoctext == LocT10V4)
+							{
+								ImGui::InputText("Tag ", tagConv, 255);
+								int32_t retTotal = mbstowcs(loctextWindowParameters.activeLoctext->GetWideTagPtr(loctextWindowParameters.activeLoctext->GetIdxOfConnectedTag(idx)), tagConv, 256);
+							}
+							else
+							{
+								ImGui::InputText("Tag ", loctextWindowParameters.activeLoctext->GetTagPtr(loctextWindowParameters.activeLoctext->GetIdxOfConnectedTag(idx)), 256);
+							}
+							
+							if (loctextWindowParameters.activeLoctext->currentlyLoadedLoctext == LocT10V8)
+							{
+								ImGui::InputTextMultiline("Text", (char*)loctextWindowParameters.activeLoctext->GetStringPtr(loctextWindowParameters.activeLoctext->GetIdxOfConnectedString(idx)), 2047); // Cut it down from 2048 to 2047 so we always have a null character.
+							}
+							else
+							{
+								ImGui::InputTextMultiline("Text", conv, 2047); // Cut it down from 2048 to 2047 so we always have a null character.
+							}
+							
+							if (loctextWindowParameters.activeLoctext->currentlyLoadedLoctext != LocT10V8)
+							{
+								int32_t retTotal = mbstowcs(loctextWindowParameters.activeLoctext->GetStringPtr(loctextWindowParameters.activeLoctext->GetIdxOfConnectedString(idx)), conv, 2048);
+							}
 
 							ImGui::TreePop();
 						}
 					}
 					else {
-						//int32_t total = WideCharToMultiByte(CP_UTF8, WC_COMPOSITECHECK, loctextWindowParameters.activeLoctext->labelTable.stringTable.strings[loctextWindowParameters.activeLoctext->GetIdxOfConnectedString(idx)].string, -1, conv, 2048, NULL, NULL);
-						size_t total = wcstombs(conv, loctextWindowParameters.activeLoctext->GetStringPtr(loctextWindowParameters.activeLoctext->GetIdxOfConnectedString(idx)), 2048);
-
+						if (loctextWindowParameters.activeLoctext->currentlyLoadedLoctext != LocT10V8)
+						{
+							size_t total = wcstombs(conv, loctextWindowParameters.activeLoctext->GetStringPtr(loctextWindowParameters.activeLoctext->GetIdxOfConnectedString(idx)), 2048);
+						}
+						else
+						{
+							strcpy(conv, (char*)loctextWindowParameters.activeLoctext->GetStringPtr(loctextWindowParameters.activeLoctext->GetIdxOfConnectedString(idx)));
+						}
+						
 						// Another cheat to get around in-text formatting.
 						ImGui::Text("%s", conv);
 					}

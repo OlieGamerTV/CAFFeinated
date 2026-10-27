@@ -507,7 +507,7 @@ public:
 	void writeBundleFileSection(FILE* writeStream);
 
 	// Allocates and returns the target file data.
-	char* getFileData(char* fileName, int32_t fileInfoIdx);
+	char* getFileData(int32_t fileInfoIdx);
 
 	bool isTextureGpuSection(int32_t sectId) {
 		if (strcmp(sectionTable.sectionLabels[sectId].label, ".texturegpu") == 0) {

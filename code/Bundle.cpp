@@ -1147,7 +1147,7 @@ void BundleV36::writeBundleFileSection(FILE* writeStream) {
 	free(headerData);
 }
 
-char* BundleV36::getFileData(char* fileName, int32_t fileInfoIdx) {
+char* BundleV36::getFileData(int32_t fileInfoIdx) {
 	if (bundleData == nullptr) {
 		printf("Error occured while trying to open the file.\n");
 		return NULL;

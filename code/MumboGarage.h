@@ -35,6 +35,7 @@ void displayActivePinataPKGFileProperty();
 void displayPinataDbFileInfo();
 void displayPinataPkgInfo();
 static unsigned char* GetRawImageData_Pinata(char* data, int32_t width, int32_t height, int32_t type);
+void ReadPinataTexture();
 
 // RR RPK Stuff
 static void openRareRPKFile();
@@ -52,7 +53,7 @@ static GLuint LoadResourceImage(int32_t  resourceName, const wchar_t* resourceTy
 static GLuint LoadImageFromData_Base(char* data, int32_t  width, int32_t  height, int32_t  type);
 static GLuint LoadImageFromData_Pinata(char* data, int32_t  width, int32_t  height, int32_t  type);
 static GLuint LoadImageFromData_Banjo(char* data, int32_t  width, int32_t  height, int32_t  type, int32_t  isSwizzled);
-static GLuint LoadImageFromData(unsigned char* data, int32_t  width, int32_t  height, int32_t  format, int32_t  type);
+static GLuint LoadImageFromData(unsigned char* data, int32_t  width, int32_t  height, int32_t  format, int32_t type);
 static GLFWimage LoadResourceImageToGLFWImage(int32_t  resourceName, const wchar_t* resourceType);
 static unsigned char* GetRawImageData_Base(char* data, int32_t  width, int32_t  height, int32_t  type);
 static unsigned char* GetRawImageData_Xenon(char* data, int32_t  width, int32_t  height, int32_t  type);

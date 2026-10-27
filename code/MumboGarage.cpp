@@ -695,7 +695,7 @@ void exportFilesFromBundleRaw(int fileCount) {
 					return;
 				}
 
-				char* data = bundleFile.V36Bundle->getFileData(currentFileName, i);
+				char* data = bundleFile.V36Bundle->getFileData(i);
 
 				size_t written = fwrite(data, sizeof(char), bundleFile.V36Bundle->sectionTable.fileInfos[i].size, writeFile);
 
@@ -1051,7 +1051,7 @@ void exportFilesFromBundleSpecial(int fileCount) {
 					break;
 				}
 
-				char* data = bundleFile.V36Bundle->getFileData(currentFileName, i);
+				char* data = bundleFile.V36Bundle->getFileData(i);
 
 				switch (typeId) {
 				case 0x11:
@@ -1907,7 +1907,7 @@ void displayActiveBundleV36Property() {
 			ImGui::PushID(label);
 			if (ImGui::Button(label)) {
 				char* activeSect = 0;
-				activeSect = bundleFile.V36Bundle->getFileData(currentFileName, s);
+				activeSect = bundleFile.V36Bundle->getFileData(s);
 
 				char file[1024];
 				memset(file, 0, 1024);
@@ -1977,7 +1977,7 @@ void displayActiveBundleV36Property() {
 	case 0:
 		if (ImGui::Button("Load Vehicle")) {
 			char* activeSect = 0;
-			activeSect = bundleFile.V36Bundle->getFileData(currentFileName, idData);
+			activeSect = bundleFile.V36Bundle->getFileData(idData);
 
 			FreeVehicleWindowVehicleMemory();
 
@@ -2006,7 +2006,7 @@ void displayActiveBundleV36Property() {
 			activeTex->isPinataTex = false;
 			
 			int32_t sectMain = bundleFile.V36Bundle->getFileInfoIdxFromFileIdx(fileId, 0);
-			char* dataSect = bundleFile.V36Bundle->getFileData(currentFileName, sectMain);
+			char* dataSect = bundleFile.V36Bundle->getFileData(sectMain);
 			
 			if (strcmp(dataSect, "texture") == 0)
 			{
@@ -2020,6 +2020,8 @@ void displayActiveBundleV36Property() {
 				activeTex->headerSect.format = Pinata::ConvertVPFormatToXenonFormat(activeTex->pinataTexture.format);
 				activeTex->headerSect.numFrames = activeTex->pinataTexture.numFrames;
 				activeTex->isPinataTex = true;
+
+				ReadPinataTexture();
 			}
 
 			free(dataSect);
@@ -2052,11 +2054,15 @@ void displayActiveBundleV36Property() {
 			ImGui::Text("FPS: %d", activeTex->pinataTexture.framesPerSecond);
 			ImGui::Text("Num Frames: %d", activeTex->pinataTexture.numFrames);
 		}
+
+		if (tempTexInt != -1) {
+			ImGui::Image(tempTexInt, ImVec2(activeTex->headerSect.width, activeTex->headerSect.height));
+		}
 		break;
 	case 0xD:
 		if (ImGui::Button("Load Marker File")) {
 			char* activeSect = 0;
-			activeSect = bundleFile.V36Bundle->getFileData(currentFileName, idData);
+			activeSect = bundleFile.V36Bundle->getFileData(idData);
 			PRINT("Loading marker data from file \"%s\".\n", lbl);
 
 			SetupLoadingPromptWidget("Currently loading the marker file. Please wait.");
@@ -2066,7 +2072,7 @@ void displayActiveBundleV36Property() {
 	case 0x11:
 		if (ImGui::Button("Load Localization Text")) {
 			char* activeSect = 0;
-			activeSect = bundleFile.V36Bundle->getFileData(currentFileName, idData);
+			activeSect = bundleFile.V36Bundle->getFileData(idData);
 
 			SetupLoadingPromptWidget("Currently loading the loctext file. Please wait.");
 			printf("Loading loctext from file \"%s\".\n", lbl);
@@ -2077,7 +2083,7 @@ void displayActiveBundleV36Property() {
 	case 0x19:
 		if (ImGui::Button("Load Script")) {
 			char* activeSect = 0;
-			activeSect = bundleFile.V36Bundle->getFileData(currentFileName, idData);
+			activeSect = bundleFile.V36Bundle->getFileData(idData);
 
 			GetScriptEditorWindowParameters()->isFileActive = false;
 
@@ -2091,7 +2097,7 @@ void displayActiveBundleV36Property() {
 	case 0x3D:
 		if (ImGui::Button("Load Challenge File")) {
 			char* activeSect = 0;
-			activeSect = bundleFile.V36Bundle->getFileData(currentFileName, idData);
+			activeSect = bundleFile.V36Bundle->getFileData(idData);
 
 			PRINT("Loading challenge data from file \"%s\".\n", lbl);
 			int32_t count = 0;
@@ -4872,7 +4878,7 @@ void writeCaffFile(const char* fileName) {
 
 					newSize = bundleFile.V36Bundle->sectionTable.fileInfos[id].size + (boundarySize - offsetRemains);
 
-					char* fileData = bundleFile.V36Bundle->getFileData(NULL, id);
+					char* fileData = bundleFile.V36Bundle->getFileData(id);
 					fwrite(fileData, 1, bundleFile.V36Bundle->sectionTable.fileInfos[id].size, newFile);
 
 					free(fileData);
@@ -5144,7 +5150,7 @@ void readCaffFile() {
 						PRINT("IDX %d\n", manifestFileIdx);
 
 						char* manifestSect = 0;
-						manifestSect = bundleFile.V36Bundle->getFileData(currentFileName, manifestFileIdx);
+						manifestSect = bundleFile.V36Bundle->getFileData(manifestFileIdx);
 						activeManifest->ReadManifest(manifestSect);
 					}
 				}
@@ -5589,12 +5595,41 @@ void ReadGhoulDemandTexture() {
 	free(texData);
 }
 
+void ReadPinataTexture() {
+	int32_t dataInfoIdx = bundleFile.V36Bundle->getFileInfoIdxFromFileIdx(fileId, 0);
+	int32_t gpuInfoIdx = bundleFile.V36Bundle->getFileInfoIdxFromFileIdx(fileId, 1);
+
+	if (gpuInfoIdx == -1) return;
+
+	char* dataSect = bundleFile.V36Bundle->getFileData(dataInfoIdx);
+
+	activePinataTex.ReadTextureInfo(dataSect, bundleFile.V36Bundle->header.byteswapFlags);
+
+	free(dataSect);
+
+	char* texData = (char*)malloc(activePinataTex.sizeOfOneFrame);
+
+	char* gpuSect = bundleFile.V36Bundle->getFileData(gpuInfoIdx);
+
+	memcpy(texData, gpuSect, activePinataTex.sizeOfOneFrame);
+
+	if (tempTexInt != -1) {
+		glDeleteTextures(1, &tempTexInt);
+	}
+
+	tempTexInt = LoadImageFromData_Pinata(texData, activePinataTex.width, activePinataTex.height, activePinataTex.format);
+	printf("tempTexInt %d\n", tempTexInt);
+
+	free(texData);
+	free(gpuSect);
+}
+
 void ExportXenonTextures(char* exportPath, char* baseLabel)
 {
 	char filePath[2048];
 	
 	int32_t sectGpu = bundleFile.V36Bundle->getGPUFileInfoIdxFromFileIdx(fileId);
-	char* gpuSect = bundleFile.V36Bundle->getFileData(currentFileName, sectGpu);
+	char* gpuSect = bundleFile.V36Bundle->getFileData(sectGpu);
 
 	int32_t bpp = 4;
 	int32_t width = activeTex->headerSect.width;
@@ -6213,49 +6248,14 @@ static GLuint LoadImageFromData_Base(char* data, int32_t width, int32_t height, 
 	int32_t internalType = GL_UNSIGNED_BYTE;
 	int32_t format = GL_RGBA;
 	int32_t imageSize = 0;
-	bool isFormatSupported = false;
-	unsigned char* imageData = nullptr;
+	unsigned char* imageData = GetRawImageData_Base(data, width, height, type);
 
-	if (type == XboxTexFormat::DXT1) {
-		printf("Image Format: DXT1\n");
-		printf("Image Size: %d\n", (width * height) * 4);
-
-		imageData = new unsigned char[(width * height) * 4];
-
-		squish::DecompressImage(imageData, width, height, data, squish::kDxt1);
-
-		isFormatSupported = true;
-	}
-	if (type == XboxTexFormat::DXT3) {
-		printf("Image Format: DXT3\n");
-		printf("Image Size: %d\n", (width * height) * 4);
-
-		imageData = new unsigned char[(width * height) * 4];
-
-		squish::DecompressImage(imageData, width, height, data, squish::kDxt3);
-		isFormatSupported = true;
-	}
-	if (type == XboxTexFormat::DXT5) {
-		printf("Image Format: DXT5\n");
-		printf("Image Size: %d\n", (width * height) * 4);
-
-		imageData = new unsigned char[(width * height) * 4];
-
-		squish::DecompressImage(imageData, width, height, data, squish::kDxt5);
-		isFormatSupported = true;
-	}
 	if (type == XboxTexFormat::B8G8R8A8) {
-		printf("Image Format: BGRA8888\n");
-		printf("Image Size: %d\n", (width * height) * 4);
-
-		imageData = new unsigned char[(width * height) * 4];
-		memcpy(imageData, data, (width * height) * 4);
-
+		
 		format = GL_BGRA;
-		isFormatSupported = true;
 	}
 
-	if (!isFormatSupported) {
+	if (imageData == nullptr) {
 		printf("Provided texture format for Ghoulies is not supported or has not been implemented.\n");
 		return 0;
 	}
@@ -6271,70 +6271,92 @@ static GLuint LoadImageFromData_Pinata(char* data, int32_t width, int32_t height
 	int32_t internalType = GL_UNSIGNED_BYTE;
 	int32_t internalFormat = GL_RGB;
 	int32_t imageSize = 0;
-	unsigned char* imageData = nullptr;
-	
-	int32_t finalWidth = width;
-	int32_t finalHeight = height;
-	if (width % 128 != 0)
+
+	int32_t finWidth = activeTex->headerSect.width;
+	int32_t finHeight = activeTex->headerSect.height;
+
+	switch (Pinata::ConvertVPFormatToXenonFormat(type))
 	{
-		finalWidth = width + (width % 128);
+	case D3DFMT_DXT1:
+	case D3DFMT_LIN_DXT1:
+	{
+		int32_t remainW = activeTex->headerSect.width % 128;
+		int32_t remainH = activeTex->headerSect.height % 128;
+		if (remainW != 0)
+		{
+			finWidth = activeTex->headerSect.width + (128 - remainW);
+		}
+		if (remainH != 0)
+		{
+			finHeight = activeTex->headerSect.height + (128 - remainH);
+		}
 	}
-	if (height % 128 != 0)
+	break;
+	case D3DFMT_DXT3:
+	case D3DFMT_LIN_DXT3:
+	case D3DFMT_DXT3A:
+	case D3DFMT_LIN_DXT3A:
+	case D3DFMT_DXT5:
+	case D3DFMT_LIN_DXT5:
+	case D3DFMT_DXT5A:
+	case D3DFMT_LIN_DXT5A:
+	case D3DFMT_DXN:
+	case D3DFMT_LIN_DXN:
 	{
-		finalHeight = height + (height % 128);
+		int32_t remainW = activeTex->headerSect.width % 128;
+		int32_t remainH = activeTex->headerSect.height % 128;
+		if (remainW != 0)
+		{
+			finWidth = activeTex->headerSect.width + (128 - remainW);
+		}
+		if (remainH != 0)
+		{
+			finHeight = activeTex->headerSect.height + (128 - remainH);
+		}
+	}
+	case D3DFMT_A8R8G8B8:
+	case D3DFMT_LIN_A8R8G8B8:
+	case D3DFMT_A8B8G8R8:
+	case D3DFMT_LIN_A8B8G8R8:
+	case D3DFMT_X8R8G8B8:
+	case D3DFMT_LIN_X8R8G8B8:
+	{
+		int multiple = 16;
+		if (!activeTex->isPinataTex)
+		{
+			multiple = 64;
+		}
+		int32_t remainW = activeTex->headerSect.width % multiple;
+		int32_t remainH = activeTex->headerSect.height % multiple;
+		if (remainW != 0)
+		{
+			finWidth = activeTex->headerSect.width + (multiple - remainW);
+		}
+		if (remainH != 0)
+		{
+			finHeight = activeTex->headerSect.height + (multiple - remainH);
+		}
+		printf("%d %d -> %d %d\n", remainW, remainH, finWidth, finHeight);
+	}
+	break;
+	}
+
+	unsigned char* imageData = GetRawImageData_Xenon(data, finWidth, finHeight, Pinata::ConvertVPFormatToXenonFormat(type));
+
+	if (imageData == nullptr) {
+		printf("A problem happened while getting the raw image data.\n");
+		return -1;
 	}
 
 	switch (type) {
-	default:
-		printf("An invalid image type has been passed.");
-		return 0;
-	case Pinata::DXT1:
-		{
-			printf("Image Size: %d", (finalWidth * finalHeight) * 4);
-
-			imageData = new unsigned char[(finalWidth * finalHeight) * 4];
-
-			squish::DecompressImage(imageData, finalWidth, finalHeight, data, squish::kDxt1);
-		}
-		break;
-	case Pinata::DXT3:
-		{
-			printf("Image Size: %d", (finalWidth * finalHeight) * 4);
-
-			imageData = new unsigned char[(finalWidth * finalHeight) * 4];
-
-			squish::DecompressImage(imageData, finalWidth, finalHeight, data, squish::kDxt3);
-		}
-		break;
 	case Pinata::DXT3A:
-		{
-			printf("Image Size: %d", (finalWidth * finalHeight) * 4);
-
-			imageData = new unsigned char[(finalWidth * finalHeight) * 4];
-
-			squish::DecompressImage(imageData, finalWidth, finalHeight, data, squish::kDxt3);
-
-			internalFormat = GL_RGBA8;
-		}
-		break;
-	case Pinata::DXT5:
-	case Pinata::DXN:
-		{
-			printf("Image Size: %d", (width * height) * 4);
-
-			imageData = new unsigned char[(width * height) * 4];
-
-			squish::DecompressImage(imageData, width, height, data, squish::kDxt5);
-		}
-		break;
 	case Pinata::LIN_A8R8G8B8:
 		{
-			imageData = (unsigned char*)data;
 			internalFormat = GL_RGBA8;
 		}
+		break;
 	case Pinata::G8R8:
 		{
-			imageData = (unsigned char*)data;
 			internalFormat = GL_RG8;
 		}
 		break;
