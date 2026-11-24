@@ -16,6 +16,7 @@ public:
 };
 
 void FireMessage(const char* message, ErrorType severity);
+void FireMessage(const char* message, ErrorType severity, int argCount, ...);
 void ResetMessage();
 void CloseMessage();
 void DisplayMessageWindow();

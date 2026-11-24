@@ -1253,24 +1253,23 @@ static const char* troubleInParadise_AssetArray[] = {
 static const char* assetSystemType_Xbox = "XBOX_v1";
 static const char* assetSystemType_XenonBeta = "XENONBETA_v1";
 
-static void assetGetTypeFromString(char* param1, char* param2) {
-	char* val = param1;
-	int32_t iVar2 = 0;
-	char cVar3 = *val;
-	char* pcVar4 = val;
+static void assetGetTypeFromString(char* aid, char* outStr) {
+	int32_t currPos = 0;
+	char currChr = *aid;
+	char* tmpAid = aid;
 
-	if (cVar3 != '\0') {
-		pcVar4 = val;
+	if (currChr != '\0') {
+		tmpAid = aid;
 		do {
-			if (cVar3 == '_') break;
-			pcVar4[param2 - val] = cVar3;
-			pcVar4 = pcVar4 + 1;
-			iVar2 = iVar2 + 1;
-			cVar3 = *pcVar4;
-		} while (cVar3 != '\0');
+			if (currChr == '_' || currChr == ' ') break; // Check if our current character is '_' (for part of the aid) or ' ' (if we're at the end of the aid)
+			tmpAid[outStr - aid] = currChr;
+			tmpAid = tmpAid + 1;
+			currPos = currPos + 1;
+			currChr = *tmpAid;
+		} while (currChr != '\0');
 	}
 
-	param2[iVar2] = '\0';
+	outStr[currPos] = '\0';
 }
 
 static int32_t GetAssetIDFromType(char* type) {

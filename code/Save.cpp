@@ -23,7 +23,7 @@ void SaveData::LoadSaveFile(char* data) {
 	memcpy(&count5Var, data + 0x20, 4);
 	memcpy(&count6Var, data + 0x24, 4);
 
-	unk1 = flipEndian_f32((char*)&unk1Var, SRC_ENDIANBIG);
+	unk1 = flipEndian_f32((char*)&unk1Var);
 	unk2 = flipEndian(unk2Var);
 
 	gameFlagNormalByteCount = flipEndian(gameFlagNormalCountVar);
@@ -121,7 +121,7 @@ char* SaveData::CompileToDataArray() {
 	memcpy(data, &SAVE_PREFIX1, 4);
 	memcpy(data + 4, &SAVE_PREFIX2, 4);
 
-	float unk1Var = flipEndian_f32((char*)&unk1, SRC_ENDIANLITTLE);
+	float unk1Var = flipEndian_f32((char*)&unk1);
 	int unk2var = flipEndian(unk2);
 
 	memcpy(data + 8, &unk1Var, 4);

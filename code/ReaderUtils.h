@@ -377,7 +377,7 @@ static uint32_t flipEndian(uint32_t val) {
 /// <param name="val"></param>
 /// <param name="endian"></param>
 /// <returns>Outputs a float, opposite of the specified endian.</returns>
-static float flipEndian_f32(char* val, int32_t endian) {
+static float flipEndian_f32(char* val) {
 	char* tmpVal = (char*)malloc(4);
 	float finalVal = 0;
 

@@ -776,6 +776,23 @@ public:
 		return false;
 	}
 
+	uint16_t GetStringHashFromId(uint16_t id) {
+		switch (currentlyLoadedLoctext) {
+		case Loc1:
+			return loc1File.labelTable.stringTable.infoEntries[id].hash;
+		case Loc2:
+			return loc2File.labelTable.stringTable.infoEntries[id].hash;
+		case LocT10V3:
+			return locTurn10V3File.labelTable.stringTable.infoEntries[id].hash;
+		case LocT10V4:
+			return locTurn10V4File.labelTable.stringTable.infoEntries[id].hash;
+		case LocT10V8:
+			return locTurn10V8File.labelTable.stringTable.infoEntries[id].hash;
+		}
+
+		return -1;
+	}
+
 	bool IsIdxConnectedToComment(uint16_t id) {
 		switch (currentlyLoadedLoctext) {
 		case Loc1:

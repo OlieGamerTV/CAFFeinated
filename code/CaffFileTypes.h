@@ -1,4 +1,3 @@
-#pragma once
 #ifndef _CAFFCOMMONFILETYPES
 #define _CAFFCOMMONFILETYPES
 
@@ -7,8 +6,10 @@
 
 #ifdef _WIN32 
 #define WIN32_LEAN_AND_MEAN
+#pragma once
 #include <windows.h>
 #endif
+
 #include <stdlib.h>
 #include "PinataTex.h"
 

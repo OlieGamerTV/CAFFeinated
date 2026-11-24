@@ -1,4 +1,10 @@
+#ifndef _GHOULFILETYPES
+#define _GHOULFILETYPES
+#include <vector>
+
+#ifdef _WIN32
 #pragma once
+#endif
 
 /// <summary>
 /// A list of the available asset types the game supports.
@@ -63,6 +69,36 @@ enum GhouliesDBType : int32_t {
 	ghoulDB_FxCamShape = 29
 };
 
+namespace Ghoulies {
+	static const char* AssetInventoryVERSION = "version,1\n";
+	static const char* AssetInventoryTABLEHEADER = "AID,VERSION,TIMESTAMP,FILEPATH,BINARY FORMAT VERSION\n";
+	static const char* AssetInventoryTABLEENTRYFORMAT = "%s,%d,%u,%s,%.2f\n";
+
+	struct AssetInventoryEntry {
+	public:
+		char aid[0x80] = { 0 };
+		char filePath[0x108] = { 0 };
+		uint32_t timeStamp = 0;
+		float binaryFormatVersion = 0;
+		int32_t aidVersion = 0;
+	};
+
+	struct AssetInventory {
+	public:
+		char* fileData = nullptr;
+
+		float version;
+		int32_t entryCount;
+		int32_t unk1;
+		std::vector<AssetInventoryEntry> entries;
+
+		void ReadStandaloneFile(char* fileName);
+		void ReadFromData(char* data);
+
+		void ExportToFile(char* fileName);
+	};
+}
+
 struct GhoulTextureHeader {
 	int32_t format;
 	int32_t headerSize;
@@ -102,3 +138,5 @@ struct TextureFile {
 
 	void FreeTextureData();
 };
+
+#endif

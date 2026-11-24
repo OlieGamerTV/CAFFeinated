@@ -1,4 +1,9 @@
+#ifndef _FLAGSCOUNTERS
+#define _FLAGSCOUNTERS
+
+#ifdef _WIN32
 #pragma once
+#endif
 
 static const char* GameCounterNames[] = {
 	"gameCounter_BanjoX_Null",
@@ -4421,3 +4426,5 @@ static const char* VolatileGameFlagNames[] = {
 	"gameFlag_Volatile_Null",
 	"gameFlag_Volatile_TestVolatile1"
 };
+
+#endif

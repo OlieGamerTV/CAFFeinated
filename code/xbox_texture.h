@@ -1,4 +1,9 @@
+#ifndef _XBOXTEX
+#define _XBOXTEX
+
+#ifdef _WIN32
 #pragma once
+#endif
 
 enum XboxTexFormat : int {
 	DXT1 = 0xC,
@@ -27,3 +32,5 @@ static char* GetXboxTextureFormatName(int format) {
 
 	return formatName;
 }
+
+#endif

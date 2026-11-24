@@ -1,4 +1,9 @@
+#ifndef _D3DTEX
+#define _D3DTEX
+
+#ifdef _WIN32
 #pragma once
+#endif
 #include <memory.h>
 
 const int HASFRAMES_FLAG = 0x4;
@@ -83,8 +88,6 @@ enum _D3DFORMAT : uint32_t
 static char* GetXenonTextureFormatName(int format) {
 	char* formatName = new char[12];
 
-	strcpy(formatName, "UNKNOWN");
-
 	switch (format) {
 	case D3DFMT_L8:
 		strcpy(formatName, "L8");
@@ -142,6 +145,9 @@ static char* GetXenonTextureFormatName(int format) {
 		break;
 	case D3DFMT_LIN_A8B8G8R8:
 		strcpy(formatName, "Linear ABGR8888");
+		break;
+	default:
+		strcpy(formatName, "UNKNOWN");
 		break;
 	}
 
@@ -306,3 +312,5 @@ static unsigned char* ModifyLinearTexture(unsigned char* data, int width, int he
 
 	return destData;
 }
+
+#endif

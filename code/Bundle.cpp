@@ -1,12 +1,12 @@
 #pragma once
-
 #include "AssetCommons.h"
 #include "CommonReader.h"
 #include "Bundle.h"
+#include "MessageHandle.h"
 
 bool BundleFile::ReadBundleFile(char* data) {
 	if (data == nullptr) {
-		printf("Passed data array is null.\n");
+		FireMessage("The data pointer passed in is null.\nThis normally shouldn't happen.\n", ErrorType_Warn);
 		return false;
 	}
 
@@ -17,17 +17,17 @@ bool BundleFile::ReadBundleFile(char* data) {
 	memset(caffVer, 0, 0x10);
 
 	if (memcpy(caffMagic, data, 0x4) == nullptr) {
-		printf("Error occured while trying to read the file.\n");
+		FireMessage("Error occured while trying to read the file.\n", ErrorType_Info);
+		return false;
+	}
+
+	if (strncmp(caffMagic, "CAFF", 4) != 0) { // If we don't find a "CAFF" magic immediately, then we already know we ain't in a valid file.
+		FireMessage("The file supplied is not a valid bundle file.\n", ErrorType_Info);
 		return false;
 	}
 
 	if (memcpy(caffVer, data + 4, 0x10) == nullptr) {
-		printf("Error occured while trying to read the file.\n");
-		return false;
-	}
-
-	if (strncmp(caffMagic, "CAFF", 4) != 0) {
-		printf("The file supplied is not a valid bundle file.\n");
+		FireMessage("Error occured while trying to read the file.\n", ErrorType_Info);
 		return false;
 	}
 
@@ -64,7 +64,7 @@ bool BundleFile::ReadBundleFile(char* data) {
 		return V40Bundle->readBundleFileV0040(data);
 	}
 
-	printf("The file supplied is not a supported bundle file.\n");
+	FireMessage("The file supplied is not a supported bundle file.\n", ErrorType_Info);
 	return false;
 }
 
@@ -92,11 +92,18 @@ void BundleFile::ClearActiveBundleFile() {
 
 SectionTable::~SectionTable() {
 	fileLabelTable.fileLabels.clear();
+	fileLabelOffsets.clear();
+	fileInfos.clear();
+
+	if (adbString != nullptr) {
+		free(adbString);
+		adbString = nullptr;
+	}
 }
 
 bool BundleV40::readBundleHeaderV0040(char* data) {
 	if (data == nullptr) {
-		printf("Passed data array is null.\n");
+		FireMessage("The data pointer passed in is null.\nThis normally shouldn't happen.\n", ErrorType_Warn);
 		return false;
 	}
 
@@ -189,15 +196,12 @@ bool BundleV40::readBundleHeaderV0040(char* data) {
 
 bool BundleV40::readBundleSectionFileV0040(char* data) {
 	if (data == nullptr) {
-		printf("Passed data array is null.\n");
+		FireMessage("The data pointer passed in is null.\nThis normally shouldn't happen.\n", ErrorType_Warn);
 		return false;
 	}
 
 	try {
 		printf("CAFF Sections - {\n");
-
-		// Initialize section table arrays.
-		sectionTable.fileInfos = new FileInfoEntry[header.numSections];
 
 		char* uncompedBaseData = (char*)malloc(header.headerSize + header.sectTable.size + header.relocTable.size);
 		memset(uncompedBaseData, 0, header.headerSize + header.sectTable.size + header.relocTable.size);
@@ -344,6 +348,7 @@ bool BundleV40::readBundleSectionFileV0040(char* data) {
 
 		//printf("File Info Offset - %d\n", sectionTable.fileInfosOffset);
 		for (int32_t i = 0; i < header.numSections; i++) {
+			sectionTable.fileInfos.emplace_back();
 			int32_t infoID = 0;
 			int32_t infoDataOffset = 0;
 			int32_t infoDataSize = 0;
@@ -394,7 +399,7 @@ bool BundleV40::readBundleFileV0040(char* data) {
 	int32_t end = SRC_ENDIANLITTLE;
 
 	if (data == nullptr) {
-		printf("Passed data array is null.\n");
+		FireMessage("The data pointer passed in is null.\nThis normally shouldn't happen.\n", ErrorType_Warn);
 		return false;
 	}
 
@@ -628,9 +633,6 @@ bool BundleV36::readBundleSectionFileV0036(char* data) {
 	try{
 		printf("CAFF Sections - {\n");
 
-		// Initialize section table arrays.
-		sectionTable.fileInfos = new FileInfoEntry[header.numSections];
-
 		char* uncompedBaseData = (char*)malloc(header.headerSize + header.sectTable.size + header.relocTable.size);
 		memset(uncompedBaseData, 0, header.headerSize + header.sectTable.size + header.relocTable.size);
 
@@ -768,6 +770,7 @@ bool BundleV36::readBundleSectionFileV0036(char* data) {
 
 		//printf("File Info Offset - %d\n", sectionTable.fileInfosOffset);
 		for (int32_t i = 0; i < header.numSections; i++) {
+			sectionTable.fileInfos.emplace_back();
 			int32_t infoID = 0;
 			int32_t infoDataOffset = 0;
 			int32_t infoDataSize = 0;

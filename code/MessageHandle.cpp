@@ -3,6 +3,7 @@
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #endif
+#include <cstdio>
 
 #ifdef __APPLE__
 #include <AudioToolbox/AudioServices.h>
@@ -16,6 +17,18 @@
 
 char title[256];
 ErrorPrompt errorPromptParams;
+
+void FireMessage(const char* message, ErrorType severity, int argCount, ...) {
+	va_list ap;
+	va_start(ap, argCount);
+
+	char buffer[1024] = { 0 };
+	vsnprintf(buffer, 1024, message, ap);
+
+	FireMessage(buffer, severity);
+
+	va_end(ap);
+}
 
 void FireMessage(const char* message, ErrorType severity) {
 

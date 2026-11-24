@@ -1,6 +1,10 @@
-#pragma once
 #ifndef _PINATADBBUNDLE
 #define _PINATADBBUNDLE
+
+#ifdef _WIN32
+#pragma once
+#endif
+#include <vector>
 
 struct IndexEntry {
 	char filename[256];

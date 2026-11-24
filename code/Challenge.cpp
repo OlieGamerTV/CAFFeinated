@@ -45,10 +45,10 @@ void ChallengeCommonDef::ParseCommon(char* data) {
 	memcpy(&jiggyMaxNotesMinTime, data + 0x2D0, sizeof(int32_t));
 	memcpy(&notesMaxTime, data + 0x2D4, sizeof(int32_t));
 	
-	ttMinTime = flipEndian_f32((char*)&ttMinTime, 1);
-	ttMaxJiggyMinTime = flipEndian_f32((char*)&ttMaxJiggyMinTime, 1);
-	jiggyMaxNotesMinTime = flipEndian_f32((char*)&jiggyMaxNotesMinTime, 1);
-	notesMaxTime = flipEndian_f32((char*)&notesMaxTime, 1);
+	ttMinTime = flipEndian_f32((char*)&ttMinTime);
+	ttMaxJiggyMinTime = flipEndian_f32((char*)&ttMaxJiggyMinTime);
+	jiggyMaxNotesMinTime = flipEndian_f32((char*)&jiggyMaxNotesMinTime);
+	notesMaxTime = flipEndian_f32((char*)&notesMaxTime);
 }
 
 void challengeStayInVehicle::ParseStayInVehicle(char* data) {

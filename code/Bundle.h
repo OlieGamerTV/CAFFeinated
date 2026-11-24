@@ -1,6 +1,10 @@
-#pragma once
 #ifndef _BUNDLE
 #define _BUNDLE
+
+#ifdef _WIN32
+#pragma once
+#endif
+
 #include <vector>
 
 static const int32_t PADDINGSIZE_TEXTUREGPU = 0x1000;
@@ -98,7 +102,7 @@ public:
 	int32_t adbStringLen = 0;
 	char* adbString = nullptr;
 
-	FileInfoEntry* fileInfos = nullptr;
+	std::vector< FileInfoEntry> fileInfos;
 
 	int32_t sectionLabelOffset = 0;
 	int32_t sectionFileLabelOffset = 0;
@@ -168,7 +172,8 @@ enum V31FileType : int32_t {
 	V31_ConkerText,
 	V31_Text,
 	V31_PDZPackage,
-	V31_KameoDB
+	V31_KameoDB,
+	V31_CLRPackage
 };
 
 struct V31SectionEntry {
@@ -396,7 +401,7 @@ public:
 	}
 
 	int32_t GetMatchingFileInfoIdx(int32_t fileIdx, int32_t section) {
-		if (sectionTable.fileInfos == NULL) return -1;
+		if (sectionTable.fileInfos.capacity() == 0) return -1;
 
 		for (int32_t i = 0; i < header.numSections; i++) {
 			if (sectionTable.fileInfos[i].asset == fileIdx && sectionTable.fileInfos[i].sectionType == section) {
@@ -416,7 +421,7 @@ public:
 	}
 
 	int32_t getFileInfoIdxFromFileIdx(int32_t fileIdx, int32_t sectionIdx) {
-		if (sectionTable.fileInfos == NULL) return -1;
+		if (sectionTable.fileInfos.capacity() == 0) return -1;
 
 		for (int32_t i = 0; i < header.numSections; i++) {
 			if (sectionTable.fileInfos[i].asset == fileIdx + 1 && sectionTable.fileInfos[i].sectionType == sectionIdx + 1) {
@@ -436,7 +441,7 @@ public:
 	}
 
 	int32_t getGPUFileInfoIdxFromFileIdx(int32_t fileIdx) {
-		if (sectionTable.fileInfos == NULL) return -1;
+		if (sectionTable.fileInfos.capacity() == 0) return -1;
 
 		for (int32_t i = 0; i < header.numSections; i++) {
 			if (sectionTable.fileInfos[i].asset == fileIdx + 1 && isGPUSection(sectionTable.fileInfos[i].sectionType - 1)) {
@@ -608,7 +613,7 @@ public:
 	}
 
 	int32_t GetMatchingFileInfoIdx(int32_t fileIdx, int32_t section) {
-		if (sectionTable.fileInfos == NULL) return -1;
+		if (sectionTable.fileInfos.capacity() == 0) return -1;
 
 		for (int32_t i = 0; i < header.numSections; i++) {
 			if (sectionTable.fileInfos[i].asset == fileIdx && sectionTable.fileInfos[i].sectionType == section) {
@@ -628,7 +633,7 @@ public:
 	}
 
 	int32_t getFileInfoIdxFromFileIdx(int32_t fileIdx, int32_t sectionIdx) {
-		if (sectionTable.fileInfos == NULL) return -1;
+		if (sectionTable.fileInfos.capacity() == 0) return -1;
 
 		for (int32_t i = 0; i < header.numSections; i++) {
 			if (sectionTable.fileInfos[i].asset == fileIdx + 1 && sectionTable.fileInfos[i].sectionType == sectionIdx + 1) {
@@ -648,7 +653,7 @@ public:
 	}
 
 	int32_t getGPUFileInfoIdxFromFileIdx(int32_t fileIdx) {
-		if (sectionTable.fileInfos == NULL) return -1;
+		if (sectionTable.fileInfos.capacity() == 0) return -1;
 
 		for (int32_t i = 0; i < header.numSections; i++) {
 			if (sectionTable.fileInfos[i].asset == fileIdx + 1 && isGPUSection(sectionTable.fileInfos[i].sectionType - 1)) {

@@ -250,13 +250,13 @@ public:
 		parentId = flipEndian(parentIdVar);
 		challengeAid = flipEndian(challengeAidVar);
 
-		pos.x = flipEndian_f32((char*)&xPosVar, SRC_ENDIANBIG);
-		pos.y = flipEndian_f32((char*)&yPosVar, SRC_ENDIANBIG);
-		pos.z = flipEndian_f32((char*)&zPosVar, SRC_ENDIANBIG);
-		pyr.p = flipEndian_f32((char*)&xRotVar, SRC_ENDIANBIG);
-		pyr.y = flipEndian_f32((char*)&yRotVar, SRC_ENDIANBIG);
-		pyr.r = flipEndian_f32((char*)&zRotVar, SRC_ENDIANBIG);
-		scale = flipEndian_f32((char*)&scaleVar, SRC_ENDIANBIG);
+		pos.x = flipEndian_f32((char*)&xPosVar);
+		pos.y = flipEndian_f32((char*)&yPosVar);
+		pos.z = flipEndian_f32((char*)&zPosVar);
+		pyr.p = flipEndian_f32((char*)&xRotVar);
+		pyr.y = flipEndian_f32((char*)&yRotVar);
+		pyr.r = flipEndian_f32((char*)&zRotVar);
+		scale = flipEndian_f32((char*)&scaleVar);
 		flags = flipEndian(flagsVar);
 	}
 };

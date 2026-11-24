@@ -118,7 +118,7 @@ void Script::ReadScript(char* data) {
 
 				memcpy(&prob, scriptPtr + pos + 0x8, sizeof(int32_t));
 
-				prob = flipEndian_f32((char*)&prob, SRC_ENDIANBIG);
+				prob = flipEndian_f32((char*)&prob);
 
 				printf(" (%f)\n", prob);
 			}
@@ -191,11 +191,11 @@ char* Vehicle::WriteToArray() {
 
 	uint16_t numOfPartsVal = flipEndian(numOfParts);
 	int16_t unk1Val = flipEndian(unk1);
-	float preloadPowerVal = flipEndian_f32((char*)&preloadPower, SRC_ENDIANLITTLE);
-	float preloadFuelVal = flipEndian_f32((char*)&preloadFuel, SRC_ENDIANLITTLE);
-	float preloadAmmoVal = flipEndian_f32((char*)&preloadAmmo, SRC_ENDIANLITTLE);
-	float preloadWeightVal = flipEndian_f32((char*)&preloadWeight, SRC_ENDIANLITTLE);
-	float preloadBlocksUsedVal = flipEndian_f32((char*)&preloadBlocksUsed, SRC_ENDIANLITTLE);
+	float preloadPowerVal = flipEndian_f32((char*)&preloadPower);
+	float preloadFuelVal = flipEndian_f32((char*)&preloadFuel);
+	float preloadAmmoVal = flipEndian_f32((char*)&preloadAmmo);
+	float preloadWeightVal = flipEndian_f32((char*)&preloadWeight);
+	float preloadBlocksUsedVal = flipEndian_f32((char*)&preloadBlocksUsed);
 	int32_t unk2Val = flipEndian(unk2);
 	int32_t unk3Val = flipEndian(unk3);
 
@@ -251,9 +251,9 @@ char* Vehicle::WriteToArray() {
 
 		uint32_t partIdxVar = flipEndian(parts[i].partIdx);
 
-		float yawVar = flipEndian_f32((char*)&parts[i].yaw, SRC_ENDIANLITTLE);
-		float pitchVar = flipEndian_f32((char*)&parts[i].pitch, SRC_ENDIANLITTLE);
-		float rollVar = flipEndian_f32((char*)&parts[i].roll, SRC_ENDIANLITTLE);
+		float yawVar = flipEndian_f32((char*)&parts[i].yaw);
+		float pitchVar = flipEndian_f32((char*)&parts[i].pitch);
+		float rollVar = flipEndian_f32((char*)&parts[i].roll);
 
 		int32_t unk2PartVar = flipEndian(parts[i].buttonMask);
 		int32_t unk3PartVar = flipEndian(parts[i].unk5);
@@ -283,11 +283,11 @@ void Vehicle::WriteToFile(char* fileName, bool isSave) {
 
 	uint16_t numOfPartsVal = flipEndian(numOfParts);
 	int16_t unk1Val = flipEndian(unk1);
-	float preloadPowerVal = flipEndian_f32((char*)&preloadPower, SRC_ENDIANLITTLE);
-	float preloadFuelVal = flipEndian_f32((char*)&preloadFuel, SRC_ENDIANLITTLE);
-	float preloadAmmoVal = flipEndian_f32((char*)&preloadAmmo, SRC_ENDIANLITTLE);
-	float preloadWeightVal = flipEndian_f32((char*)&preloadWeight, SRC_ENDIANLITTLE);
-	float preloadBlocksUsedVal = flipEndian_f32((char*)&preloadBlocksUsed, SRC_ENDIANLITTLE);
+	float preloadPowerVal = flipEndian_f32((char*)&preloadPower);
+	float preloadFuelVal = flipEndian_f32((char*)&preloadFuel);
+	float preloadAmmoVal = flipEndian_f32((char*)&preloadAmmo);
+	float preloadWeightVal = flipEndian_f32((char*)&preloadWeight);
+	float preloadBlocksUsedVal = flipEndian_f32((char*)&preloadBlocksUsed);
 	int32_t unk2Val = flipEndian(unk2);
 	int32_t unk3Val = flipEndian(unk3);
 
@@ -334,9 +334,9 @@ void Vehicle::WriteToFile(char* fileName, bool isSave) {
 	for (int32_t i = 0; i < numOfParts; i++) {
 		uint32_t partIdxVar = flipEndian(parts[i].partIdx);
 
-		float yawVar = flipEndian_f32((char*)&parts[i].yaw, SRC_ENDIANLITTLE);
-		float pitchVar = flipEndian_f32((char*)&parts[i].pitch, SRC_ENDIANLITTLE);
-		float rollVar = flipEndian_f32((char*)&parts[i].roll, SRC_ENDIANLITTLE);
+		float yawVar = flipEndian_f32((char*)&parts[i].yaw);
+		float pitchVar = flipEndian_f32((char*)&parts[i].pitch);
+		float rollVar = flipEndian_f32((char*)&parts[i].roll);
 
 		int32_t unk2PartVar = flipEndian(parts[i].buttonMask);
 		int32_t unk3PartVar = flipEndian(parts[i].unk5);
@@ -471,11 +471,11 @@ void Vehicle::ReadVehicle(char* data, bool isFromSave) {
 
 		numOfParts = flipEndian(numOfPartsVal);
 		unk1 = flipEndian(unk1Val);
-		preloadPower = flipEndian_f32(preloadPowerVal, SRC_ENDIANBIG);
-		preloadFuel = flipEndian_f32(preloadFuelVal, SRC_ENDIANBIG);
-		preloadAmmo = flipEndian_f32(preloadAmmoVal, SRC_ENDIANBIG);
-		preloadWeight = flipEndian_f32(preloadWeightVal, SRC_ENDIANBIG);
-		preloadBlocksUsed = flipEndian_f32(preloadBlocksUsedVal, SRC_ENDIANBIG);
+		preloadPower = flipEndian_f32(preloadPowerVal);
+		preloadFuel = flipEndian_f32(preloadFuelVal);
+		preloadAmmo = flipEndian_f32(preloadAmmoVal);
+		preloadWeight = flipEndian_f32(preloadWeightVal);
+		preloadBlocksUsed = flipEndian_f32(preloadBlocksUsedVal);
 		unk2 = flipEndian(unk2Val);
 		unk3 = flipEndian(unk3Val);
 
@@ -541,9 +541,9 @@ void Vehicle::ReadVehicle(char* data, bool isFromSave) {
 			parts[i].buttonMask = flipEndian(unk2PartVar);
 			parts[i].unk5 = flipEndian(unk3PartVar);
 
-			parts[i].yaw = flipEndian_f32(vehiclePtr + (partOffset + (i * 0x24)) + 0xC, SRC_ENDIANBIG);
-			parts[i].pitch = flipEndian_f32(vehiclePtr + (partOffset + (i * 0x24)) + 0x10, SRC_ENDIANBIG);
-			parts[i].roll = flipEndian_f32(vehiclePtr + (partOffset + (i * 0x24)) + 0x14, SRC_ENDIANBIG);
+			parts[i].yaw = flipEndian_f32(vehiclePtr + (partOffset + (i * 0x24)) + 0xC);
+			parts[i].pitch = flipEndian_f32(vehiclePtr + (partOffset + (i * 0x24)) + 0x10);
+			parts[i].roll = flipEndian_f32(vehiclePtr + (partOffset + (i * 0x24)) + 0x14);
 
 			printf("Part %d - {%f %f %f}\n", i, parts[i].yaw, parts[i].pitch, parts[i].roll);
 		}

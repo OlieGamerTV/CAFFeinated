@@ -1,4 +1,9 @@
+#ifndef _MUMBOGARAGE
+#define _MUMBOGARAGE
+
+#ifdef _WIN32
 #pragma once
+#endif
 
 //Ghoulies Stuff
 static void openGhouliesDemand();
@@ -245,3 +250,5 @@ struct ImGuiGarageWindow {
 void framebuffer_size_callback(GLFWwindow* window, int32_t  width, int32_t  height);
 void window_refresh_callback(GLFWwindow* window);
 void processInput(GLFWwindow* window);
+
+#endif

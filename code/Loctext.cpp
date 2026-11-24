@@ -1973,13 +1973,14 @@ void LoctextFile::ExportToFileRaw(char* fileName) {
 				int32_t total = wcstombs(conv, GetStringPtr(i), 2048);
 			}
 			
+			// It's not *explicitly* required to have this, but it makes identifying which strings changed between builds that didn't have loctext tags easier.
 			if (currentlyLoadedLoctext == LocT10V8)
 			{
-				sprintf(fullStr, "%s\n", (char*)GetStringPtr(i));
+				sprintf(fullStr, "TAG_%04X\t\t\t= \"%s\"\n", GetStringHashFromId(i), (char*)GetStringPtr(i));
 			}
 			else
 			{
-				sprintf(fullStr, "%s\n", conv);
+				sprintf(fullStr, "TAG_%04X\t\t\t= \"%s\"\n", GetStringHashFromId(i), conv);
 			}
 
 			is.write(fullStr, strlen(fullStr));
@@ -1995,10 +1996,10 @@ void LoctextFile::ExportToFileRaw(char* fileName) {
 			bool hasCommentGotNewLine = true;
 
 			if (IsIdxConnectedToComment(idx)) {
-				is.write(GetCommentPtr(IsIdxConnectedToComment(idx)), strlen(GetCommentPtr(IsIdxConnectedToComment(idx))));
+				is.write(GetCommentPtr(GetIdxOfConnectedComment(idx)), strlen(GetCommentPtr(GetIdxOfConnectedComment(idx))));
 
 				// Check if the comment has an new line character.
-				hasCommentGotNewLine = strchr(GetCommentPtr(IsIdxConnectedToComment(idx)), '\n') != nullptr;
+				hasCommentGotNewLine = strchr(GetCommentPtr(GetIdxOfConnectedComment(idx)), '\n') != nullptr;
 			}
 
 			if (IsHashConnectedToTag(idx)) {

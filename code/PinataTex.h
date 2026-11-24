@@ -48,7 +48,7 @@ namespace Pinata {
 		dbTexture_Type_MAX
 	};
 	
-	int32_t ConvertVPFormatToXenonFormat(int32_t format)
+	uint32_t ConvertVPFormatToXenonFormat(int32_t format)
 	{
 		if (format == DXT1) return D3DFMT_DXT1;
 		if (format == DXT3) return D3DFMT_DXT3;
