@@ -8,10 +8,10 @@ struct FolderFile
 {
     int fileCount = 0;
     char* currentDirectory; // Used for restoring the currentFilePath when you exit a file.
-    CaffType currentType;
+    SupportedFileType currentType;
 
     std::vector<char*> fileNames;
-    std::vector<CaffType> fileTypes;
+    std::vector<SupportedFileType> fileTypes;
 
     bool showInvalidFiles = false;
     

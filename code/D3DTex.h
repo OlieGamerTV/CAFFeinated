@@ -259,6 +259,8 @@ static unsigned char* ModifyLinearTexture(unsigned char* data, int width, int he
 		break;
 	case D3DFMT_DXT3:
 	case D3DFMT_LIN_DXT3:
+	case D3DFMT_DXT3A:
+	case D3DFMT_LIN_DXT3A:
 	case D3DFMT_DXT5:
 	case D3DFMT_LIN_DXT5:
 	case D3DFMT_DXN:

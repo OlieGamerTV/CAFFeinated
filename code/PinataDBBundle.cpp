@@ -2,7 +2,9 @@
 #include "AssetCommons.h"
 #include "PinataDBBundle.h"
 #include "LoadingProcess.h"
+#include "MessageHandle.h"
 #include "Bundle.h"
+#include <filesystem>
 
 char* DBBundle::getFileData(int32_t fileIdx, int32_t* dataSize) {
 	if (savedFilePath == nullptr) {
@@ -62,6 +64,11 @@ bool DBBundle::readStandaloneDbBundleFiles(char* filePath) {
 	hasErrored = false;
 	isReady = false;
 
+	if (!std::filesystem::is_directory(filePath)) {
+		FireMessage("A non-directory was passed in.", ErrorType_Error);
+		return false;
+	}
+
 	savedFilePath = filePath;
 
 	char indexFilePath[1024];
@@ -70,33 +77,43 @@ bool DBBundle::readStandaloneDbBundleFiles(char* filePath) {
 	char hashFilePath[1024];
 	hashFilePath[0] = 0;
 
+	char packFilePath[1024];
+
 	sprintf(indexFilePath, "%s\\db_index.txt", filePath);
 	sprintf(hashFilePath, "%s\\debug_hash.bin", filePath);
+	sprintf(packFilePath, "%s\\debug_pack.bin", filePath);
+
+	if (!std::filesystem::exists(indexFilePath)) {
+		sprintf(indexFilePath, "%s\\db_index.bin", filePath); // If "db_index.txt" doesn't exist, check instead for "db_index.bin", which is what Trouble in Paradise uses.
+		if (!std::filesystem::exists(indexFilePath)) {
+			FireMessage("The file \"db_index.txt\" / \"db_index.bin\" could not be found in this directory.", ErrorType_Error);
+			return false;
+		}
+		else isTiPIndexFile = true;
+	}
+
+	if (!std::filesystem::exists(hashFilePath)) {
+		FireMessage("The file \"debug_hash.bin\" could not be found in this directory.", ErrorType_Error);
+		return false;
+	}
+
+	if (!std::filesystem::exists(packFilePath)) {
+		FireMessage("The file \"debug_pack.bin\" could not be found in this directory.", ErrorType_Error);
+		return false;
+	}
 
 	FILE* idxFile = fopen(indexFilePath, "rb");
 
 	if (idxFile == 0) {
-		sprintf(indexFilePath, "%s\\db_index.bin", filePath); // If "db_index.txt" doesn't exist, check instead for "db_index.bin", which is what Trouble in Paradise uses.
-
-		//fclose(idxFile);
-		idxFile = fopen(indexFilePath, "rb");
-
-		if (idxFile != 0) {
-			isTiPIndexFile = true;
-		}
-	}
-
-	// If both cases fail, print an error and return.
-	if (idxFile == 0) {
-		printf("%s - db_index does not exist in this directory.\n", __func__);
-		hasErrored = true;
+		
+		FireMessageF("%s - db_index does not exist in this directory.\n", ErrorType_Error, __func__);
 		return false;
 	}
 
 	FILE* hashFile = fopen(hashFilePath, "rb");
 
 	if (hashFile == 0) {
-		printf("%s - debug_hash does not exist in this directory.\n", __func__);
+		FireMessageF("%s - debug_hash does not exist in this directory.\n", ErrorType_Error, __func__);
 		fclose(idxFile);
 		fclose(hashFile);
 		hasErrored = true;

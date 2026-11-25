@@ -5,23 +5,7 @@
 #pragma once
 #endif
 
-//Ghoulies Stuff
-static void openGhouliesDemand();
-static void openGhouliesBundle();
-void displayGhoulDemandInfo();
-void displayGhoulBundleInfo();
-void displayActiveGhoulDemandProperty();
-void fillGhouliesBundleFileList();
-void displayActiveGhoulBundleProperty();
-void ReadGhoulBundleTexture();
-void ReadGhoulDemandTexture();
-
-//h
-void countTimeToLoad();
-void ReadConkerLiveReloadedTexture(char* gpuData);
-
 //CAFF Stuff
-void readCaffFile();
 void writeCaffFile(const char* fileName);
 void writeStreamBundleFile(const char* fileName);
 void disposeAndCloseActiveFile();
@@ -31,28 +15,8 @@ void writeDataToFile(const char* fileName, const char* filter, char* data, size_
 void exportFilesFromBundleRaw(int fileCount);
 void exportFilesFromBundleSpecial(int fileCount);
 
-static void openPinataDbBundle();
-static void openPinataPKGBundle();
-void fillPinataDbBundleFileList();
-void fillPinataPKGFileList();
-void displayActivePinataDbBundleFileProperty();
-void displayActivePinataPKGFileProperty();
-void displayPinataDbFileInfo();
-void displayPinataPkgInfo();
-static unsigned char* GetRawImageData_Pinata(char* data, int32_t width, int32_t height, int32_t type);
-void ReadPinataTexture();
-
-// RR RPK Stuff
-static void openRareRPKFile();
-void displayRPKInfo();
-void fillRPKFileList();
-void displayActiveRPKFileProperty();
-
-void readFolderGroup();
-void readFolderLogicGroup(char* outPath);
-void fillFolderGroupList();
-
 //Image Functions
+#pragma region Texture & Resources
 void ExportXenonTextures(char* exportPath, char* baseLabel);
 static GLuint LoadResourceImage(int32_t  resourceName, const wchar_t* resourceType);
 static GLuint LoadImageFromData_Base(char* data, int32_t  width, int32_t  height, int32_t  type);
@@ -62,42 +26,102 @@ static GLuint LoadImageFromData(unsigned char* data, int32_t  width, int32_t  he
 static GLFWimage LoadResourceImageToGLFWImage(int32_t  resourceName, const wchar_t* resourceType);
 static unsigned char* GetRawImageData_Base(char* data, int32_t  width, int32_t  height, int32_t  type);
 static unsigned char* GetRawImageData_Xenon(char* data, int32_t  width, int32_t  height, int32_t  type);
+static unsigned char* GetRawImageData_Pinata(char* data, int32_t width, int32_t height, int32_t type);
 
 static ImFont* LoadResourceFont(int32_t  resourceName, const wchar_t* resourceType, float extraSize);
+#pragma endregion
 
 int32_t  mainWindowCode();
 void drawWindow();
-void readOtherSupportedFile(int32_t  type);
 void handleSavingAsync(const char* fileName);
 
 //Base Window
 void buildBaseImGuiWindow();
 void buildMainWindow();
 void buildTitleBar();
+
+#pragma region File List
+void displayAvailableFilesList(float barHeight);
+void fillBundleV40FileList();
+void fillBundleV36FileList();
+void fillBundleV31FileList();
+void fillBundleV26FileList();
+void fillStreamBundleFileList();
+void fillKameoDBFileList();
+void fillGhouliesBundleFileList();
+void fillPinataDbBundleFileList();
+void fillPinataPKGFileList();
+void fillFolderGroupList();
+void fillRPKFileList();
+#pragma endregion
+
+#pragma region File Info
 void displayFileInfo(float barHeight);
-void displayProperties(float barHeight);
-void displayBundleInfo();
 void displayBundleV40Info();
+void displayBundleInfo();
 void displayBundleV31Info();
 void displayStreamBundleInfo();
+void displayGhoulDemandInfo();
+void displayGhoulBundleInfo();
+void displayPinataDbFileInfo();
+void displayPinataPkgInfo();
+
+void displayRPKInfo();
+#pragma endregion
+
+#pragma region Properties
+void displayProperties(float barHeight);
+void displayActiveBundleV40Property();
 void displayActiveBundleV36Property();
-void displayActiveV40BundleProperty();
 void displayActiveBundleV26Property();
 void displayActiveBundleV31Property();
 void displayActiveStreamBundleFileProperty();
-void displayAvailableFilesList(float barHeight);
-void fillBundleFileList();
-void fillKameoDBFileList();
-void fillStreamBundleFileList();
-void fillBundleV26FileList();
-void fillBundleV31FileList();
-void fillBundleV40FileList();
+void displayActiveGhoulDemandProperty();
+void displayActiveGhoulBundleProperty();
+void displayActivePinataDbBundleFileProperty();
+void displayActivePinataPKGFileProperty();
+void displayActiveRPKFileProperty();
+#pragma endregion
+
+#pragma region Open/Read File Data Functions
+// General
+void readCaffFile();
+void readOtherSupportedFile(int32_t  type);
+
+// Determine Files
+int32_t DetermineFileType(const char* fileName);
+void DetermineAndLoadFileType(const char* fileName);
+
+// Folders
+void readFolderGroup();
+void readFolderLogicGroup(char* outPath);
+
+// Ghoulies Stuff
+static void openGhouliesDemand();
+static void openGhouliesBundle();
+void ReadGhoulBundleTexture();
+void ReadGhoulDemandTexture();
+
+// Conker L&R
+void ReadConkerLiveReloadedTexture(char* gpuData);
+
+// Pinata
+void ReadPinataTexture();
+static void openPinataDbBundle();
+static void openPinataPKGBundle();
+
+// Rare Replay
+static void openRareRPKFile();
+
+// Other Types
+void readLoctextFile(char* data, int32_t  startEndian);
+void readMarkerFile(char* data);
+#pragma endregion
+
 static void ShowMenuFile();
 static void openMenu();
 static void ShowSearchMenu();
 void TestBundleRecompilation();
-void readLoctextFile(char* data, int32_t  startEndian);
-void readMarkerFile(char* data);
 
 //Save Editor
 static void DisplaySaveEditorBaseWindow();
@@ -248,7 +272,9 @@ struct ImGuiGarageWindow {
 
 //GLFW
 void framebuffer_size_callback(GLFWwindow* window, int32_t  width, int32_t  height);
+void framebuffer_pos_callback(GLFWwindow* window, int xpos, int ypos);
 void window_refresh_callback(GLFWwindow* window);
 void processInput(GLFWwindow* window);
+void drop_callback(GLFWwindow* window, int path_count, const char* paths[]);
 
 #endif

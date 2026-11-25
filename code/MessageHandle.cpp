@@ -10,17 +10,21 @@
 #endif
 
 #include <string.h>
-
-#ifndef MSG_WINDOW
 #include "MessageHandle.h"
-#endif
 
-char title[256];
 ErrorPrompt errorPromptParams;
 
-void FireMessage(const char* message, ErrorType severity, int argCount, ...) {
+void FireMessageF(const char* message, ErrorType severity, ...) {
+	int count = 0;
+	char cset[] = "%%";
+	const char* pch = strpbrk(message, cset);
+	while (pch != NULL) {
+		count++;
+		pch = strpbrk(pch + 1, cset);
+	}
+
 	va_list ap;
-	va_start(ap, argCount);
+	va_start(ap, count);
 
 	char buffer[1024] = { 0 };
 	vsnprintf(buffer, 1024, message, ap);
@@ -31,24 +35,31 @@ void FireMessage(const char* message, ErrorType severity, int argCount, ...) {
 }
 
 void FireMessage(const char* message, ErrorType severity) {
-
 	ImGui::DebugLog("FIREMESSAGE - %s\n", message);
 
+	errorPromptParams.promptEntries.emplace_back();
+
 	if (strlen(message) <= 1024) {
-		strcpy(errorPromptParams.errorMessage, message);
+		strcpy(errorPromptParams.promptEntries[errorPromptParams.promptsActive].message, message);
 	}
 	
-	errorPromptParams.errorSeverity = severity;
+	errorPromptParams.promptEntries[errorPromptParams.promptsActive].severity = severity;
 
-	memset(title, 0, 256);
+	memset(errorPromptParams.promptEntries[errorPromptParams.promptsActive].title, 0, 256);
 
 	if (severity == ErrorType_None) {
-		CloseMessage();
+		CloseMessage(errorPromptParams.promptsActive);
 		return;
 	}
 
 #ifdef __APPLE__
-	AudioServicesPlayAlertSound(kSystemSoundID_UserPreferredAlert);
+	if (severity == ErrorType_Info) {
+		AudioServicesPlayAlertSound(kSystemSoundID_UserPreferredAlert);
+	}
+	if (severity == ErrorType_Warn || severity == ErrorType_Error || severity == ErrorType_Critical) {
+		AudioServicesPlayAlertSound(kSystemSoundID_UserPreferredAlert);
+		AudioServicesPlayAlertSound(kSystemSoundID_FlashScreen);
+	}
 #endif
 
 #if _WIN32
@@ -66,52 +77,55 @@ void FireMessage(const char* message, ErrorType severity) {
 #endif
 
 	if (severity == ErrorType_Info) {
-		strcpy(title, "Informational Message");
+		strcpy(errorPromptParams.promptEntries[errorPromptParams.promptsActive].title, "Informational Message");
 	}
 
 	if (severity == ErrorType_Warn) {
-		strcpy(title, "Warning Message");
+		strcpy(errorPromptParams.promptEntries[errorPromptParams.promptsActive].title, "Warning Message");
 	}
 
 	if (severity == ErrorType_Error) {
-		strcpy(title, "Error Message");
+		strcpy(errorPromptParams.promptEntries[errorPromptParams.promptsActive].title, "Error Message");
 	}
 
 	if (severity == ErrorType_Critical) {
-		strcpy(title, "Critical Message");
+		strcpy(errorPromptParams.promptEntries[errorPromptParams.promptsActive].title, "Critical Message");
 	}
 
-	errorPromptParams.showErrorPrompt = true;
+	errorPromptParams.promptsActive++;
 }
 
-void ResetMessage() {
-	memset(errorPromptParams.errorMessage, 0, 1024);
-	errorPromptParams.errorSeverity = ErrorType_None;
-
-	errorPromptParams.showErrorPrompt = true;
+void ResetMessage(int idx) {
+	memset(errorPromptParams.promptEntries[idx].title, 0, 256);
+	memset(errorPromptParams.promptEntries[idx].message, 0, 1024);
+	errorPromptParams.promptEntries[idx].severity = ErrorType_None;
 }
 
-void CloseMessage() {
-	ResetMessage();
+void CloseMessage(int idx) {
+	ResetMessage(idx);
 
-	errorPromptParams.showErrorPrompt = false;
+	errorPromptParams.promptEntries.erase(errorPromptParams.promptEntries.begin() + idx);
+	errorPromptParams.promptsActive--;
 }
 
 void DisplayMessageWindow() {
 
 	//ImGui::DebugLog("DISPLAY - %s\n", errorPromptParams.errorMessage);
 
-	if (ImGui::Begin(title, NULL, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize)) {
-		ImGui::Text(errorPromptParams.errorMessage);
-		ImGui::Spacing();
-		if (ImGui::Button("Okay")) {
-			CloseMessage();
-			ImGui::CloseCurrentPopup();
+	for (int i = 0; i < errorPromptParams.promptsActive; i++) {
+		bool isOpen = true;
+		if (ImGui::Begin(errorPromptParams.promptEntries[i].title, &isOpen, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize)) {
+			ImGui::Text(errorPromptParams.promptEntries[i].message);
+			ImGui::Spacing();
+			if (ImGui::Button("Okay") || !isOpen) {
+				CloseMessage(i);
+				ImGui::CloseCurrentPopup();
+			}
+			ImGui::End();
 		}
-		ImGui::End();
 	}
 }
 
-bool IsMessagePromptShowing() { return errorPromptParams.showErrorPrompt; }
-char* GetMessagePromptMessage() { return errorPromptParams.errorMessage; }
-ErrorType GetMessagePromptSeverity() { return errorPromptParams.errorSeverity; }
+bool IsMessagePromptShowing() { return errorPromptParams.promptsActive != 0; }
+char* GetMessagePromptMessage(int idx) { return errorPromptParams.promptEntries[idx].message; }
+ErrorType GetMessagePromptSeverity(int idx) { return errorPromptParams.promptEntries[idx].severity; }

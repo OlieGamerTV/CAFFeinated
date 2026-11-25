@@ -12,7 +12,12 @@ static const int32_t PADDINGSIZE_MODELGPU = 0x20;
 static const int32_t PADDINGSIZE_STANDARD = 0x10;
 static const int32_t PADDINGSIZE_MODELSTREAM = 4;
 
-enum CaffType : int32_t {
+static const char BUNDLEV40_VER[16] = "08.11.07.0040";
+static const char BUNDLEV36_VER[16] = "07.08.06.0036";
+static const char BUNDLEV31_VER[16] = "28.01.05.0031";
+static const char BUNDLEV26_VER[16] = "24.09.03.0026";
+
+enum SupportedFileType : int32_t {
 	NONE = 0,
 	GHOUL_BUNDLE,
 	GHOUL_DEMAND,
@@ -20,9 +25,9 @@ enum CaffType : int32_t {
 	BUNDLEV36,
 	BUNDLEV26,
 	BUNDLEV31,
+	STREAMEDBUNDLE,
 	PINATA_DBBUNDLE,
 	PINATA_PKG,
-	NB_STREAMBUNDLE,
 	RR_RPK,
 	FOLDER_GROUP
 };

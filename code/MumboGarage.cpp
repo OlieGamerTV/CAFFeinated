@@ -115,8 +115,12 @@ GLFWwindow* window;
 // The filename of the currently opened file.
 char currentFileName[MAX_PATH];
 
+//commandline biz
+int argCount = 0;
+char* args[10];
+
 // Designates which file type is currently open.
-static CaffType fileType = CaffType::NONE;
+static SupportedFileType fileType = SupportedFileType::NONE;
 static BundleFile bundleFile;
 static StreamBundle streamBundleFile;
 static GhoulDemand ghoulDemandFile;
@@ -173,29 +177,31 @@ GLuint DXT3_TEST = -1;
 // The ImGuiWindow
 static ImGuiGarageWindow imGuiWindowInfo;
 
-void countTimeToLoad()
-{
-	auto begin = std::chrono::steady_clock::now();
-	duration = 0;
-	isTimerCounting = true;
-	while (isTimerCounting)
-	{
-		std::this_thread::yield();
-	}
-	auto end = std::chrono::steady_clock::now();
-	
-	duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count();
-}
-
 // For release builds (Where you just need the window)
 #ifdef _WIN32
 int32_t APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int32_t nCmdShow) {
+
+	// We only support one file loaded at a time, sorgee
+	printf("cmd %s\n", lpCmdLine);
+	if (lpCmdLine != nullptr && lpCmdLine[0] != '\0') {
+		argCount = 1;
+		char* thing = (char*)malloc(strlen(lpCmdLine) + 1);
+		memset(thing, 0, strlen(lpCmdLine) + 1);
+		strncpy(thing, lpCmdLine + 1, strlen(lpCmdLine) - 2);
+		args[0] = thing;
+	}
 	return mainWindowCode();
 }
 #endif
 
 // For debug builds or any existing non-Windows platforms ig (Where we need a console to debug stuff)
-int32_t main() {
+int32_t main(int argc, char** argv) {
+	// We only support one file loaded at a time, sorgee
+	if (argc > 1) {
+		argCount = 1;
+		args[0] = argv[1];
+		printf("cmd %s\n", argv[1]);
+	}
 	return mainWindowCode();
 }
 
@@ -289,7 +295,13 @@ int32_t mainWindowCode() {
 
 	// Setup some callbacks
 	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
+	glfwSetWindowPosCallback(window, framebuffer_pos_callback);
 	glfwSetWindowRefreshCallback(window, window_refresh_callback);
+	glfwSetDropCallback(window, drop_callback);
+
+	if (argCount > 0) {
+		DetermineAndLoadFileType(args[0]);
+	}
 
 	// The main loop
 	while (!glfwWindowShouldClose(window))
@@ -302,7 +314,7 @@ int32_t mainWindowCode() {
 			glfwSwapBuffers(window);
 		}
 		catch (std::exception e) {
-			FireMessage("An error occured in the window.\n%s\n", ErrorType_Info, 1, e.what());
+			FireMessageF("An error occured in the window.\n%s\n", ErrorType_Info, e.what());
 			//glfwSetWindowShouldClose(window, true);
 		}
 		catch (...) {
@@ -428,7 +440,7 @@ void buildTitleBar() {
 		}
 		if (ImGui::BeginMenu("Bundles"))
 		{
-			if (ImGui::BeginMenu("Streamed", fileType == NB_STREAMBUNDLE))
+			if (ImGui::BeginMenu("Streamed", fileType == STREAMEDBUNDLE))
 			{
 				if (ImGui::MenuItem("Add Reference", NULL)) { imGuiWindowInfo.addRefToStreamed = !imGuiWindowInfo.addRefToStreamed; }
 				if (ImGui::MenuItem("Remove Reference", NULL)) {}
@@ -630,7 +642,7 @@ static void ShowMenuFile()
 			if (fileType == BUNDLEV26) {
 				numOfFiles = bundleFile.V26Bundle->header.numOfFiles;
 			}
-			if (fileType == NB_STREAMBUNDLE) {
+			if (fileType == STREAMEDBUNDLE) {
 				numOfFiles = streamBundleFile.header.totalFileTotal;
 			}
 			if (fileType == GHOUL_BUNDLE) {
@@ -722,7 +734,7 @@ void exportFilesFromBundleRaw(int fileCount) {
 				IncreaseCurrentSavedOnLoadingWidget();
 			}
 		}
-		if (fileType == NB_STREAMBUNDLE) {
+		if (fileType == STREAMEDBUNDLE) {
 			for (int32_t i = 0; i < streamBundleFile.header.totalFileTotal; i++) {
 				memset(lbl, 0, 1024);
 				memset(type, 0, 32);
@@ -1079,7 +1091,7 @@ void exportFilesFromBundleSpecial(int fileCount) {
 				IncreaseCurrentSavedOnLoadingWidget();
 			}
 		}
-		else if (fileType == NB_STREAMBUNDLE) {
+		else if (fileType == STREAMEDBUNDLE) {
 		}
 
 		CloseLoadingBarPromptWidget();
@@ -1096,7 +1108,7 @@ static void openMenu() {
 			disposeAndCloseActiveFile();
 		}
 
-		SetupLoadingPromptWidget("Currently opening the file. Please wait.");
+		SetupLoadingPromptWidget(PROMPTLOADINGFILE_GENERIC);
 
 		sprintf(currentFileName, "%s", outPath);
 
@@ -1104,7 +1116,6 @@ static void openMenu() {
 
 		// Note: DON'T FORGET TO DETACH THE LOAD THREAD. IT CAUSES ISSUES IF YOU DON'T (SUCH AS CRASHING).
 		std::thread(&readCaffFile).detach();
-		std::thread(&countTimeToLoad).detach();
 	}
 	else {
 	}
@@ -1119,7 +1130,7 @@ static void openPinataDbBundle() {
 			disposeAndCloseActiveFile();
 		}
 
-		SetupLoadingPromptWidget("Currently opening the file. Please wait.");
+		SetupLoadingPromptWidget(PROMPTLOADINGFILE_GENERIC);
 
 		sprintf(currentFileName, "%s", outPath);
 		PRINT("Folder picked: %s\n", currentFileName);
@@ -1128,8 +1139,7 @@ static void openPinataDbBundle() {
 		imGuiWindowInfo.saveData.targetType = PINATA_DBBUNDLE;
 		//imGuiWindowInfo.saveData.loadThread = std::thread(&DBBundle::readStandaloneDbBundleFiles, PinataDbBundleFile, currentFileName);
 		//imGuiWindowInfo.saveData.loadThread.detach();
-		std::thread(&readOtherSupportedFile, CaffType::PINATA_DBBUNDLE).detach();
-		std::thread(&countTimeToLoad).detach();
+		std::thread(&readOtherSupportedFile, SupportedFileType::PINATA_DBBUNDLE).detach();
 	}
 	else {
 	}
@@ -1145,7 +1155,7 @@ static void openPinataPKGBundle() {
 			disposeAndCloseActiveFile();
 		}
 
-		SetupLoadingPromptWidget("Currently opening the file. Please wait.");
+		SetupLoadingPromptWidget(PROMPTLOADINGFILE_GENERIC);
 
 		sprintf(currentFileName, "%s", outPath);
 		PRINT("File picked: %s\n", currentFileName);
@@ -1154,8 +1164,7 @@ static void openPinataPKGBundle() {
 		imGuiWindowInfo.saveData.targetType = PINATA_PKG;
 		//imGuiWindowInfo.saveData.loadThread = std::thread(&DBBundle::readStandaloneDbBundleFiles, PinataDbBundleFile, currentFileName);
 		//imGuiWindowInfo.saveData.loadThread.detach();
-		std::thread(&readOtherSupportedFile, CaffType::PINATA_PKG).detach();
-		std::thread(&countTimeToLoad).detach();
+		std::thread(&readOtherSupportedFile, SupportedFileType::PINATA_PKG).detach();
 	}
 	else {
 	}
@@ -1170,16 +1179,13 @@ static void openGhouliesBundle() {
 			disposeAndCloseActiveFile();
 		}
 
-		SetupLoadingPromptWidget("Currently opening the file. Please wait.");
+		SetupLoadingPromptWidget(PROMPTLOADINGFILE_GENERIC);
 
 		sprintf(currentFileName, "%s", outPath);
 		PRINT("File picked: %s\n", currentFileName);
 
 		imGuiWindowInfo.saveData.targetType = GHOUL_BUNDLE;
-		std::thread(&readOtherSupportedFile, CaffType::GHOUL_BUNDLE).detach();
-		std::thread(&countTimeToLoad).detach();
-		/*imGuiWindowInfo.saveData.loadThread = std::thread(&GhoulBundle::readStandaloneBundleFile, ghoulBundleFile, currentFileName);
-		imGuiWindowInfo.saveData.loadThread.detach();*/
+		std::thread(&readOtherSupportedFile, SupportedFileType::GHOUL_BUNDLE).detach();
 	}
 	else {
 	}
@@ -1194,16 +1200,13 @@ static void openGhouliesDemand() {
 			disposeAndCloseActiveFile();
 		}
 
-		SetupLoadingPromptWidget("Currently opening the file. Please wait.");
+		SetupLoadingPromptWidget(PROMPTLOADINGFILE_GENERIC);
 
 		sprintf(currentFileName, "%s", outPath);
 		PRINT("File picked: %s\n", currentFileName);
 
 		imGuiWindowInfo.saveData.targetType = GHOUL_DEMAND;
-		std::thread(&readOtherSupportedFile, CaffType::GHOUL_DEMAND).detach();
-		std::thread(&countTimeToLoad).detach();
-		/*imGuiWindowInfo.saveData.loadThread = std::thread(&GhoulDemand::readStandaloneDemandFile, ghoulDemandFile, currentFileName);
-		imGuiWindowInfo.saveData.loadThread.detach();*/
+		std::thread(&readOtherSupportedFile, SupportedFileType::GHOUL_DEMAND).detach();
 	}
 	else {
 	}
@@ -1219,14 +1222,13 @@ static void openRareRPKFile() {
 			disposeAndCloseActiveFile();
 		}
 
-		SetupLoadingPromptWidget("Currently opening the file. Please wait.");
+		SetupLoadingPromptWidget(PROMPTLOADINGFILE_GENERIC);
 
 		sprintf(currentFileName, "%s", outPath);
 		PRINT("File picked: %s\n", currentFileName);
 
 		//imGuiWindowInfo.saveData.targetType = RR_RPK;
-		std::thread(&readOtherSupportedFile, CaffType::RR_RPK).detach();
-		std::thread(&countTimeToLoad).detach();
+		std::thread(&readOtherSupportedFile, SupportedFileType::RR_RPK).detach();
 	}
 	else {
 	}
@@ -1239,7 +1241,6 @@ void readFolderGroup()
 	if (NFD_PickFolderU8(&outPath, "") == NFD_OKAY) {
 		SetupLoadingPromptWidget("Currently reading the folder. Please wait.");
 		std::thread(&readFolderLogicGroup, outPath).detach();
-		std::thread(&countTimeToLoad).detach();
 	}
 	else {
 	}
@@ -1274,70 +1275,9 @@ void readFolderLogicGroup(char* outPath)
 			folderFile.fileCount++;
 			folderFile.fileNames.push_back(recFileName);
 
-			CaffType type = NONE;
+			int type = DetermineFileType(recFilePath);
 
-			// Some file checks
-			FILE* currentFile = fopen(recFilePath, "rb");
-			char magic[4] = { 0 };
-			fread(magic, 1, 4, currentFile);
-
-			if (strncmp(magic, "CAFF", 4) == 0) {
-				// Version Check
-				char version[16] = { 0 };
-				fread(version, 1, 16, currentFile);
-
-				if (strcmp(version, "24.09.03.0026") == 0) {
-					type = BUNDLEV26;
-				}
-				if (strcmp(version, "28.01.05.0031") == 0) {
-					type = BUNDLEV31;
-				}
-				if (strcmp(version, "07.08.06.0036") == 0) {
-					type = BUNDLEV36;
-				}
-				if (strcmp(version, "08.11.07.0040") == 0) {
-					type = BUNDLEV40;
-				}
-			}
-
-			// Do some additional checks if it isn't a regular bundle file.
-			if (type == NONE) {
-
-				if (strstr(recFileName, ".rpk") != nullptr) {
-					type = RR_RPK;
-				}
-				if (strstr(recFileName, ".bnl") != nullptr) { // This will generally only be a Ghoulies bundle file if we already found VP's .bnl files via the magic.
-					type = GHOUL_BUNDLE;
-				}
-				if (strstr(recFileName, ".pkg") != nullptr) { // This will generally only be a Ghoulies bundle file if we already found VP's .bnl files via the magic.
-					type = PINATA_PKG;
-				}
-				if (strstr(recFileName, "debug_hash.bin") != nullptr || strstr(recFileName, "debug_pack.bin") != nullptr) { // This will generally only be a Ghoulies bundle file if we already found VP's .bnl files via the magic.
-					type = PINATA_DBBUNDLE;
-				}
-
-				if (type == NONE) {
-					int32_t valType = 0;
-					int32_t sectCount = 0;
-
-					fseek(currentFile, 0, SEEK_SET);
-
-					fread(&valType, 1, 4, currentFile);
-					fseek(currentFile, 0xC, SEEK_SET);
-					fread(&sectCount, 1, 4, currentFile);
-
-					if (sectCount == 2 && (valType > 0 && valType <= 29)) {
-						type = GHOUL_DEMAND;
-					}
-
-					if (valType == 0x7CB48C43) {
-						type = NB_STREAMBUNDLE;
-					}
-				}
-			}
-			fclose(currentFile);
-
-			folderFile.fileTypes.push_back(type);
+			folderFile.fileTypes.push_back((SupportedFileType)type);
 		}
 	}
 
@@ -1366,8 +1306,7 @@ void displayFileInfo(float barHeight) {
 	ImGui::SetNextWindowSize(ImVec2(width / 2.5, (height / 2) - barHeight));
 
 	if (ImGui::Begin("Bundle File", 0, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoBringToFrontOnFocus)) {
-		if (fileType != NONE) ImGui::Text("Time Taken to Load: %lldms (%0.3fs)", duration, duration / 1000.0);
-		CaffType currentType = fileType;
+		SupportedFileType currentType = fileType;
 		if (folderFile.currentType != NONE) currentType = folderFile.currentType;
 		switch (currentType)
 		{
@@ -1383,7 +1322,7 @@ void displayFileInfo(float barHeight) {
 		case BUNDLEV31:
 			displayBundleV31Info();
 			break;
-		case NB_STREAMBUNDLE:
+		case STREAMEDBUNDLE:
 			displayStreamBundleInfo();
 			break;
 		case GHOUL_BUNDLE:
@@ -1755,7 +1694,7 @@ void displayProperties(float barHeight) {
 	ImGui::SetNextWindowSize(ImVec2(width / 2.5, (height / 2)));
 
 	if (ImGui::Begin("Properties", 0, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_HorizontalScrollbar)) {
-		CaffType currentType = fileType;
+		SupportedFileType currentType = fileType;
 		if (folderFile.currentType != NONE && fileIdx != -1) currentType = folderFile.currentType;
 		if (folderFile.currentType != NONE) {
 			if(folderFile.currentType == GHOUL_DEMAND) currentType = folderFile.currentType;
@@ -1768,9 +1707,9 @@ void displayProperties(float barHeight) {
 			displayActiveBundleV36Property();
 			break;
 		case BUNDLEV40:
-			displayActiveV40BundleProperty();
+			displayActiveBundleV40Property();
 			break;
-		case NB_STREAMBUNDLE:
+		case STREAMEDBUNDLE:
 			displayActiveStreamBundleFileProperty();
 			break;
 		case BUNDLEV31:
@@ -1809,7 +1748,7 @@ void displaySpecialActionProperty() {
 	memset(type, 0, 32);
 	memset(domain, 0, 16);
 
-	CaffType currentType = fileType;
+	SupportedFileType currentType = fileType;
 	if (folderFile.currentType != NONE && fileIdx != -1) currentType = folderFile.currentType;
 	if (folderFile.currentType != NONE) {
 		if (folderFile.currentType == GHOUL_DEMAND) currentType = folderFile.currentType;
@@ -2507,7 +2446,7 @@ void displayActiveBundleV36Property() {
 	}
 }
 
-void displayActiveV40BundleProperty() {
+void displayActiveBundleV40Property() {
 	if (fileIdx == -1) return;
 
 	char* tStamp = { 0 };
@@ -4145,34 +4084,36 @@ void displayAvailableFilesList(float barHeight) {
 	ImGui::SetNextWindowSize(ImVec2(width / 1.665, height - barHeight));
 
 	if (ImGui::Begin("Bundle File List", 0, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoBringToFrontOnFocus)) {
-		switch (fileType)
-		{
-		case NONE:break;
-		case BUNDLEV36: fillBundleFileList(); break;
-		case BUNDLEV40: fillBundleV40FileList(); break;
-		case NB_STREAMBUNDLE: fillStreamBundleFileList(); break;
-		case BUNDLEV31: fillBundleV31FileList(); break;
-		case BUNDLEV26: fillBundleV26FileList(); break;
-		case GHOUL_BUNDLE: fillGhouliesBundleFileList(); break;
-		case PINATA_DBBUNDLE: fillPinataDbBundleFileList(); break;
-		case PINATA_PKG: fillPinataPKGFileList(); break;
-		case RR_RPK: fillRPKFileList(); break;
-		case FOLDER_GROUP: fillFolderGroupList(); break;
+		if (ImGui::BeginTable("File List", 1)) {
+			ImGui::TableSetupColumn("File Name");
+			ImGui::TableHeadersRow();
+			switch (fileType)
+			{
+			case NONE:break;
+			case BUNDLEV36: fillBundleV36FileList(); break;
+			case BUNDLEV40: fillBundleV40FileList(); break;
+			case STREAMEDBUNDLE: fillStreamBundleFileList(); break;
+			case BUNDLEV31: fillBundleV31FileList(); break;
+			case BUNDLEV26: fillBundleV26FileList(); break;
+			case GHOUL_BUNDLE: fillGhouliesBundleFileList(); break;
+			case PINATA_DBBUNDLE: fillPinataDbBundleFileList(); break;
+			case PINATA_PKG: fillPinataPKGFileList(); break;
+			case RR_RPK: fillRPKFileList(); break;
+			case FOLDER_GROUP: fillFolderGroupList(); break;
+			}
+			ImGui::EndTable();
 		}
-
 		ImGui::End();
 	}
 }
 
-void fillBundleFileList() {
+void fillBundleV36FileList() {
 	// Setup the local parameters needed.
 	char lbl[1024];
 	char type[32];
 	char domain[32];
 	char subtype[32];
 
-	ImGui::Text("File List");
-	ImGui::Separator();
 	for (int32_t i = 0; i < bundleFile.V36Bundle->header.numAssets; i++) {
 		memset(lbl, 0, 1024);
 		memset(type, 0, 32);
@@ -4221,6 +4162,8 @@ void fillBundleFileList() {
 		}
 
 		ImGui::PushID(i);
+		ImGui::TableNextRow();
+		ImGui::TableSetColumnIndex(0);
 
 		// Most entries will contain a timestamp and presumably a version number, separated by "," characters.
 		if (strchr(lbl, ',') != NULL) {
@@ -4319,8 +4262,6 @@ void fillBundleV40FileList() {
 	char domain[32];
 	char subtype[32];
 
-	ImGui::Text("File List");
-	ImGui::Separator();
 	for (int32_t i = 0; i < bundleFile.V40Bundle->header.numAssets; i++) {
 		ImGui::PushID(i);
 		memset(lbl, 0, 1024);
@@ -4346,6 +4287,9 @@ void fillBundleV40FileList() {
 				}
 			}
 		}
+
+		ImGui::TableNextRow();
+		ImGui::TableSetColumnIndex(0);
 
 		if (ImGui::Selectable(lbl, fileIdx == i + 1)) {
 			if (fileIdx == i + 1) {
@@ -4379,8 +4323,6 @@ void fillKameoDBFileList() {
 	char domain[32];
 	char subtype[32];
 
-	ImGui::Text("File List");
-	ImGui::Separator();
 	for (int32_t i = 0; i < activeKameoDBFile.fileTable.header.entryCount; i++) {
 		ImGui::PushID(i);
 		memset(lbl, 0, 1024);
@@ -4400,6 +4342,9 @@ void fillKameoDBFileList() {
 
 		if (imGuiWindowInfo.aidSearch != 0) {
 		}
+
+		ImGui::TableNextRow();
+		ImGui::TableSetColumnIndex(0);
 
 		if (ImGui::Selectable(lbl, fileId == i)) {
 			if (fileId == i) {
@@ -4421,8 +4366,6 @@ void fillBundleV31FileList() {
 	char domain[32];
 	char subtype[32];
 
-	ImGui::Text("File List");
-	ImGui::Separator();
 	for (int32_t i = 0; i < bundleFile.V31Bundle->header.numAssets; i++) {
 		ImGui::PushID(i);
 		memset(lbl, 0, 1024);
@@ -4448,6 +4391,9 @@ void fillBundleV31FileList() {
 		if (imGuiWindowInfo.aidSearch != 0) {
 		}
 
+		ImGui::TableNextRow();
+		ImGui::TableSetColumnIndex(0);
+
 		if (ImGui::Selectable(lbl, fileId == i)) {
 			if (fileId == i) {
 				fileId = -1;
@@ -4472,8 +4418,6 @@ void fillBundleV26FileList() {
 	char domain[32];
 	char subtype[32];
 
-	ImGui::Text("File List");
-	ImGui::Separator();
 	for (int32_t i = 0; i < bundleFile.V26Bundle->header.numOfFiles; i++) {
 		ImGui::PushID(i);
 		memset(lbl, 0, 1024);
@@ -4498,6 +4442,9 @@ void fillBundleV26FileList() {
 
 		if (imGuiWindowInfo.aidSearch != 0) {
 		}
+
+		ImGui::TableNextRow();
+		ImGui::TableSetColumnIndex(0);
 
 		if (ImGui::Selectable(lbl, fileId == i)) {
 			if (fileId == i) {
@@ -4529,7 +4476,7 @@ void fillStreamBundleFileList() {
 		ImGui::SameLine();
 		ImGui::Text("Back to Streamed Bundle File List");
 		ImGui::Separator();
-		fillBundleFileList();
+		fillBundleV36FileList();
 		return;
 	}
 
@@ -4581,6 +4528,9 @@ void fillStreamBundleFileList() {
 				strtok(lbl, "\\");
 			}
 
+			ImGui::TableNextRow();
+			ImGui::TableSetColumnIndex(0);
+
 			if (ImGui::Selectable(lbl, i == imGuiWindowInfo.streamBundleSelectedItem, ImGuiSelectableFlags_AllowDoubleClick)) {
 				// If we double click, assign the V36 bundle.
 				if(ImGui::IsMouseDoubleClicked(0)) {
@@ -4616,6 +4566,9 @@ void fillStreamBundleFileList() {
 				}
 			}
 
+			ImGui::TableNextRow();
+			ImGui::TableSetColumnIndex(0);
+
 			if (ImGui::Selectable(bnkLbl, i == imGuiWindowInfo.streamBundleSelectedItem)) {
 				if (imGuiWindowInfo.streamBundleSelectedItem == i) {
 					imGuiWindowInfo.streamBundleSelectedItem = -1;
@@ -4637,8 +4590,6 @@ void fillGhouliesBundleFileList() {
 	char domain[32];
 	char subtype[32];
 
-	ImGui::Text("File List");
-	ImGui::Separator();
 	for (int32_t i = 0; i < ghoulBundleFile.entryCount; i++) {
 		ImGui::PushID(i);
 		memset(lbl, 0, 1024);
@@ -4677,6 +4628,9 @@ void fillGhouliesBundleFileList() {
 			strtok(lbl, "\\");
 		}
 
+		ImGui::TableNextRow();
+		ImGui::TableSetColumnIndex(0);
+
 		if (ImGui::Selectable(lbl, fileIdx == i + 1)) {
 			if (fileIdx == i + 1) {
 				fileId = -1;
@@ -4699,8 +4653,6 @@ void fillGhouliesBundleFileList() {
 }
 
 void fillRPKFileList() {
-	ImGui::Text("File List");
-	ImGui::Separator();
 	for (int32_t i = 0; i < rpkFile.fileCount; i++) {
 		ImGui::PushID(i);
 
@@ -4710,6 +4662,9 @@ void fillRPKFileList() {
 				continue;
 			}
 		}
+
+		ImGui::TableNextRow();
+		ImGui::TableSetColumnIndex(0);
 
 		if (ImGui::Selectable(rpkFile.fileEntries[i].fileName, fileId == i)) {
 			if (fileId == i) {
@@ -4740,38 +4695,20 @@ void fillPinataDbBundleFileList() {
 		ImGui::SameLine();
 		ImGui::Text("Back to DB Bundle File List");
 		ImGui::Separator();
-		fillBundleFileList();
+		fillBundleV36FileList();
 		return;
 	}
 
 	// Setup the local parameters needed.
-	char lbl[1024];
-	char type[32];
-	char domain[32];
-	char subtype[32];
+	char lbl[256];
 
-	ImGui::Text("File List");
-	ImGui::Separator();
 	for (int32_t i = 0; i < PinataDbBundleFile.hashFile.fileCount; i++) {
-		memset(lbl, 0, 1024);
-		memset(type, 0, 32);
-		memset(domain, 0, 32);
-		memset(subtype, 0, 32);
+		memset(lbl, 0, 256);
 
 		// Check if the entry label we're reading contains "aid_".
 		int32_t idx = PinataDbBundleFile.precachedEntries[i].indexIdx;
 		if (idx != -1) {
-			strcpy(lbl, PinataDbBundleFile.indexFile[idx].filename);
-
-			assetGetTypeFromString(lbl + 4, type);
-
-			assetGetTypeFromString(lbl + 4 + (strlen(type) + 1), domain);
-
-			if (strcmp(type, "misc") == 0 || strcmp(type, "objparams") == 0 || strcmp(type, "statetable") == 0) {
-				assetGetTypeFromString(lbl + 4 + (strlen(type) + 1) + (strlen(domain) + 1), subtype);
-			}
-			else {
-			}
+			strncpy(lbl, PinataDbBundleFile.indexFile[idx].filename, 255);
 		}
 
 		if (strlen(imGuiWindowInfo.search) != 0) {
@@ -4780,11 +4717,12 @@ void fillPinataDbBundleFileList() {
 			}
 		}
 
-		if(idx == -1) {
+		if (idx == -1) {
 			continue;
 		};
 
-		ImGui::PushID(i);
+		ImGui::TableNextRow();
+		ImGui::TableSetColumnIndex(0);
 
 		// Most entries will contain a timestamp and presumably a version number, separated by "," characters.
 		if (strchr(lbl, ' ') != NULL) {
@@ -4808,8 +4746,6 @@ void fillPinataDbBundleFileList() {
 				imGuiWindowInfo.streamBundleSelectedItem = i;
 			}
 		}
-
-		ImGui::PopID();
 	}
 }
 
@@ -4827,15 +4763,13 @@ void fillPinataPKGFileList() {
 		ImGui::Text("Back to PKG File List");
 		ImGui::Text("Currently Browsing Bundle %d", PinataPKGFile.entries[imGuiWindowInfo.streamBundleSelectedBundle - 1].id);
 		ImGui::Separator();
-		fillBundleFileList();
+		fillBundleV36FileList();
 		return;
 	}
 
 	// Setup the local parameters needed.
 	char lbl[1024];
 
-	ImGui::Text("File List");
-	ImGui::Separator();
 	for (int32_t i = 0; i < PinataPKGFile.header.entryCount; i++) {
 		ImGui::PushID(i);
 		memset(lbl, 0, 1024);
@@ -4849,6 +4783,9 @@ void fillPinataPKGFileList() {
 				continue;
 			}
 		}
+
+		ImGui::TableNextRow();
+		ImGui::TableSetColumnIndex(0);
 
 		if (ImGui::Selectable(lbl, imGuiWindowInfo.streamBundleSelectedItem == i, ImGuiSelectableFlags_AllowDoubleClick)) {
 			if (ImGui::IsMouseDoubleClicked(0)) {
@@ -4886,7 +4823,7 @@ void fillFolderGroupList() {
 		}
 		break;
 		case BUNDLEV36: {
-			fillBundleFileList();
+			fillBundleV36FileList();
 		}
 		break;
 		case BUNDLEV40: {
@@ -4938,8 +4875,6 @@ void fillFolderGroupList() {
 		}
 	}
 
-	ImGui::Text("File List");
-	ImGui::Separator();
 	for (int32_t i = 0; i < folderFile.fileCount; i++) {
 		if (folderFile.fileTypes[i] == NONE && !folderFile.showInvalidFiles) continue;
 
@@ -5010,6 +4945,8 @@ void fillFolderGroupList() {
 			break;
 		}
 
+		ImGui::TableNextRow();
+		ImGui::TableSetColumnIndex(0);
 		
 		ImGui::BeginDisabled(folderFile.fileTypes[i] == NONE || folderFile.fileTypes[i] == PINATA_DBBUNDLE);
 		if (ImGui::Selectable(lbl, imGuiWindowInfo.streamBundleSelectedItem == i, ImGuiSelectableFlags_AllowDoubleClick)) {
@@ -5115,7 +5052,7 @@ void readLoctextFile(char* data, int32_t startEndian) {
 void handleSavingAsync(const char* fileName) {
 	switch (fileType) {
 	case BUNDLEV36: { SetupLoadingBarPromptWidget("Currently saving bundle file...", bundleFile.V36Bundle->header.numSections); writeCaffFile(fileName); } break;
-	case NB_STREAMBUNDLE: { SetupLoadingBarPromptWidget("Currently saving streamed bundle file...", streamBundleFile.header.totalFileTotal); writeStreamBundleFile(fileName); } break;
+	case STREAMEDBUNDLE: { SetupLoadingBarPromptWidget("Currently saving streamed bundle file...", streamBundleFile.header.totalFileTotal); writeStreamBundleFile(fileName); } break;
 	case GHOUL_BUNDLE: { SetupLoadingBarPromptWidget("Currently saving bundle file...", ghoulBundleFile.entryCount); ghoulBundleFile.writeToFile(fileName); } break;
 	case PINATA_PKG: { SetupLoadingBarPromptWidget("Currently saving PKG file...", PinataPKGFile.header.entryCount); PinataPKGFile.writePinataPKG(fileName); } break;
 	}
@@ -5348,9 +5285,14 @@ void writeCaffFile(const char* fileName) {
 }
 
 void readOtherSupportedFile(int32_t type) {
+	if (currentFileName == nullptr || currentFileName[0] == '\0') {
+		FireMessageF("A bad filename was passed into %s.\n", ErrorType_Error, __func__);
+		return;
+	}
+
 	SetupLoadingPromptWidget("Currently reading the file. Please wait.");
 
-	if (type == CaffType::GHOUL_BUNDLE) {
+	if (type == SupportedFileType::GHOUL_BUNDLE) {
 		if (!ghoulBundleFile.readStandaloneBundleFile(currentFileName)) {
 			CloseLoadingPromptWidget();
 			FireMessage("Either the file provided is bad or this is not a valid bundle file.\n", ErrorType_Warn);
@@ -5358,7 +5300,7 @@ void readOtherSupportedFile(int32_t type) {
 			isTimerCounting = false;
 			return;
 		}
-		fileType = CaffType::GHOUL_BUNDLE;
+		fileType = SupportedFileType::GHOUL_BUNDLE;
 
 		/*char* bicFile = (char*)malloc(strlen(currentFileName + 1));
 		strcpy(bicFile, currentFileName);
@@ -5386,7 +5328,7 @@ void readOtherSupportedFile(int32_t type) {
 		free(bicFile);*/
 	}
 
-	if (type == CaffType::GHOUL_DEMAND) {
+	if (type == SupportedFileType::GHOUL_DEMAND) {
 		if (!ghoulDemandFile.readStandaloneDemandFile(currentFileName)) {
 			CloseLoadingPromptWidget();
 			FireMessage("Either the file provided is bad or this is not a valid bundle file.\n", ErrorType_Warn);
@@ -5394,10 +5336,10 @@ void readOtherSupportedFile(int32_t type) {
 			isTimerCounting = false;
 			return;
 		}
-		fileType = CaffType::GHOUL_DEMAND;
+		fileType = SupportedFileType::GHOUL_DEMAND;
 	}
 
-	if (type == CaffType::PINATA_DBBUNDLE) {
+	if (type == SupportedFileType::PINATA_DBBUNDLE) {
 		if (!PinataDbBundleFile.readStandaloneDbBundleFiles(currentFileName)) {
 			CloseLoadingPromptWidget();
 			FireMessage("A problem was encountered while reading the data.\nThe files might be bad or the files required aren't in the directory given.", ErrorType_Warn);
@@ -5405,10 +5347,10 @@ void readOtherSupportedFile(int32_t type) {
 			isTimerCounting = false;
 			return;
 		}
-		fileType = CaffType::PINATA_DBBUNDLE;
+		fileType = SupportedFileType::PINATA_DBBUNDLE;
 	}
 
-	if (type == CaffType::PINATA_PKG) {
+	if (type == SupportedFileType::PINATA_PKG) {
 		if (!PinataPKGFile.readStandalonePkgFile(currentFileName)) {
 			CloseLoadingPromptWidget();
 			FireMessage("A problem was encountered while reading the data.\n", ErrorType_Warn);
@@ -5416,17 +5358,17 @@ void readOtherSupportedFile(int32_t type) {
 			isTimerCounting = false;
 			return;
 		}
-		fileType = CaffType::PINATA_PKG;
+		fileType = SupportedFileType::PINATA_PKG;
 	}
 
-	if (type == CaffType::RR_RPK) {
+	if (type == SupportedFileType::RR_RPK) {
 		if (!rpkFile.readStandaloneRPKFile(currentFileName)) {
 			CloseLoadingPromptWidget();
 			FireMessage("Either the file provided is bad or this is not a valid RPK file.\n", ErrorType_Warn);
 			imGuiWindowInfo.saveData.targetType = NONE;
 			return;
 		}
-		fileType = CaffType::RR_RPK;
+		fileType = SupportedFileType::RR_RPK;
 	}
 
 	imGuiWindowInfo.saveData.targetType = NONE;
@@ -5435,6 +5377,10 @@ void readOtherSupportedFile(int32_t type) {
 }
 
 void readCaffFile() {
+	if (currentFileName == nullptr || currentFileName[0] == '\0') {
+		FireMessageF("A bad filename was passed into %s.\n", ErrorType_Error, __func__);
+		return;
+	}
 	FILE* fdart = fopen(currentFileName, "rb");
 
 	char* outData = nullptr;
@@ -5515,21 +5461,21 @@ void readCaffFile() {
 	if (caffMagic == 0x46464143) {
 		PRINT("About to start reading a standalone bundle file.\n");
 
-		CaffType type = NONE;
+		SupportedFileType type = NONE;
 
-		if (strcmp(caffVersion, "24.09.03.0026") == 0) {
+		if (strncmp(caffVersion, BUNDLEV26_VER, 16) == 0) {
 			type = BUNDLEV26;
 		}
 
-		if (strcmp(caffVersion, "28.01.05.0031") == 0) {
+		if (strncmp(caffVersion, BUNDLEV31_VER, 16) == 0) {
 			type = BUNDLEV31;
 		}
 
-		if (strcmp(caffVersion, "07.08.06.0036") == 0) {
+		if (strncmp(caffVersion, BUNDLEV36_VER, 16) == 0) {
 			type = BUNDLEV36;
 		}
 
-		if (strcmp(caffVersion, "08.11.07.0040") == 0) {
+		if (strncmp(caffVersion, BUNDLEV40_VER, 16) == 0) {
 			type = BUNDLEV40;
 		}
 		
@@ -5632,7 +5578,7 @@ void readCaffFile() {
 			isTimerCounting = false;
 			return;
 		}
-		fileType = NB_STREAMBUNDLE;
+		fileType = STREAMEDBUNDLE;
 	}
 	
 	isTimerCounting = false;
@@ -5641,6 +5587,10 @@ void readCaffFile() {
 }
 
 void writeStreamBundleFile(const char* fileName) {
+	if (currentFileName == nullptr || currentFileName[0] == '\0') {
+		FireMessageF("A bad filename was passed into %s.\n", ErrorType_Error, __func__);
+		return;
+	}
 
 	if (!bundleSetup.isDirty) {
 		printf("No changes have been made to the CAFF file.\n");
@@ -5791,7 +5741,7 @@ void writeDataToFile(const char* fileName, const char* filter, char *data, size_
 /// Disposes of any active file.
 /// </summary>
 void disposeAndCloseActiveFile() {
-	if (fileType != NB_STREAMBUNDLE && fileType != PINATA_PKG) {
+	if (fileType != STREAMEDBUNDLE && fileType != PINATA_PKG) {
 		bundleFile.ClearActiveBundleFile();
 	}
 
@@ -5833,7 +5783,7 @@ void disposeAndCloseActiveFile() {
 	}
 
 	tempTexInt = -1;
-	fileType = CaffType::NONE;
+	fileType = SupportedFileType::NONE;
 	imGuiWindowInfo.saveData.targetType = NONE;
 }
 
@@ -7047,12 +6997,142 @@ static GLFWimage LoadResourceImageToGLFWImage(int32_t resourceName, const wchar_
 	return img;
 }
 
-// GLFW
-void framebuffer_size_callback(GLFWwindow* window, int32_t width, int32_t height)
-{
-	glViewport(0, 0, width, height);
+int32_t DetermineFileType(const char* fileName) {
+	if (fileName == nullptr || fileName[0] == '\0') return SupportedFileType::NONE;
+	if (std::filesystem::is_directory(fileName)) {
+		return SupportedFileType::FOLDER_GROUP;
+	}
+
+	FILE* file = fopen(fileName, "rb");
+
+	if(file == nullptr) return SupportedFileType::NONE;
+
+	int type = SupportedFileType::NONE;
+
+	char magic[4];
+	fread(magic, 1, 4, file);
+
+	// This should take priority over the bundle code.
+	if (strstr(fileName, "debug_hash.bin") != nullptr || strstr(fileName, "debug_pack.bin") != nullptr) {
+		return SupportedFileType::PINATA_DBBUNDLE;
+	}
+
+	// Preliminary Checks
+	if (magic[0] == 'C' && magic[1] == 'A' && magic[2] == 'F' && magic[3] == 'F') {
+		char version[16] = { 0 };
+		fread(version, 1, 16, file);
+		fclose(file);
+		
+		if (strncmp(version, BUNDLEV26_VER, 16) == 0) return SupportedFileType::BUNDLEV26;
+		if (strncmp(version, BUNDLEV31_VER, 16) == 0) return SupportedFileType::BUNDLEV31;
+		if (strncmp(version, BUNDLEV36_VER, 16) == 0) return SupportedFileType::BUNDLEV36;
+		if (strncmp(version, BUNDLEV40_VER, 16) == 0) return SupportedFileType::BUNDLEV40;
+		return SupportedFileType::NONE; // We realistically don't need to do any further checks here.
+	}
+
+	// Do some additional checks if it isn't a regular bundle file.
+	if (strstr(fileName, ".rpk") != nullptr) {
+		type = SupportedFileType::RR_RPK;
+	}
+	if (strstr(fileName, ".bnl") != nullptr) { 
+		type = SupportedFileType::GHOUL_BUNDLE;
+	}
+	if (strstr(fileName, ".pkg") != nullptr) {
+		type = SupportedFileType::PINATA_PKG;
+	}
+
+	if (type != SupportedFileType::NONE) {
+		fclose(file);
+		return type;
+	}
+
+	int32_t valType = 0;
+	int32_t sectCount = 0;
+
+	fseek(file, 0, SEEK_SET);
+
+	fread(&valType, 1, 4, file);
+	fseek(file, 0xC, SEEK_SET);
+	fread(&sectCount, 1, 4, file);
+
+	fclose(file);
+
+	if (sectCount == 2 && (valType > 0 && valType <= 29)) {
+		type = SupportedFileType::GHOUL_DEMAND;
+	}
+
+	if (valType == 0x7CB48C43) {
+		type = SupportedFileType::STREAMEDBUNDLE;
+	}
+
+	fclose(file);
+	return type;
 }
 
+void DetermineAndLoadFileType(const char* fileName) {
+	if (fileName == nullptr || fileName[0] == '\0') return;
+
+	int type = DetermineFileType(fileName);
+
+	if (type == SupportedFileType::NONE) return;
+
+	SetupLoadingPromptWidget(PROMPTLOADINGFILE_GENERIC);
+
+
+	// We only need the path if we're reading a DB file.
+	if (type == SupportedFileType::PINATA_DBBUNDLE) {
+		const char* endPtr = strrchr(fileName, '\\');
+
+		if (endPtr == nullptr) return;
+
+		size_t strLen = endPtr - fileName;
+		strncpy(currentFileName, fileName, strLen);
+		printf("Given Path - %s\n", currentFileName);
+	}
+	else {
+		strncpy(currentFileName, fileName, MAX_PATH);
+	}
+
+	switch (type) {
+	case SupportedFileType::BUNDLEV26:
+	case SupportedFileType::BUNDLEV31:
+	case SupportedFileType::BUNDLEV36:
+	case SupportedFileType::BUNDLEV40:
+	case SupportedFileType::STREAMEDBUNDLE:
+		std::thread(&readCaffFile).detach(); // Handles standard asset files and streamed bundles.
+		return;
+	case SupportedFileType::RR_RPK:
+	case SupportedFileType::GHOUL_BUNDLE:
+	case SupportedFileType::PINATA_PKG:
+	case SupportedFileType::PINATA_DBBUNDLE:
+	case SupportedFileType::GHOUL_DEMAND:
+		std::thread(&readOtherSupportedFile, type).detach(); // Handles files from VP, Ghoulies and Rocket titles.
+		return;
+	case SupportedFileType::FOLDER_GROUP:
+		std::thread(&readFolderLogicGroup, currentFileName).detach(); // Handles the folder group.
+		return;
+	}
+}
+
+// GLFW
+
+// Handles resizing the window
+void framebuffer_size_callback(GLFWwindow* window, int32_t width, int32_t height)
+{
+	int xpos = 0;
+	int ypos = 0;
+	glfwGetWindowPos(window, &xpos, &ypos);
+	glViewport(xpos, ypos, width, height);
+}
+
+void framebuffer_pos_callback(GLFWwindow* window, int xpos, int ypos) {
+	int width = 0;
+	int height = 0;
+	glfwGetWindowSize(window, &width, &height);
+	glViewport(xpos, ypos, width, height);
+}
+
+// Handles refreshing the window
 void window_refresh_callback(GLFWwindow* window)
 {
 	drawWindow();
@@ -7066,4 +7146,14 @@ void processInput(GLFWwindow* window)
 	// No clue why this was here.
 	/*if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
 		glfwSetWindowShouldClose(window, true);*/
+}
+
+// Handles drag+drop callbacks
+void drop_callback(GLFWwindow* window, int path_count, const char* paths[]) {
+	if (path_count == 0) return;
+
+	if (fileType != NONE) {
+		disposeAndCloseActiveFile();
+	}
+	DetermineAndLoadFileType(paths[0]);
 }

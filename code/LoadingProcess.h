@@ -1,6 +1,9 @@
 #ifndef __LOADINGPROCESS_H__
 #define __LOADINGPROCESS_H__
 
+static const char* PROMPTLOADINGFILE_GENERIC = "Currently opening the file. Please wait.";
+
+
 struct LoadingPrompt {
 public:
 	bool showLoadingPrompt = false;
