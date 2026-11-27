@@ -6,6 +6,7 @@
 #endif
 
 #include "CaffFileTypes.h"
+#include "StreamBundle.h"
 
 #pragma region Script
 void Script::ReadScript(char* data) {
@@ -563,7 +564,7 @@ void Manifest::ReadManifest(char* data) {
 	manifestPtr = data;
 
 	uint32_t magicVar = 0;
-	uint32_t hashVar = 0;
+	time_t timeStampVar = 0;
 
 	int32_t aidTableOffsetVar = 0;
 	int32_t aidTableCountVar = 0;
@@ -575,9 +576,11 @@ void Manifest::ReadManifest(char* data) {
 	int32_t xcueRefTableCountVar = 0;
 
 	memcpy(&magicVar, manifestPtr, sizeof(uint32_t));
-	memcpy(&hashVar, manifestPtr + 4, sizeof(uint32_t));
 
-	if (magicVar == 0xB65E2D43) { // V0040
+	magic = flipEndian(magicVar);
+
+	if (magic == STREAMBUNDLE_IDENTIFIER_SEPT18VERSION || magic == STREAMBUNDLE_IDENTIFIER_SEPT20VERSION) { // V0040
+		memcpy(&timeStampVar, manifestPtr + 8, sizeof(uint64_t));
 		memcpy(&aidTableOffsetVar, manifestPtr + 0x10, sizeof(int32_t));
 		memcpy(&aidTableCountVar, manifestPtr + 0x14, sizeof(int32_t));
 		memcpy(&referenceTableOffsetVar, manifestPtr + 0x18, sizeof(int32_t));
@@ -586,7 +589,8 @@ void Manifest::ReadManifest(char* data) {
 		memcpy(&xcueRefTableCountVar, manifestPtr + 0x24, sizeof(int32_t));
 	}
 
-	if (magicVar == 0x7CB48C43) { // V0036
+	if (magic == STREAMBUNDLE_IDENTIFIER_NOVVERSION) { // V0036
+		memcpy(&timeStampVar, manifestPtr + 4, sizeof(uint32_t));
 		memcpy(&aidTableOffsetVar, manifestPtr + 8, sizeof(int32_t));
 		memcpy(&aidTableCountVar, manifestPtr + 0xC, sizeof(int32_t));
 		memcpy(&referenceTableOffsetVar, manifestPtr + 0x10, sizeof(int32_t));
@@ -595,9 +599,7 @@ void Manifest::ReadManifest(char* data) {
 		memcpy(&xcueRefTableCountVar, manifestPtr + 0x1C, sizeof(int32_t));
 	}
 
-	magic = flipEndian(magicVar);
-	timestamp = flipEndian(hashVar);
-
+	timestamp = flipEndian(timeStampVar);
 	aidTableOffset = flipEndian(aidTableOffsetVar);
 	aidTableCount = flipEndian(aidTableCountVar);
 

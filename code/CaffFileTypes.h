@@ -138,7 +138,7 @@ struct Manifest {
 	char* manifestPtr = nullptr;
 
 	uint32_t magic = 0;
-	uint32_t timestamp = 0;
+	time_t timestamp = 0;
 
 	// Tables
 	int32_t aidTableOffset = 0;

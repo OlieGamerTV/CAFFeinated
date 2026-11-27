@@ -299,6 +299,7 @@ int32_t mainWindowCode() {
 	glfwSetWindowRefreshCallback(window, window_refresh_callback);
 	glfwSetDropCallback(window, drop_callback);
 
+	// If we've launched with a file, load it in by default.
 	if (argCount > 0) {
 		DetermineAndLoadFileType(args[0]);
 	}
@@ -348,6 +349,7 @@ void drawWindow() {
 	ImGui::GetStyle().FontScaleDpi = main_scale;
 
 	ImGui::NewFrame();
+	handleKeyboardShortcuts();
 
 	buildBaseImGuiWindow();
 	buildTitleBar();
@@ -541,7 +543,7 @@ static void ShowMenuFile()
 	if (ImGui::BeginMenu("New")) {
 		ImGui::SeparatorText("Main");
 		// R1 Bundle Files
-		if (ImGui::MenuItem("V36 Bundle File", "Ctrl+O")) { bundleFile.CreateNewBundleV36(); fileType = BUNDLEV36; }
+		if (ImGui::MenuItem("V36 Bundle File", NULL)) { bundleFile.CreateNewBundleV36(); fileType = BUNDLEV36; }
 		if (ImGui::IsItemHovered()) { ImGui::SetTooltip("The V0036 bundle format."); }
 
 		// Ghoulies Bundle Files
@@ -564,12 +566,18 @@ static void ShowMenuFile()
 		}
 		ImGui::EndMenu();
 	}
-	
-	if (ImGui::BeginMenu("Open")) {
+
+	if (ImGui::MenuItem("Open File", "Ctrl+O")) { openFilePrompt(); }
+	if (ImGui::IsItemHovered()) { ImGui::SetTooltip("Opens a supported file."); }
+
+	if (ImGui::BeginMenu("Open File (Specific)")) {
 		ImGui::SeparatorText("Main");
 		// R1 Bundle Files
-		if (ImGui::MenuItem("R1 Bundle File", "Ctrl+O")) { openMenu(); }
+		if (ImGui::MenuItem("R1 Bundle File", NULL)) { openR1Bundle(); }
 		if (ImGui::IsItemHovered()) { ImGui::SetTooltip("The bundle format found in many games using R1 components.\nKnown versions are: V0026, V0031, V0036, V0040."); }
+
+		if (ImGui::MenuItem("Streaned Bundle File", NULL)) { openStreamedBundle(); }
+		if (ImGui::IsItemHovered()) { ImGui::SetTooltip("The stream bundle format found in Banjo-Kazooie: Nuts & Bolts and Kinect Sports."); }
 
 		// Ghoulies Bundle Files
 		if (ImGui::BeginMenu("Ghoulies Files")) {
@@ -598,7 +606,7 @@ static void ShowMenuFile()
 		ImGui::EndMenu();
 	}
 	
-	if (ImGui::MenuItem("Open Folder", NULL)) { readFolderGroup(); }
+	if (ImGui::MenuItem("Open Folder", "Ctrl+Shift+O")) { readFolderGroup(); }
 	if (ImGui::IsItemHovered()) { ImGui::SetTooltip("Selects a full folder."); }
 
 	if (ImGui::MenuItem("Save", "Ctrl+S", false, fileType != NONE && strlen(currentFileName) != 0))
@@ -643,7 +651,7 @@ static void ShowMenuFile()
 				numOfFiles = bundleFile.V26Bundle->header.numOfFiles;
 			}
 			if (fileType == STREAMEDBUNDLE) {
-				numOfFiles = streamBundleFile.header.totalFileTotal;
+				numOfFiles = streamBundleFile.header.numEntries;
 			}
 			if (fileType == GHOUL_BUNDLE) {
 				numOfFiles = ghoulBundleFile.entryCount;
@@ -664,6 +672,16 @@ static void ShowMenuFile()
 	ImGui::Separator();
 
 	if (ImGui::MenuItem("Quit", "Alt+F4")) { glfwSetWindowShouldClose(window, 1); }
+}
+
+void handleKeyboardShortcuts() {
+	// File Shortcuts
+	if (ImGui::Shortcut(ImGuiMod_Ctrl | ImGuiKey_O, ImGuiInputFlags_RouteGlobal)) { openFilePrompt(); }
+	if (ImGui::Shortcut(ImGuiMod_Ctrl | ImGuiMod_Shift | ImGuiKey_O, ImGuiInputFlags_RouteGlobal)) { readFolderGroup(); }
+	if (fileType != NONE && strlen(currentFileName) != 0 && ImGui::Shortcut(ImGuiMod_Ctrl | ImGuiKey_S, ImGuiInputFlags_RouteGlobal))
+	{
+		std::thread(handleSavingAsync, currentFileName).detach();
+	}
 }
 
 void exportFilesFromBundleRaw(int fileCount) {
@@ -735,7 +753,7 @@ void exportFilesFromBundleRaw(int fileCount) {
 			}
 		}
 		if (fileType == STREAMEDBUNDLE) {
-			for (int32_t i = 0; i < streamBundleFile.header.totalFileTotal; i++) {
+			for (int32_t i = 0; i < streamBundleFile.header.numEntries; i++) {
 				memset(lbl, 0, 1024);
 				memset(type, 0, 32);
 
@@ -745,7 +763,14 @@ void exportFilesFromBundleRaw(int fileCount) {
 
 				if (streamBundleFile.bundleFiles[i].entryType == ENTRY_BUNDLE) {
 					// Check if the entry label we're reading contains "aid_".
-					char* ptr = strstr(streamBundleFile.bundleFiles[i].bundleFile.sectionTable.fileLabelTable.fileLabels[0], "aid_");
+					char* ptr = nullptr;
+					if (streamBundleFile.header.version == STREAMBUNDLE_NOVVERSION) {
+						ptr = strstr(streamBundleFile.bundleFiles[i].bundleFile.V36Bundle->sectionTable.fileLabelTable.fileLabels[0], "aid_");
+					}
+					if (streamBundleFile.header.version == STREAMBUNDLE_SEPTVERSION) {
+						ptr = strstr(streamBundleFile.bundleFiles[i].bundleFile.V40Bundle->sectionTable.fileLabelTable.fileLabels[0], "aid_");
+					}
+
 					if (ptr != NULL) {
 						// If so, copy the contents from the location of that and fetch the asset type.
 						strcpy(lbl, ptr);
@@ -754,7 +779,12 @@ void exportFilesFromBundleRaw(int fileCount) {
 					}
 					else {
 						// Else, just copy the contents of the label to the dest.
-						strcpy(lbl, streamBundleFile.bundleFiles[i].bundleFile.sectionTable.fileLabelTable.fileLabels[0]);
+						if (streamBundleFile.header.version == STREAMBUNDLE_NOVVERSION) {
+							strcpy(lbl, streamBundleFile.bundleFiles[i].bundleFile.V36Bundle->sectionTable.fileLabelTable.fileLabels[0]);
+						}
+						if (streamBundleFile.header.version == STREAMBUNDLE_SEPTVERSION) {
+							strcpy(lbl, streamBundleFile.bundleFiles[i].bundleFile.V40Bundle->sectionTable.fileLabelTable.fileLabels[0]);
+						}
 					}
 
 					//All (properly named) texture files end with "\default.rtx". Filter that out as well.
@@ -775,9 +805,9 @@ void exportFilesFromBundleRaw(int fileCount) {
 					return;
 				}
 
-				size_t written = fwrite(data, sizeof(char), streamBundleFile.fileEntries[i].dataSize, writeFile);
+				size_t written = fwrite(data, sizeof(char), streamBundleFile.fileEntries[i].assetSize, writeFile);
 
-				if (written != streamBundleFile.fileEntries[i].dataSize) {
+				if (written != streamBundleFile.fileEntries[i].assetSize) {
 					ASSERT("An error occured while writing data to output file.\n");
 				}
 
@@ -1099,7 +1129,28 @@ void exportFilesFromBundleSpecial(int fileCount) {
 	CloseLoadingPromptWidget();
 }
 
-static void openMenu() {
+static void openFilePrompt() {
+	nfdchar_t* outPath = NULL;
+
+	if (NFD_OpenDialogU8(&outPath, NULL, 0, "") == NFD_OKAY) {
+
+		if (fileType != NONE) {
+			disposeAndCloseActiveFile();
+		}
+
+		SetupLoadingPromptWidget(PROMPTLOADINGFILE_GENERIC);
+
+		sprintf(currentFileName, "%s", outPath);
+
+		PRINT("File picked: %s\n", currentFileName);
+
+		DetermineAndLoadFileType(currentFileName);
+	}
+	else {
+	}
+}
+
+static void openR1Bundle() {
 	nfdchar_t* outPath = NULL;
 
 	if (NFD_OpenDialogU8(&outPath, NULL, 0, "") == NFD_OKAY) {
@@ -1116,6 +1167,28 @@ static void openMenu() {
 
 		// Note: DON'T FORGET TO DETACH THE LOAD THREAD. IT CAUSES ISSUES IF YOU DON'T (SUCH AS CRASHING).
 		std::thread(&readCaffFile).detach();
+	}
+	else {
+	}
+}
+
+static void openStreamedBundle() {
+	nfdchar_t* outPath = NULL;
+
+	if (NFD_OpenDialogU8(&outPath, NULL, 0, "") == NFD_OKAY) {
+
+		if (fileType != NONE) {
+			disposeAndCloseActiveFile();
+		}
+
+		SetupLoadingPromptWidget(PROMPTLOADINGFILE_GENERIC);
+
+		sprintf(currentFileName, "%s", outPath);
+
+		PRINT("File picked: %s\n", currentFileName);
+
+		// Note: DON'T FORGET TO DETACH THE LOAD THREAD. IT CAUSES ISSUES IF YOU DON'T (SUCH AS CRASHING).
+		std::thread(&readOtherSupportedFile, SupportedFileType::STREAMEDBUNDLE).detach();
 	}
 	else {
 	}
@@ -1317,7 +1390,7 @@ void displayFileInfo(float barHeight) {
 			displayBundleV40Info();
 			break;
 		case BUNDLEV36:
-			displayBundleInfo();
+			displayBundleV36Info();
 			break;
 		case BUNDLEV31:
 			displayBundleV31Info();
@@ -1345,7 +1418,7 @@ void displayFileInfo(float barHeight) {
 	}
 }
 
-void displayBundleInfo() {
+void displayBundleV36Info() {
 	char filename[256];
 #if _WIN32
 	char* end = strrchr(currentFileName, '\\');
@@ -1365,9 +1438,7 @@ void displayBundleInfo() {
 		ImGui::Text("Bundle Version: %s", bundleFile.V36Bundle->header.versionString);
 		ImGui::Text("Bundle CRC: %08x", bundleFile.V36Bundle->header.headerHash);
 		if (activeManifest != nullptr) {
-			time_t time = activeManifest->timestamp;
-
-			ImGui::Text("Timestamp: %08x -> %s", activeManifest->timestamp, ctime(&time));
+			ImGui::Text("Timestamp: %08x -> %s", activeManifest->timestamp, ctime(&activeManifest->timestamp));
 		}
 
 		if (imGuiWindowInfo.streamBundleSelectedBundle != -1) {
@@ -1435,7 +1506,6 @@ void displayBundleV40Info() {
 		ImGui::Text("Bundle Version: %s", bundleFile.V40Bundle->header.versionString);
 		ImGui::Text("Bundle CRC: %08x", bundleFile.V40Bundle->header.headerHash);
 		time_t time = bundleFile.V40Bundle->header.timestamp;
-
 		ImGui::Text("Timestamp: %08x -> %s", bundleFile.V40Bundle->header.timestamp, ctime(&time));
 		bool val = bundleFile.V40Bundle->header.compression;
 		ImGui::Checkbox("Compressed", &val);
@@ -1502,7 +1572,16 @@ void displayStreamBundleInfo() {
 	if (imGuiWindowInfo.streamBundleSelectedBundle != -1) {
 		ImGui::Text("Currently viewing a contained bundle file...");
 		ImGui::Separator();
-		displayBundleInfo();
+		const char* version = streamBundleFile.bundleFiles[imGuiWindowInfo.streamBundleSelectedBundle].bundleFile.GetVersionHeader();
+		if (strncmp(version, BUNDLEV31_VER, 16) == 0) {
+			displayBundleV31Info();
+		}
+		if (strncmp(version, BUNDLEV36_VER, 16) == 0) {
+			displayBundleV36Info();
+		}
+		if (strncmp(version, BUNDLEV40_VER, 16) == 0) {
+			displayBundleV40Info();
+		}
 		return;
 	}
 
@@ -1516,19 +1595,16 @@ void displayStreamBundleInfo() {
 	int32_t remainLeft = strLen - (end - currentFileName);
 
 	try {
-
-		time_t time = streamBundleFile.header.timestamp;
-
 		strncpy(filename, end + 1, remainLeft);
 		ImGui::Text("Filename: %s", filename);
 		ImGui::SeparatorText("Streamed Bundle Information");
-		ImGui::Text("Timestamp: %08x -> %s", streamBundleFile.header.timestamp, ctime(&time));
+		ImGui::Text("Timestamp: %08x -> %s", streamBundleFile.header.timestamp, ctime(&streamBundleFile.header.timestamp));
 		ImGui::Spacing();
 		ImGui::SeparatorText("Bundle Sections");
 		ImGui::Text("TODO: fill this area.");
 		ImGui::Spacing();
 		ImGui::Text("References to other streamed bundles: {");
-		for (int32_t i = 0; i < streamBundleFile.header.referenceTableCount; i++) {
+		for (int32_t i = 0; i < streamBundleFile.header.numParents; i++) {
 			int32_t slot1 = (streamBundleFile.header.referenceTable[i] >> 24) & 0xFF;
 			int32_t slot2 = (streamBundleFile.header.referenceTable[i] >> 16) & 0xFF;
 			int32_t slot3 = (streamBundleFile.header.referenceTable[i] >> 8) & 0xFF;
@@ -1611,7 +1687,7 @@ void displayPinataDbFileInfo() {
 	if (imGuiWindowInfo.streamBundleSelectedBundle != -1) {
 		ImGui::Text("Currently viewing a contained bundle file...");
 		ImGui::Separator();
-		displayBundleInfo();
+		displayBundleV36Info();
 		return;
 	}
 
@@ -1638,7 +1714,7 @@ void displayPinataPkgInfo() {
 	if (imGuiWindowInfo.streamBundleSelectedBundle != -1) {
 		ImGui::Text("Currently viewing a contained bundle file...");
 		ImGui::Separator();
-		displayBundleInfo();
+		displayBundleV36Info();
 		return;
 	}
 
@@ -2673,9 +2749,6 @@ void displayActiveBundleV31Property() {
 	if (aidPtr != nullptr && type == V31_Unknown) {
 		if (strncmp(aidPtr + 4, "text", 4) == 0 || strncmp(aidPtr + 4, "strings", 7) == 0) {
 			type = V31_Text;
-		}
-		if (strncmp(aidPtr + 4, "texture", 7) == 0) {
-			type = V31_Texture;
 		}
 		if (strncmp(aidPtr + 4, "texture", 7) == 0) {
 			type = V31_Texture;
@@ -3794,7 +3867,19 @@ void displayActiveRPKFileProperty() {
 
 void displayActiveStreamBundleFileProperty() {
 	if (imGuiWindowInfo.streamBundleSelectedBundle != -1) {
-		displayActiveBundleV36Property();
+		const char* version = streamBundleFile.bundleFiles[imGuiWindowInfo.streamBundleSelectedBundle].bundleFile.versionString;
+		if (strncmp(version, BUNDLEV26_VER, 16) == 0) {
+			displayActiveBundleV26Property();
+		}
+		if (strncmp(version, BUNDLEV31_VER, 16) == 0) {
+			displayActiveBundleV31Property();
+		}
+		if (strncmp(version, BUNDLEV36_VER, 16) == 0) {
+			displayActiveBundleV36Property();
+		}
+		if (strncmp(version, BUNDLEV40_VER, 16) == 0) {
+			displayActiveBundleV40Property();
+		}
 		return;
 	}
 
@@ -3804,16 +3889,37 @@ void displayActiveStreamBundleFileProperty() {
 	StreamEntry* entry = &streamBundleFile.bundleFiles[imGuiWindowInfo.streamBundleSelectedItem];
 
 	ImGui::SeparatorText("Streamed File Properties");
-	ImGui::Text("Total Bundle Size: %d", fileEntry->dataSize);
-	ImGui::Text("Aid Hash: %08x", fileEntry->aid);
+	ImGui::Text("Total Bundle Size: %d", fileEntry->assetSize);
+	ImGui::Text("Aid Hash: %08x", fileEntry->assetId);
 
 	if (entry->entryType == ENTRY_BUNDLE) {
-		if (entry->bundleFile.sectionTable.adbStringLen != 0) {
-			char lbl[1024];
+		if (strncmp(entry->bundleFile.versionString, BUNDLEV36_VER, 16) == 0) {
+			if (entry->bundleFile.V36Bundle->sectionTable.adbStringLen != 0) {
+				char lbl[1024];
 
-			char* ptr = strstr(entry->bundleFile.sectionTable.adbString, "aid_");
+				char* ptr = strstr(entry->bundleFile.V36Bundle->sectionTable.adbString, "aid_");
 
-			ImGui::Text("ADB: %s", ptr);
+				if (ptr != nullptr) {
+					ImGui::Text("ADB: %s", ptr);
+				}
+				else {
+					ImGui::Text("ADB: %s", entry->bundleFile.V36Bundle->sectionTable.adbString);
+				}
+			}
+		}
+		if (strncmp(entry->bundleFile.versionString, BUNDLEV40_VER, 16) == 0) {
+			if (entry->bundleFile.V40Bundle->sectionTable.adbStringLen != 0) {
+				char lbl[1024];
+
+				char* ptr = strstr(entry->bundleFile.V40Bundle->sectionTable.adbString, "AMID_");
+
+				if (ptr != nullptr) {
+					ImGui::Text("ADB: %s", ptr);
+				}
+				else {
+					ImGui::Text("ADB: %s", entry->bundleFile.V40Bundle->sectionTable.adbString);
+				}
+			}
 		}
 	}
 
@@ -3830,7 +3936,7 @@ void displayActiveStreamBundleFileProperty() {
 			strcat(file, ".xwb");
 			break;
 		case ENTRY_BUNDLE:
-			sprintf(file, "%08x", fileEntry->aid);
+			sprintf(file, "%08x", fileEntry->assetId);
 			break;
 		default:
 			strcat(file, "lbl");
@@ -3840,7 +3946,7 @@ void displayActiveStreamBundleFileProperty() {
 		char* activeSect = 0;
 		activeSect = streamBundleFile.getFileData(imGuiWindowInfo.streamBundleSelectedItem);
 
-		writeDataToFile(file, "", activeSect, streamBundleFile.fileEntries[imGuiWindowInfo.streamBundleSelectedItem].dataSize);
+		writeDataToFile(file, "", activeSect, streamBundleFile.fileEntries[imGuiWindowInfo.streamBundleSelectedItem].assetSize);
 	}
 
 	if (ImGui::Button("Import Data")) {
@@ -3886,13 +3992,25 @@ void displayActiveStreamBundleFileProperty() {
 		ImGui::SeparatorText("General File Properties");
 
 		if (streamBundleFile.bundleFiles[imGuiWindowInfo.streamBundleSelectedItem].entryType == ENTRY_BUNDLE) {
-			BundleV36* bundle = &streamBundleFile.bundleFiles[imGuiWindowInfo.streamBundleSelectedItem].bundleFile;
-			char* ptr = strstr(bundle->sectionTable.fileLabelTable.fileLabels[fileIdx - 1], "aid_");
-			if (ptr != NULL) {
-				strcpy(lbl, ptr);
+			if (streamBundleFile.header.version == STREAMBUNDLE_NOVVERSION) {
+				BundleV36* bundle = streamBundleFile.bundleFiles[imGuiWindowInfo.streamBundleSelectedItem].bundleFile.V36Bundle;
+				char* ptr = strstr(bundle->sectionTable.fileLabelTable.fileLabels[fileIdx - 1], "aid_");
+				if (ptr != NULL) {
+					strcpy(lbl, ptr);
+				}
+				else {
+					strcpy(lbl, bundle->sectionTable.fileLabelTable.fileLabels[fileIdx - 1]);
+				}
 			}
-			else {
-				strcpy(lbl, bundle->sectionTable.fileLabelTable.fileLabels[fileIdx - 1]);
+			if (streamBundleFile.header.version == STREAMBUNDLE_SEPTVERSION) {
+				BundleV40* bundle = streamBundleFile.bundleFiles[imGuiWindowInfo.streamBundleSelectedItem].bundleFile.V40Bundle;
+				char* ptr = strstr(bundle->sectionTable.fileLabelTable.fileLabels[fileIdx - 1], "AMID_");
+				if (ptr != NULL) {
+					strcpy(lbl, ptr);
+				}
+				else {
+					strcpy(lbl, bundle->sectionTable.fileLabelTable.fileLabels[fileIdx - 1]);
+				}
 			}
 
 			if (strchr(lbl, ',') != NULL) {
@@ -3927,10 +4045,21 @@ void displayActiveStreamBundleFileProperty() {
 			ImGui::Text("Sections: ");
 			ImGui::SameLine();
 
-			for (int32_t s = 0; s < bundle->header.numSections; s++) {
-				if (bundle->sectionTable.fileInfos[s].asset == fileIdx) {
-					totalFileSize = totalFileSize + bundle->sectionTable.fileInfos[s].size;
-					char* label = bundle->sectionTable.sectionLabels[bundle->sectionTable.fileInfos[s].sectionType - 1].label;
+			int numSections = 0;
+			SectionTable* sectionTable = nullptr;
+			if (streamBundleFile.header.version == STREAMBUNDLE_NOVVERSION) {
+				numSections = streamBundleFile.bundleFiles[imGuiWindowInfo.streamBundleSelectedItem].bundleFile.V36Bundle->header.numSections;
+				sectionTable = &streamBundleFile.bundleFiles[imGuiWindowInfo.streamBundleSelectedItem].bundleFile.V36Bundle->sectionTable;
+			}
+			if (streamBundleFile.header.version == STREAMBUNDLE_SEPTVERSION) {
+				numSections = streamBundleFile.bundleFiles[imGuiWindowInfo.streamBundleSelectedItem].bundleFile.V40Bundle->header.numSections;
+				sectionTable = &streamBundleFile.bundleFiles[imGuiWindowInfo.streamBundleSelectedItem].bundleFile.V40Bundle->sectionTable;
+			}
+
+			for (int32_t s = 0; s < numSections; s++) {
+				if (sectionTable->fileInfos[s].asset == fileIdx) {
+					totalFileSize = totalFileSize + sectionTable->fileInfos[s].size;
+					char* label = sectionTable->sectionLabels[sectionTable->fileInfos[s].sectionType - 1].label;
 					ImGui::Text("%s ", label);
 					ImGui::SameLine();
 				}
@@ -4273,7 +4402,17 @@ void fillBundleV40FileList() {
 		strcpy(lbl, bundleFile.V40Bundle->sectionTable.fileLabelTable.fileLabels[i]);
 
 		if (strlen(imGuiWindowInfo.search) != 0) {
-			if (strstr(lbl, imGuiWindowInfo.search) == NULL) {
+			bool hasBeenFound = false;
+			if (strstr(lbl, imGuiWindowInfo.search) != nullptr) {
+				hasBeenFound = true;
+			}
+			if (activeManifest) {
+				if (flipEndian(activeManifest->GetAidHash(i)) == assetIdGetHash_Typed(imGuiWindowInfo.search)) {
+					hasBeenFound = true;
+				}
+			}
+
+			if (!hasBeenFound) {
 				ImGui::PopID();
 				continue;
 			}
@@ -4465,27 +4604,52 @@ void fillStreamBundleFileList() {
 
 	// If we have a bundle selected, display the regular bundle file list with a top back to the stream bundle contents
 	if (imGuiWindowInfo.streamBundleSelectedBundle != -1) {
+		const char* version = streamBundleFile.bundleFiles[imGuiWindowInfo.streamBundleSelectedBundle].bundleFile.GetVersionHeader();
 		if (ImGui::ArrowButton("backToStreamBundle", ImGuiDir_Left)) {
 			imGuiWindowInfo.streamBundleSelectedItem = -1;
 			imGuiWindowInfo.streamBundleSelectedBundle = -1;
-			if (bundleFile.V36Bundle != nullptr)
-				bundleFile.V36Bundle = nullptr;
+			if (strncmp(version, BUNDLEV26_VER, 16) == 0) {
+				if (bundleFile.V26Bundle != nullptr)
+					bundleFile.V26Bundle = nullptr;
+			}
+			if (strncmp(version, BUNDLEV31_VER, 16) == 0) {
+				if (bundleFile.V31Bundle != nullptr)
+					bundleFile.V31Bundle = nullptr;
+			}
+			if (strncmp(version, BUNDLEV36_VER, 16) == 0) {
+				if (bundleFile.V36Bundle != nullptr)
+					bundleFile.V36Bundle = nullptr;
+			}
+			if (strncmp(version, BUNDLEV40_VER, 16) == 0) {
+				if (bundleFile.V40Bundle != nullptr)
+					bundleFile.V40Bundle = nullptr;
+			}
 			fileIdx = -1;
 			return;
 		}
 		ImGui::SameLine();
 		ImGui::Text("Back to Streamed Bundle File List");
 		ImGui::Separator();
-		fillBundleV36FileList();
+		if (strncmp(version, BUNDLEV26_VER, 16) == 0) {
+			fillBundleV26FileList();
+		}
+		if (strncmp(version, BUNDLEV31_VER, 16) == 0) {
+			fillBundleV31FileList();
+		}
+		if (strncmp(version, BUNDLEV36_VER, 16) == 0) {
+			fillBundleV36FileList();
+		}
+		if (strncmp(version, BUNDLEV40_VER, 16) == 0) {
+			fillBundleV40FileList();
+		}
 		return;
 	}
 
-	for (int32_t i = 0; i < streamBundleFile.header.totalFileTotal; i++) {
+	for (int32_t i = 0; i < streamBundleFile.header.numEntries; i++) {
 		char* ptr = 0;
 
 		if (imGuiWindowInfo.aidSearch != 0) {
-			if (streamBundleFile.fileEntries[i].aid != imGuiWindowInfo.aidSearch) {
-				ImGui::PopID();
+			if (streamBundleFile.fileEntries[i].assetId != imGuiWindowInfo.aidSearch) {
 				continue;
 			}
 		}
@@ -4499,7 +4663,20 @@ void fillStreamBundleFileList() {
 			memset(lbl, 0, 1024);
 			memset(type, 0, 32);
 
-			ptr = strstr(streamBundleFile.bundleFiles[i].bundleFile.sectionTable.fileLabelTable.fileLabels[0], "aid_");
+			if (strncmp(streamBundleFile.bundleFiles[i].bundleFile.versionString, BUNDLEV26_VER, 16) == 0) {
+				ptr = strstr(streamBundleFile.bundleFiles[i].bundleFile.V26Bundle->fileInfoTable.debugTable.fileNames[0], "aid_");
+			}
+			if (strncmp(streamBundleFile.bundleFiles[i].bundleFile.versionString, BUNDLEV31_VER, 16) == 0) {
+				ptr = strstr(streamBundleFile.bundleFiles[i].bundleFile.V31Bundle->fileInfoTable.debugTable.fileNames[0], "aid_");
+			}
+			if (strncmp(streamBundleFile.bundleFiles[i].bundleFile.versionString, BUNDLEV36_VER, 16) == 0) {
+				int fileCount = streamBundleFile.bundleFiles[i].bundleFile.V36Bundle->header.numAssets;
+				ptr = strstr(streamBundleFile.bundleFiles[i].bundleFile.V36Bundle->sectionTable.fileLabelTable.fileLabels[fileCount - 1], "aid_");
+			}
+			if (strncmp(streamBundleFile.bundleFiles[i].bundleFile.versionString, BUNDLEV40_VER, 16) == 0) {
+				int fileCount = streamBundleFile.bundleFiles[i].bundleFile.V40Bundle->header.numAssets;
+				ptr = strstr(streamBundleFile.bundleFiles[i].bundleFile.V40Bundle->sectionTable.fileLabelTable.fileLabels[fileCount - 1], "AMID_");
+			}
 			if (ptr != NULL) {
 				// If so, copy the contents from the location of that and fetch the asset type.
 				strcpy(lbl, ptr);
@@ -4507,8 +4684,20 @@ void fillStreamBundleFileList() {
 				assetGetTypeFromString(lbl + 4, type);
 			}
 			else {
-				// Else, just copy the contents of the label to the dest.
-				strcpy(lbl, streamBundleFile.bundleFiles[i].bundleFile.sectionTable.fileLabelTable.fileLabels[0]);
+				if (strncmp(streamBundleFile.bundleFiles[i].bundleFile.versionString, BUNDLEV26_VER, 16) == 0) {
+					strcpy(lbl, streamBundleFile.bundleFiles[i].bundleFile.V26Bundle->fileInfoTable.debugTable.fileNames[0]);
+				}
+				if (strncmp(streamBundleFile.bundleFiles[i].bundleFile.versionString, BUNDLEV31_VER, 16) == 0) {
+					strcpy(lbl, streamBundleFile.bundleFiles[i].bundleFile.V31Bundle->fileInfoTable.debugTable.fileNames[0]);
+				}
+				if (strncmp(streamBundleFile.bundleFiles[i].bundleFile.versionString, BUNDLEV36_VER, 16) == 0) {
+					int pos = streamBundleFile.bundleFiles[i].bundleFile.V36Bundle->sectionTable.fileLabelTable.fileLabels[0][0] != '\0' ? 0 : 1;
+					strcpy(lbl, streamBundleFile.bundleFiles[i].bundleFile.V36Bundle->sectionTable.fileLabelTable.fileLabels[pos]);
+				}
+				if (strncmp(streamBundleFile.bundleFiles[i].bundleFile.versionString, BUNDLEV40_VER, 16) == 0) {
+					int pos = streamBundleFile.bundleFiles[i].bundleFile.V40Bundle->sectionTable.fileLabelTable.fileLabels[0][0] != '\0' ? 0 : 1;
+					strcpy(lbl, streamBundleFile.bundleFiles[i].bundleFile.V40Bundle->sectionTable.fileLabelTable.fileLabels[pos]);
+				}
 			}
 
 			if (strlen(imGuiWindowInfo.search) != 0) {
@@ -4535,7 +4724,18 @@ void fillStreamBundleFileList() {
 				// If we double click, assign the V36 bundle.
 				if(ImGui::IsMouseDoubleClicked(0)) {
 					imGuiWindowInfo.streamBundleSelectedBundle = i;
-					bundleFile.V36Bundle = &streamBundleFile.bundleFiles[i].bundleFile;
+					if (strncmp(streamBundleFile.bundleFiles[i].bundleFile.versionString, BUNDLEV26_VER, 16) == 0) {
+						bundleFile.V26Bundle = streamBundleFile.bundleFiles[i].bundleFile.V26Bundle;
+					}
+					if (strncmp(streamBundleFile.bundleFiles[i].bundleFile.versionString, BUNDLEV31_VER, 16) == 0) {
+						bundleFile.V31Bundle = streamBundleFile.bundleFiles[i].bundleFile.V31Bundle;
+					}
+					if (strncmp(streamBundleFile.bundleFiles[i].bundleFile.versionString, BUNDLEV36_VER, 16) == 0) {
+						bundleFile.V36Bundle = streamBundleFile.bundleFiles[i].bundleFile.V36Bundle;
+					}
+					if (strncmp(streamBundleFile.bundleFiles[i].bundleFile.versionString, BUNDLEV40_VER, 16) == 0) {
+						bundleFile.V40Bundle = streamBundleFile.bundleFiles[i].bundleFile.V40Bundle;
+					}
 				}
 				else {
 					if (imGuiWindowInfo.streamBundleSelectedItem == i) {
@@ -4591,11 +4791,8 @@ void fillGhouliesBundleFileList() {
 	char subtype[32];
 
 	for (int32_t i = 0; i < ghoulBundleFile.entryCount; i++) {
-		ImGui::PushID(i);
 		memset(lbl, 0, 1024);
 		memset(type, 0, 32);
-		memset(domain, 0, 32);
-		memset(subtype, 0, 32);
 
 		// Check if the entry label we're reading contains "aid_".
 		char* ptr = strstr(ghoulBundleFile.fileEntries[i].fileName, "aid_");
@@ -4604,12 +4801,6 @@ void fillGhouliesBundleFileList() {
 			strcpy(lbl, ptr);
 
 			assetGetTypeFromString(lbl + 4, type);
-
-			assetGetTypeFromString(lbl + 4 + (strlen(type) + 1), domain);
-
-			if (strcmp(type, "misc") == 0 || strcmp(type, "objparams") == 0 || strcmp(type, "statetable") == 0) {
-				assetGetTypeFromString(lbl + 4 + (strlen(type) + 1) + (strlen(domain) + 1), subtype);
-			}
 		}
 		else {
 			// Else, just copy the contents of the label to the dest.
@@ -4618,10 +4809,11 @@ void fillGhouliesBundleFileList() {
 
 		if (strlen(imGuiWindowInfo.search) != 0) {
 			if (strstr(lbl, imGuiWindowInfo.search) == NULL) {
-				ImGui::PopID();
 				continue;
 			}
 		}
+
+		ImGui::PushID(i);
 
 		//All (properly named) texture files end with "\default.rtx". Filter that out as well.
 		if (strcmp(type, "texture") == 0) {
@@ -4654,14 +4846,13 @@ void fillGhouliesBundleFileList() {
 
 void fillRPKFileList() {
 	for (int32_t i = 0; i < rpkFile.fileCount; i++) {
-		ImGui::PushID(i);
-
 		if (strlen(imGuiWindowInfo.search) != 0) {
 			if (strstr(rpkFile.fileEntries[i].fileName, imGuiWindowInfo.search) == NULL) {
-				ImGui::PopID();
 				continue;
 			}
 		}
+
+		ImGui::PushID(i);
 
 		ImGui::TableNextRow();
 		ImGui::TableSetColumnIndex(0);
@@ -4851,52 +5042,9 @@ void fillFolderGroupList() {
 	// Setup the local parameters needed.
 	char lbl[1024];
 
-	char tmpSearchFileName[16] = { 0 };
-	char tmpSearchFileNamePlain [16] = { 0 };
-	if (strlen(imGuiWindowInfo.search) != 0) {
-		if (strstr(imGuiWindowInfo.search, "banjox") != nullptr) {
-			uint32_t aid = assetIdGetHash_Typed(imGuiWindowInfo.search);
-			sprintf(tmpSearchFileNamePlain, "%02x%02x%02x%02x", (aid >> 24), (aid >> 16) & 0xFF, (aid >> 8) & 0xFF, aid & 0xFF);
-
-			if ((aid >> 24) == 0x11 || (aid >> 24) == 0x36) {
-
-				sprintf(tmpSearchFileName, "%02x\\%02x\\%02x\\%02x", (aid >> 24) & 0xFF, (aid >> 16) & 0xFF, (aid >> 8) & 0xFF, aid & 0xFF);
-			}
-			else {
-
-				sprintf(tmpSearchFileName, "%02x\\%02x%02x%02x", (aid >> 24) & 0xFF, (aid >> 16) & 0xFF, (aid >> 8) & 0xFF, aid & 0xFF);
-			}
-		}
-		if(strstr(imGuiWindowInfo.search, "ghoulies") != nullptr || strstr(imGuiWindowInfo.search, "pinata") != nullptr) {
-			uint32_t aid = assetIdGetHash_Base(imGuiWindowInfo.search);
-
-			sprintf(tmpSearchFileNamePlain, "%02x%02x%02x%02x", (aid >> 24), (aid >> 16) & 0xFF, (aid >> 8) & 0xFF, aid & 0xFF);
-			sprintf(tmpSearchFileName, "%02x%02x%02x%02x", (aid >> 24) & 0xFF, (aid >> 16) & 0xFF, (aid >> 8) & 0xFF, aid & 0xFF);
-		}
-	}
-
 	for (int32_t i = 0; i < folderFile.fileCount; i++) {
 		if (folderFile.fileTypes[i] == NONE && !folderFile.showInvalidFiles) continue;
 
-		if (strlen(imGuiWindowInfo.search) != 0) {
-			bool passedSearch = false;
-
-			if (strstr(folderFile.fileNames[i], imGuiWindowInfo.search) != NULL) {
-				passedSearch = true;
-			}
-
-			if (strstr(folderFile.fileNames[i], tmpSearchFileName) != NULL) {
-				passedSearch = true;
-			}
-
-			if (strstr(folderFile.fileNames[i], tmpSearchFileNamePlain) != NULL) {
-				passedSearch = true;
-			}
-
-			if (!passedSearch) {
-				continue;
-			}
-		}
 		memset(lbl, 0, 1024);
 		strcpy(lbl, folderFile.fileNames[i]);
 
@@ -5052,7 +5200,7 @@ void readLoctextFile(char* data, int32_t startEndian) {
 void handleSavingAsync(const char* fileName) {
 	switch (fileType) {
 	case BUNDLEV36: { SetupLoadingBarPromptWidget("Currently saving bundle file...", bundleFile.V36Bundle->header.numSections); writeCaffFile(fileName); } break;
-	case STREAMEDBUNDLE: { SetupLoadingBarPromptWidget("Currently saving streamed bundle file...", streamBundleFile.header.totalFileTotal); writeStreamBundleFile(fileName); } break;
+	case STREAMEDBUNDLE: { SetupLoadingBarPromptWidget("Currently saving streamed bundle file...", streamBundleFile.header.numEntries); writeStreamBundleFile(fileName); } break;
 	case GHOUL_BUNDLE: { SetupLoadingBarPromptWidget("Currently saving bundle file...", ghoulBundleFile.entryCount); ghoulBundleFile.writeToFile(fileName); } break;
 	case PINATA_PKG: { SetupLoadingBarPromptWidget("Currently saving PKG file...", PinataPKGFile.header.entryCount); PinataPKGFile.writePinataPKG(fileName); } break;
 	}
@@ -5328,10 +5476,21 @@ void readOtherSupportedFile(int32_t type) {
 		free(bicFile);*/
 	}
 
+	if (type == SupportedFileType::STREAMEDBUNDLE) {
+		if (!streamBundleFile.readStandaloneStreamBundleFile(currentFileName)) {
+			CloseLoadingPromptWidget();
+			FireMessage("Either the file provided is bad or this is not a valid streambundle file.\n", ErrorType_Warn);
+			imGuiWindowInfo.saveData.targetType = NONE;
+			isTimerCounting = false;
+			return;
+		}
+		fileType = STREAMEDBUNDLE;
+	}
+
 	if (type == SupportedFileType::GHOUL_DEMAND) {
 		if (!ghoulDemandFile.readStandaloneDemandFile(currentFileName)) {
 			CloseLoadingPromptWidget();
-			FireMessage("Either the file provided is bad or this is not a valid bundle file.\n", ErrorType_Warn);
+			FireMessage("Either the file provided is bad or this is not a valid demand file.\n", ErrorType_Warn);
 			imGuiWindowInfo.saveData.targetType = NONE;
 			isTimerCounting = false;
 			return;
@@ -5353,7 +5512,7 @@ void readOtherSupportedFile(int32_t type) {
 	if (type == SupportedFileType::PINATA_PKG) {
 		if (!PinataPKGFile.readStandalonePkgFile(currentFileName)) {
 			CloseLoadingPromptWidget();
-			FireMessage("A problem was encountered while reading the data.\n", ErrorType_Warn);
+			FireMessage("Either the file provided is bad or this is not a valid PKG file.\n", ErrorType_Warn);
 			imGuiWindowInfo.saveData.targetType = NONE;
 			isTimerCounting = false;
 			return;
@@ -5448,10 +5607,9 @@ void readCaffFile() {
 
 	PRINT("MAGIC: %08x, VERSION: %s\n", caffMagic, caffVersion);
 
-	if (caffMagic != 0x46464143 && caffMagic != 0x7CB48C43) { 
-		//PRINT("The file supplied is not a valid bundle or streambundle file.\n");
+	if (caffMagic != 0x46464143) { 
 		CloseLoadingPromptWidget();
-		FireMessage("The file supplied is not a valid bundle or streambundle file.\n", ErrorType_Warn);
+		FireMessage("The file supplied is not a valid bundle file.\n", ErrorType_Warn);
 		return; 
 	}
 
@@ -5570,16 +5728,6 @@ void readCaffFile() {
 			}
 		}
 	}
-	else if(caffMagic == 0x7CB48C43) {
-
-		if (!streamBundleFile.readStandaloneStreamBundleFile(currentFileName)) {
-			CloseLoadingPromptWidget();
-			imGuiWindowInfo.saveData.targetType = NONE;
-			isTimerCounting = false;
-			return;
-		}
-		fileType = STREAMEDBUNDLE;
-	}
 	
 	isTimerCounting = false;
 	CloseLoadingPromptWidget();
@@ -5635,25 +5783,25 @@ void writeStreamBundleFile(const char* fileName) {
 	try {
 		fwrite(data, 1, 0x10, newFile);
 
-		int32_t entryTotalSize = streamBundleFile.header.totalFileTotal * 0xC;
-		int32_t refTotalSize = streamBundleFile.header.referenceTableCount * 0x4;
+		int32_t entryTotalSize = streamBundleFile.header.numEntries * 0xC;
+		int32_t refTotalSize = streamBundleFile.header.numParents * 0x4;
 
-		int32_t refCount = flipEndian(streamBundleFile.header.referenceTableCount);
+		int32_t refCount = flipEndian(streamBundleFile.header.numParents);
 		fwrite(&refCount, 4, 1, newFile);
 
-		for (int32_t i = 0; i < streamBundleFile.header.referenceTableCount; i++) {
+		for (int32_t i = 0; i < streamBundleFile.header.numParents; i++) {
 			uint32_t ref = flipEndian(streamBundleFile.header.referenceTable[i]);
 			fwrite(&ref, 4, 1, newFile);
 		}
 
 		int32_t offset = 0x14 + refTotalSize + entryTotalSize;
 
-		for (int32_t i = 0; i < streamBundleFile.header.totalFileTotal; i++) {
-			int32_t writeAid = flipEndian(streamBundleFile.fileEntries[i].aid);
+		for (int32_t i = 0; i < streamBundleFile.header.numEntries; i++) {
+			int32_t writeAid = flipEndian(streamBundleFile.fileEntries[i].assetId);
 			int32_t writeOffset = flipEndian(offset);
-			int32_t writeSize = flipEndian(streamBundleFile.fileEntries[i].dataSize);
+			int32_t writeSize = flipEndian(streamBundleFile.fileEntries[i].assetSize);
 
-			int32_t sizeOfData = streamBundleFile.fileEntries[i].dataSize;
+			int32_t sizeOfData = streamBundleFile.fileEntries[i].assetSize;
 
 			if (bundleSetup.doesBufferedSaveExist(i, 0)) {
 				writeSize = flipEndian(bundleSetup.bufferedSaves[bundleSetup.getIdOfBufferedSave(i, 0)].dataSize);
@@ -5667,12 +5815,12 @@ void writeStreamBundleFile(const char* fileName) {
 			offset += sizeOfData;
 		}
 
-		for (int32_t i = 0; i < streamBundleFile.header.totalFileTotal; i++) {
+		for (int32_t i = 0; i < streamBundleFile.header.numEntries; i++) {
 			if (bundleSetup.doesBufferedSaveExist(i, 0)) {
 				fwrite(bundleSetup.bufferedSaves[bundleSetup.getIdOfBufferedSave(i, 0)].savedData, 1, bundleSetup.bufferedSaves[bundleSetup.getIdOfBufferedSave(i, 0)].dataSize, newFile);
 			}
 			else {
-				fwrite(data + streamBundleFile.fileEntries[i].offset, 1, streamBundleFile.fileEntries[i].dataSize, newFile);
+				fwrite(data + streamBundleFile.fileEntries[i].startOffset, 1, streamBundleFile.fileEntries[i].assetSize, newFile);
 			}
 
 			imGuiWindowInfo.saveData.currentSaved++;
@@ -7027,6 +7175,7 @@ int32_t DetermineFileType(const char* fileName) {
 		if (strncmp(version, BUNDLEV31_VER, 16) == 0) return SupportedFileType::BUNDLEV31;
 		if (strncmp(version, BUNDLEV36_VER, 16) == 0) return SupportedFileType::BUNDLEV36;
 		if (strncmp(version, BUNDLEV40_VER, 16) == 0) return SupportedFileType::BUNDLEV40;
+		FireMessageF("A CAFF header was found the version %s is not recognised.", ErrorType_Info, version);
 		return SupportedFileType::NONE; // We realistically don't need to do any further checks here.
 	}
 
@@ -7046,6 +7195,8 @@ int32_t DetermineFileType(const char* fileName) {
 		return type;
 	}
 
+	// Games without an ASCII identifier or a filename.
+
 	int32_t valType = 0;
 	int32_t sectCount = 0;
 
@@ -7061,7 +7212,9 @@ int32_t DetermineFileType(const char* fileName) {
 		type = SupportedFileType::GHOUL_DEMAND;
 	}
 
-	if (valType == 0x7CB48C43) {
+	valType = flipEndian(valType);
+
+	if (valType == STREAMBUNDLE_IDENTIFIER_NOVVERSION || valType == STREAMBUNDLE_IDENTIFIER_SEPT18VERSION || valType == STREAMBUNDLE_IDENTIFIER_SEPT20VERSION) {
 		type = SupportedFileType::STREAMEDBUNDLE;
 	}
 
@@ -7070,11 +7223,19 @@ int32_t DetermineFileType(const char* fileName) {
 }
 
 void DetermineAndLoadFileType(const char* fileName) {
-	if (fileName == nullptr || fileName[0] == '\0') return;
+	if (fileName == nullptr || fileName[0] == '\0') {
+		CloseLoadingPromptWidget();
+		FireMessage("The given file does not appear to be a supported format.", ErrorType_Info);
+		return;
+	}
 
 	int type = DetermineFileType(fileName);
 
-	if (type == SupportedFileType::NONE) return;
+	if (type == SupportedFileType::NONE) {
+		CloseLoadingPromptWidget();
+		FireMessage("The given file does not appear to be a supported format.", ErrorType_Info);
+		return;
+	}
 
 	SetupLoadingPromptWidget(PROMPTLOADINGFILE_GENERIC);
 
@@ -7098,14 +7259,14 @@ void DetermineAndLoadFileType(const char* fileName) {
 	case SupportedFileType::BUNDLEV31:
 	case SupportedFileType::BUNDLEV36:
 	case SupportedFileType::BUNDLEV40:
-	case SupportedFileType::STREAMEDBUNDLE:
 		std::thread(&readCaffFile).detach(); // Handles standard asset files and streamed bundles.
 		return;
 	case SupportedFileType::RR_RPK:
+	case SupportedFileType::STREAMEDBUNDLE:
 	case SupportedFileType::GHOUL_BUNDLE:
+	case SupportedFileType::GHOUL_DEMAND:
 	case SupportedFileType::PINATA_PKG:
 	case SupportedFileType::PINATA_DBBUNDLE:
-	case SupportedFileType::GHOUL_DEMAND:
 		std::thread(&readOtherSupportedFile, type).detach(); // Handles files from VP, Ghoulies and Rocket titles.
 		return;
 	case SupportedFileType::FOLDER_GROUP:

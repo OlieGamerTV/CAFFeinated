@@ -10,29 +10,26 @@ bool BundleFile::ReadBundleFile(char* data) {
 		return false;
 	}
 
-	char caffMagic[4] = { 0 };
-	char caffVer[0x10] = { 0 };
+	memset(magic, 0, 4);
+	memset(versionString, 0, 0x10);
 
-	memset(caffMagic, 0, 4);
-	memset(caffVer, 0, 0x10);
-
-	if (memcpy(caffMagic, data, 0x4) == nullptr) {
+	if (memcpy(magic, data, 0x4) == nullptr) {
 		FireMessage("Error occured while trying to read the file.\n", ErrorType_Info);
 		return false;
 	}
 
-	if (strncmp(caffMagic, "CAFF", 4) != 0) { // If we don't find a "CAFF" magic immediately, then we already know we ain't in a valid file.
+	if (strncmp(magic, "CAFF", 4) != 0) { // If we don't find a "CAFF" magic immediately, then we already know we ain't in a valid file.
 		FireMessage("The file supplied is not a valid bundle file.\n", ErrorType_Info);
 		return false;
 	}
 
-	if (memcpy(caffVer, data + 4, 0x10) == nullptr) {
+	if (memcpy(versionString, data + 4, 0x10) == nullptr) {
 		FireMessage("Error occured while trying to read the file.\n", ErrorType_Info);
 		return false;
 	}
 
 
-	if (strncmp(caffVer, "24.09.03.0026", 0x10) == 0) {
+	if (strncmp(versionString, BUNDLEV26_VER, 0x10) == 0) {
 		if (V26Bundle == nullptr) {
 			V26Bundle = new BundleV26();
 		}
@@ -40,7 +37,7 @@ bool BundleFile::ReadBundleFile(char* data) {
 		return V26Bundle->readBundleFileV0026(data);
 	}
 
-	if (strncmp(caffVer, "28.01.05.0031", 0x10) == 0) {
+	if (strncmp(versionString, BUNDLEV31_VER, 0x10) == 0) {
 		if (V31Bundle == nullptr) {
 			V31Bundle = new BundleV31();
 		}
@@ -48,7 +45,7 @@ bool BundleFile::ReadBundleFile(char* data) {
 		return V31Bundle->readBundleFileV0031(data);
 	}
 
-	if (strncmp(caffVer, "07.08.06.0036", 0x10) == 0) {
+	if (strncmp(versionString, BUNDLEV36_VER, 0x10) == 0) {
 		if (V36Bundle == nullptr) {
 			V36Bundle = new BundleV36();
 		}
@@ -56,7 +53,7 @@ bool BundleFile::ReadBundleFile(char* data) {
 		return V36Bundle->readBundleFileV0036(data);
 	}
 
-	if (strncmp(caffVer, "08.11.07.0040", 0x10) == 0) {
+	if (strncmp(versionString, BUNDLEV40_VER, 0x10) == 0) {
 		if (V40Bundle == nullptr) {
 			V40Bundle = new BundleV40();
 		}
@@ -66,6 +63,10 @@ bool BundleFile::ReadBundleFile(char* data) {
 
 	FireMessage("The file supplied is not a supported bundle file.\n", ErrorType_Info);
 	return false;
+}
+
+BundleFile::~BundleFile() {
+	ClearActiveBundleFile();
 }
 
 void BundleFile::ClearActiveBundleFile() {
@@ -107,28 +108,20 @@ bool BundleV40::readBundleHeaderV0040(char* data) {
 		return false;
 	}
 
-	char caffVer[0x10];
-
 	int32_t offset = 0;
 	bool isValidVersion = false;
 
-	if (memcpy(caffVer, data + 4, 0x10) == nullptr) {
+	if (memcpy(header.versionString, data + 4, 0x10) == nullptr) {
 		printf("Error occured while trying to read the file.\n");
 		return false;
 	}
 
-	//printf("Bundle Version: %s\n", caffVer);
-	strcpy(header.versionString, caffVer);
-
-	if (strcmp(header.versionString, "08.11.07.0040") == 0) {
-		printf("The bundle file provided is a Kinect Sports bundle.\n");
-		isValidVersion = true;
-	}
-
-	if (!isValidVersion) {
+	if (strncmp(header.versionString, BUNDLEV40_VER, 16)) {
 		printf("The given file is not a valid or supported bundle file.\n");
 		return false;
 	}
+
+	printf("The bundle file provided is a valid V0040 Bundle file.\n");
 
 	try {
 		printf("CAFF Header - {\n");
@@ -518,28 +511,20 @@ bool BundleV36::readBundleHeaderV0036(char* data) {
 		return false;
 	}
 
-	char caffVer[0x10];
-
 	int32_t offset = 0;
 	bool isValidVersion = false;
 
-	if (memcpy(caffVer, data + 4, 0x10) == nullptr) {
+	if (memcpy(header.versionString, data + 4, 0x10) == nullptr) {
 		printf("Error occured while trying to read the file.\n");
 		return false;
 	}
 
-	//printf("Bundle Version: %s\n", caffVer);
-	strcpy(header.versionString, caffVer);
-
-	if (strcmp(header.versionString, "07.08.06.0036") == 0) {
-		printf("The bundle file provided is a Viva Pinata or Nuts & Bolts file.\n");
-		isValidVersion = true;
-	}
-
-	if (!isValidVersion) {
+	if (strncmp(header.versionString, BUNDLEV36_VER, 16)) {
 		printf("The given file is not a valid or supported bundle file.\n");
 		return false;
 	}
+
+	printf("The bundle file provided is a valid V0036 Bundle file.\n");
 
 	try {
 		printf("CAFF Header - {\n");
@@ -894,7 +879,7 @@ void BundleV36::writeBundleFileHeader(FILE* writeStream) {
 	char* headerData = (char*)malloc(header.headerSize);
 	memset(headerData, 0 , header.headerSize);
 	memcpy(headerData, "CAFF", 4);
-	memcpy(headerData + 4, "07.08.06.0036", 13);
+	memcpy(headerData + 4, BUNDLEV36_VER, strlen(BUNDLEV36_VER));
 	memcpy(headerData + 0x48, &header.byteswapFlags, 1);
 	memcpy(headerData + 0x49, &header.numSectionTypes, 1);
 	memcpy(headerData + 0x4A, &header.compression, 1);
@@ -1212,28 +1197,20 @@ bool BundleV31::readBundleFileV0031(char* data) {
 
 	bundleData = data;
 
-	char caffVer[0x10];
-
 	int32_t offset = 0;
 	bool isValidVersion = false;
 
-	if (memcpy(caffVer, data + 4, 0x10) == nullptr) {
+	if (memcpy(header.versionString, data + 4, 0x10) == nullptr) {
 		printf("Error occured while trying to read the file.\n");
 		return false;
 	}
 
-	//printf("Bundle Version: %s\n", caffVer);
-	strcpy(header.versionString, caffVer);
-
-	if (strcmp(header.versionString, "28.01.05.0031") == 0) {
-		printf("The bundle file provided is indeed the January 28th, 2005 version of the bundle format.\n");
-		isValidVersion = true;
-	}
-
-	if (!isValidVersion) {
+	if (strncmp(header.versionString, BUNDLEV31_VER, 16)) {
 		printf("The given file is not a valid or is a bundle file with a different version.\n");
 		return false;
 	}
+
+	printf("The bundle file provided is indeed the January 28th, 2005 version of the bundle format.\n");
 
 	try {
 		printf("CAFF Header - {\n");
@@ -1517,28 +1494,20 @@ bool BundleV26::readBundleFileV0026(char* data) {
 
 	bundleData = data;
 
-	char caffVer[0x10];
-
 	int32_t offset = 0;
 	bool isValidVersion = false;
 
-	if (memcpy(caffVer, data + 4, 0x10) == nullptr) {
+	if (memcpy(header.versionString, data + 4, 0x10) == nullptr) {
 		printf("Error occured while trying to read the file.\n");
 		return false;
 	}
 
-	//printf("Bundle Version: %s\n", caffVer);
-	strcpy(header.versionString, caffVer);
-
-	if (strcmp(header.versionString, "24.09.03.0026") == 0) {
-		printf("The bundle file provided is indeed the September 24, 2003 version of the bundle format.\n");
-		isValidVersion = true;
-	}
-
-	if (!isValidVersion) {
+	if (!strncmp(header.versionString, BUNDLEV26_VER, 16)) {
 		printf("The given file is not a valid or is a bundle file with a different version.\n");
 		return false;
 	}
+
+	printf("The bundle file provided is indeed the September 24, 2003 version of the bundle format.\n");
 
 	try {
 		// Now we read the important information.

@@ -1,29 +1,17 @@
 #include "imgui_includes.h"
 #include "CommonReader.h"
 #include "StreamBundle.h"
+#include "MessageHandle.h"
 
 void StreamBundle::ClearActiveData() {
-	if (bundleFiles != nullptr) {
-		for (int i = 0; i < header.totalFileTotal; i++) {
-			if (bundleFiles[i].entryType == ENTRY_BUNDLE) {
-				bundleFiles[i].bundleFile.bundleData = nullptr;
-			}
-		}
-		delete[] bundleFiles;
-	}
-
-	if (header.referenceTable != nullptr) {
-		delete[] header.referenceTable;
-	}
-
-	if (fileEntries != nullptr) {
-		delete[] fileEntries;
-	}
-
 	if (fileData != nullptr) {
 		free(fileData);
 		fileData = nullptr;
 	}
+
+	bundleFiles.clear();
+	header.referenceTable.clear();
+	fileEntries.clear();
 }
 
 bool StreamBundle::readStandaloneStreamBundleFile(char* fileName) {
@@ -48,90 +36,126 @@ bool StreamBundle::readStandaloneStreamBundleFile(char* fileName) {
 	return readStreamBundleFile(data);
 }
 
-bool StreamBundle::readStreamBundleFile(char* data) {
-	if (data == nullptr) return false;
+bool StreamBundle::readStreamBundleFileHeader(){
+	if (fileData == nullptr) return false;
 
-	fileData = data;
-	int32_t offsetVar = 0xC;
-	int32_t totalFileTotalVar = 0;
-	uint32_t timestampVar = 0;
+	uint32_t versionVar = 0;
+	memcpy(&versionVar, fileData, sizeof(int32_t));
+	header.version = flipEndian(versionVar);
 
-	int32_t referenceTableCountVar = 0;
+	if (header.version == STREAMBUNDLE_IDENTIFIER_NOVVERSION) {
+		int32_t offsetVar = 0xC;
+		int32_t totalFileTotalVar = 0;
+		uint32_t timestampVar = 0;
+		int32_t referenceTableCountVar = 0;
 
-	memcpy(&offsetVar, data + 4, sizeof(int32_t));
-	memcpy(&totalFileTotalVar, data + 8, sizeof(int32_t));
-	memcpy(&timestampVar, data + 0xC, sizeof(int32_t));
-	memcpy(&referenceTableCountVar, data + 0x10, sizeof(int32_t));
+		memcpy(&offsetVar, fileData + 4, sizeof(int32_t));
+		memcpy(&totalFileTotalVar, fileData + 8, sizeof(int32_t));
+		memcpy(&timestampVar, fileData + 0xC, sizeof(int32_t));
+		memcpy(&referenceTableCountVar, fileData + 0x10, sizeof(int32_t));
 
-	header.offset = flipEndian(offsetVar);
-	header.totalFileTotal = flipEndian(totalFileTotalVar);
-	header.timestamp = flipEndian(timestampVar);
-	header.referenceTableCount = flipEndian(referenceTableCountVar);
+		header.entrySize = flipEndian(offsetVar);
+		header.numEntries = flipEndian(totalFileTotalVar);
+		header.timestamp = flipEndian(timestampVar);
+		header.numParents = flipEndian(referenceTableCountVar);
+		return true;
+	}
+	if (header.version == STREAMBUNDLE_IDENTIFIER_SEPT18VERSION || header.version == STREAMBUNDLE_IDENTIFIER_SEPT20VERSION) {
+		int32_t offsetVar = 0xC;
+		int32_t totalFileTotalVar = 0;
+		uint64_t timestampVar = 0;
+		int32_t referenceTableCountVar = 0;
 
-	header.referenceTable = new uint32_t[header.referenceTableCount];
+		memcpy(&offsetVar, fileData + 4, sizeof(int32_t));
+		memcpy(&totalFileTotalVar, fileData + 8, sizeof(int32_t));
+		memcpy(&timestampVar, fileData + 0x10, sizeof(int64_t));
+		memcpy(&referenceTableCountVar, fileData + 0x18, sizeof(int32_t));
 
-	printf("Total References %d\n", header.referenceTableCount);
+		header.entrySize = flipEndian(offsetVar);
+		header.numEntries = flipEndian(totalFileTotalVar);
+		header.timestamp = flipEndian(timestampVar);
+		header.numParents = flipEndian(referenceTableCountVar);
+		return true;
+	}
+
+	return false;
+}
+
+bool StreamBundle::readStreamBunfleFileEntries() {
+	printf("Total References %d\n", header.numParents);
 
 	int32_t pos = 0x14;
-	for (int32_t i = 0; i < header.referenceTableCount; i++) {
+	if (header.version == STREAMBUNDLE_IDENTIFIER_NOVVERSION) {
+		pos = 0x14;
+	}
+	if (header.version == STREAMBUNDLE_IDENTIFIER_SEPT18VERSION || header.version == STREAMBUNDLE_IDENTIFIER_SEPT20VERSION) {
+		pos = 0x20;
+	}
+
+	for (int32_t i = 0; i < header.numParents; i++) {
 		int32_t refAid = 0;
-		memcpy(&refAid, data + pos, sizeof(int32_t));
-		header.referenceTable[i] = flipEndian(refAid);
+		memcpy(&refAid, fileData + pos, sizeof(int32_t));
+		header.referenceTable.emplace_back(flipEndian(refAid));
 		pos += 4;
 
 		printf("Ref %d - %08x (Bundle\\%02x\\%02x%02x%02x)\n", i, header.referenceTable[i], (header.referenceTable[i] >> 24) & 0xFF, (header.referenceTable[i] >> 16) & 0xFF, (header.referenceTable[i] >> 8) & 0xFF, header.referenceTable[i] & 0xFF);
 	}
 
-	fileEntries = new StreamFileEntry[header.totalFileTotal];
+	if (header.version == STREAMBUNDLE_IDENTIFIER_NOVVERSION) {
+		pos = 0x14 + (header.numParents * 4);
+	}
+	if (header.version == STREAMBUNDLE_IDENTIFIER_SEPT18VERSION || header.version == STREAMBUNDLE_IDENTIFIER_SEPT20VERSION) {
+		pos = 0x20 + (header.numParents * 4);
+	}
 
-	pos = 0x14 + (header.referenceTableCount * 4);
-	for (int32_t i = 0; i < header.totalFileTotal; i++) {
+	for (int32_t i = 0; i < header.numEntries; i++) {
+		fileEntries.emplace_back();
 		uint32_t aidVar;
 		int32_t offsetVar;
 		int32_t dataSizeVar;
-		memcpy(&aidVar, data + pos, sizeof(int32_t));
-		memcpy(&offsetVar, data + pos + 4, sizeof(int32_t));
-		memcpy(&dataSizeVar, data + pos + 8, sizeof(int32_t));
-		fileEntries[i].aid = flipEndian(aidVar);
-		fileEntries[i].offset = flipEndian(offsetVar);
-		fileEntries[i].dataSize = flipEndian(dataSizeVar);
+		memcpy(&aidVar, fileData + pos, sizeof(int32_t));
+		memcpy(&offsetVar, fileData + pos + 4, sizeof(int32_t));
+		memcpy(&dataSizeVar, fileData + pos + 8, sizeof(int32_t));
+		fileEntries[i].assetId = flipEndian(aidVar);
+		fileEntries[i].startOffset = flipEndian(offsetVar);
+		fileEntries[i].assetSize = flipEndian(dataSizeVar);
 		pos += 0xC;
 
-		printf("File %08x (%d - %d)\n", fileEntries[i].aid, fileEntries[i].offset, fileEntries[i].dataSize);
+		printf("File %08x (%d - %d)\n", fileEntries[i].assetId, fileEntries[i].startOffset, fileEntries[i].assetSize);
 	}
 
-	bundleFiles = new StreamEntry[header.totalFileTotal];
 	uint32_t magic = 0;
 	char magicChar[5];
 
-	try {
-		for (int32_t i = 0; i < header.totalFileTotal; i++) {
-			//char* bundleData = (char*)malloc(fileEntries[i].dataSize);
+	bundleFiles.reserve(header.numEntries);
 
+	try {
+		for (int32_t i = 0; i < header.numEntries; i++) {
+			bundleFiles.emplace_back();
 			memset(magicChar, 0, 5);
 
-			memcpy(&magic, data + fileEntries[i].offset, sizeof(uint32_t));
-			memcpy(&magicChar, data + fileEntries[i].offset, 4);
+			memcpy(&magic, fileData + fileEntries[i].startOffset, sizeof(uint32_t));
+			memcpy(&magicChar, fileData + fileEntries[i].startOffset, 4);
 
 			printf("File %d Magic %08x (%s)\n", i, magic, magicChar);
 
-			//memcpy(bundleData, data + fileEntries[i].offset, fileEntries[i].dataSize);
+			// Necessity due to now using std::vector.
+			char* bundleData = (char*)malloc(fileEntries[i].assetSize);
+			memcpy(bundleData, fileData + fileEntries[i].startOffset, fileEntries[i].assetSize);
+
 			if (magic == 0x57424E44) {
 				bundleFiles[i].entryType = ENTRY_DNBW;
-				bundleFiles[i].waveBankFile.ReadBankFile(data + fileEntries[i].offset);
+				bundleFiles[i].waveBankFile.ReadBankFile(bundleData);
 			}
 			else if (magic == 0x46464143) {
 				bundleFiles[i].entryType = ENTRY_BUNDLE;
-				bundleFiles[i].bundleFile.readBundleFileV0036(data + fileEntries[i].offset);
-				//bundleData = nullptr;
+				bundleFiles[i].bundleFile.ReadBundleFile(bundleData);
 			}
 			else {
 				bundleFiles[i].entryType = ENTRY_NONE;
 			}
 
-			/*if (bundleData != nullptr) {
-				free(bundleData);
-			}*/
+			bundleData = nullptr;
 		}
 	}
 	catch (std::exception e) {
@@ -142,6 +166,14 @@ bool StreamBundle::readStreamBundleFile(char* data) {
 		printf("A problem occured while reading the data. Error %d\n", errno);
 		return false;
 	}
+}
+
+bool StreamBundle::readStreamBundleFile(char* data) {
+	if (data == nullptr) return false;
+	fileData = data;
+
+	if (!readStreamBundleFileHeader()) return false;
+	if (!readStreamBunfleFileEntries()) return false;
 	
 
 	printf("Finished reading StreamBundle file.\n");
@@ -157,9 +189,9 @@ char* StreamBundle::getFileData(int32_t fileIdx) {
 		return NULL;
 	}
 
-	char* data = (char*)malloc(fileEntries[fileIdx].dataSize);
+	char* data = (char*)malloc(fileEntries[fileIdx].assetSize);
 
-	memcpy(data, fileData + fileEntries[fileIdx].offset, fileEntries[fileIdx].dataSize);
+	memcpy(data, fileData + fileEntries[fileIdx].startOffset, fileEntries[fileIdx].assetSize);
 
 	return data;
 }
@@ -169,22 +201,47 @@ bool StreamBundle::addStreamedReference(bool* open) {
 	if (ImGui::BeginPopupModal("Add Reference", open, ImGuiWindowFlags_NoCollapse)) {
 		uint32_t aid = 0x50000000;
 
-		ImGui::InputScalar("Reference Aid", ImGuiDataType_U32, &aid, 0, 0, "%08X", ImGuiInputTextFlags_CharsHexadecimal);
+		ImGui::InputScalar("Reference Aid", ImGuiDataType_U32, &aid, 0, 0, "%08X", ImGuiInputTextFlags_CharsHexadecimal | ImGuiInputTextFlags_CharsUppercase);
 
 		if (ImGui::Button("Add")) {
-			uint32_t* tempTable = new uint32_t[header.referenceTableCount];
-			for (int32_t i = 0; i < header.referenceTableCount; i++) {
-				tempTable[i] = header.referenceTable[i];
+			bool isAlreadyPresent = false;
+			for (int i = 0; i < header.numParents; i++) {
+				if (header.referenceTable[i] == aid) {
+					isAlreadyPresent = true;
+					break;
+				}
 			}
-			header.referenceTableCount++;
-			header.referenceTable = new uint32_t[header.referenceTableCount];
-			for (int32_t i = 0; i < header.referenceTableCount - 1; i++) {
-				header.referenceTable[i] = tempTable[i];
+
+			if (!isAlreadyPresent) {
+				header.referenceTable.emplace_back(aid);
+				header.numParents++;
+
+				*open = false;
+				ImGui::CloseCurrentPopup();
+				ret = true;
 			}
-			header.referenceTable[header.referenceTableCount - 1] = aid;
-			*open = false;
-			ImGui::CloseCurrentPopup();
-			ret = true;
+			else {
+				FireMessageF("The given hash %08X is already present as a reference.", ErrorType_Warn, aid);
+			}
+		}
+		if (ImGui::Button("Remove")) {
+			bool wasPresent = false;
+			for (int i = 0; i < header.numParents; i++) {
+				if (header.referenceTable[i] == aid) {
+					header.referenceTable.erase(header.referenceTable.begin() + i);
+					wasPresent = true;
+					break;
+				}
+			}
+			
+			if (wasPresent) {
+				*open = false;
+				ImGui::CloseCurrentPopup();
+				ret = true;
+			}
+			else {
+				FireMessageF("The given hash %08X was not found as an existing reference.", ErrorType_Warn, aid);
+			}
 		}
 
 		ImGui::SameLine();

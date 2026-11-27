@@ -35,6 +35,8 @@ int32_t  mainWindowCode();
 void drawWindow();
 void handleSavingAsync(const char* fileName);
 
+void handleKeyboardShortcuts();
+
 //Base Window
 void buildBaseImGuiWindow();
 void buildMainWindow();
@@ -58,7 +60,7 @@ void fillRPKFileList();
 #pragma region File Info
 void displayFileInfo(float barHeight);
 void displayBundleV40Info();
-void displayBundleInfo();
+void displayBundleV36Info();
 void displayBundleV31Info();
 void displayStreamBundleInfo();
 void displayGhoulDemandInfo();
@@ -92,6 +94,11 @@ void readOtherSupportedFile(int32_t  type);
 int32_t DetermineFileType(const char* fileName);
 void DetermineAndLoadFileType(const char* fileName);
 
+// General
+static void openFilePrompt();
+static void openR1Bundle();
+static void openStreamedBundle();
+
 // Folders
 void readFolderGroup();
 void readFolderLogicGroup(char* outPath);
@@ -119,7 +126,6 @@ void readMarkerFile(char* data);
 #pragma endregion
 
 static void ShowMenuFile();
-static void openMenu();
 static void ShowSearchMenu();
 void TestBundleRecompilation();
 

@@ -12,10 +12,10 @@ static const int32_t PADDINGSIZE_MODELGPU = 0x20;
 static const int32_t PADDINGSIZE_STANDARD = 0x10;
 static const int32_t PADDINGSIZE_MODELSTREAM = 4;
 
-static const char BUNDLEV40_VER[16] = "08.11.07.0040";
-static const char BUNDLEV36_VER[16] = "07.08.06.0036";
-static const char BUNDLEV31_VER[16] = "28.01.05.0031";
-static const char BUNDLEV26_VER[16] = "24.09.03.0026";
+static const char BUNDLEV40_VER[16] = "08.11.07.0040\0";
+static const char BUNDLEV36_VER[16] = "07.08.06.0036\0";
+static const char BUNDLEV31_VER[16] = "28.01.05.0031\0";
+static const char BUNDLEV26_VER[16] = "24.09.03.0026\0";
 
 enum SupportedFileType : int32_t {
 	NONE = 0,
@@ -843,10 +843,21 @@ public:
 
 struct BundleFile {
 public:
+	char magic[4] = { 0 };
+	char versionString[16] = { 0 };
 	BundleV40* V40Bundle = nullptr;
 	BundleV36* V36Bundle = nullptr;
 	BundleV31* V31Bundle = nullptr;
 	BundleV26* V26Bundle = nullptr;
+
+	void CreateNewBundleV40() {
+		ClearActiveBundleFile();
+		V40Bundle = new BundleV40();
+
+		V40Bundle->header.headerSize = 0x80;
+		memset(V40Bundle->header.versionString, 0, 0x10);
+		strncpy(V40Bundle->header.versionString, BUNDLEV40_VER, 16);
+	}
 	
 	void CreateNewBundleV36() {
 		ClearActiveBundleFile();
@@ -854,7 +865,7 @@ public:
 		
 		V36Bundle->header.headerSize = 0x78;
 		memset(V36Bundle->header.versionString, 0, 0x10);
-		strcpy(V36Bundle->header.versionString, "07.08.06.0036");
+		strncpy(V40Bundle->header.versionString, BUNDLEV36_VER, 16);
 	}
 	
 	void CreateNewBundleV31() {
@@ -862,6 +873,7 @@ public:
 		V31Bundle = new BundleV31();
 		
 		V31Bundle->header.headerSize = 0x180;
+		strncpy(V40Bundle->header.versionString, BUNDLEV31_VER, 16);
 	}
 	
 	void CreateNewBundleV26() {
@@ -869,7 +881,10 @@ public:
 		V26Bundle = new BundleV26();
 		
 		V26Bundle->header.headerSize = 0x158;
+		strncpy(V40Bundle->header.versionString, BUNDLEV26_VER, 16);
 	}
+
+	~BundleFile();
 	
 	bool ReadBundleFile(char* data);
 	void ClearActiveBundleFile();
@@ -878,5 +893,9 @@ public:
 	const BundleV36* GetV36BundlePtr() { return V36Bundle; }
 	const BundleV31* GetV31BundlePtr() { return V31Bundle; }
 	const BundleV26* GetV26BundlePtr() { return V26Bundle; }
+
+	const char* GetVersionHeader() {
+		return versionString;
+	}
 };
 #endif
